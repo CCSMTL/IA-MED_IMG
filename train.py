@@ -74,7 +74,7 @@ def main() :
     model=torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True)
     batch_size=8
     if torch.cuda.is_available():
-        device = "cuda"
+        device = "cuda:0"
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
