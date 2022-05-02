@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Download the 56 zip files in Images_png in batches
 import urllib.request
-
+import tarfile
+import os
 # URLs for the zip files
 links = [
     'https://nihcc.box.com/shared/static/vfk49d74nhbxq3nqjg0900w5nvkorp5c.gz',
@@ -19,8 +20,12 @@ links = [
 ]
 
 for idx, link in enumerate(links):
-    fn = 'images_%02d.tar.gz' % (idx+1)
+    fn = '../data/images_%02d.tar.gz' % (idx+1)
     print('downloading'+fn+'...')
     urllib.request.urlretrieve(link, fn)  # download the zip file
 
 print("Download complete. Please check the checksums")
+
+for file in os.listdir("../data") :
+    file = tarfile.open("../data/" + file)
+    file.extractall(f"../data/{file[::-7]}")

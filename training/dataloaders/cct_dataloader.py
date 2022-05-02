@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset
 import os
 from imageio import imread
-#import re
+
 import json
 import numpy as np
 import cv2 as cv
