@@ -27,6 +27,7 @@ for idx, link in enumerate(links):
 
 print("Download complete. Please check the checksums")
 
-for file in os.listdir("../data") :
-    file = tarfile.open("../data/" + file)
-    file.extractall(f"../data/{file[::-7]}")
+
+#This part requires to be on linux os
+query=f"ls ../data/*.gz |xargs -n1 tar -xzf"
+os.system(query)

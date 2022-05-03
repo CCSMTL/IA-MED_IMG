@@ -1,7 +1,7 @@
 import os
 import shutil
 
-
+data_folder="../data"
 final_folder="../data/"
 #training 70 , val 20, test 10 %
 n_images=112120
@@ -15,7 +15,7 @@ os.mkdir(final_folder+"validation",parents=True,exist_ok=True)
 os.mkdir(final_folder+"test",parents=True,exist_ok=True)
 for folder in os.listdir("../data") :
 
-    for root, dirs, files in os.walk("../data", topdown=False):  #adjust walk parameters
+    for root, dirs, files in os.walk(data_folder, topdown=False):  #adjust walk parameters
         for file in files :
             if count> n_train :
                 #add to training set

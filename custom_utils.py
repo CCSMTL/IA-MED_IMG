@@ -107,6 +107,10 @@ class metrics :
         pred = np.argmax(pred, axis=1)
         return sklearn.metrics.recall_score(true, pred, average='macro')
 
+    def auc(self,true,pred):
+        #TODO : verify auc works well
+        return sklearn.metrics.auc(true,pred)
+
     def metrics(self):
         dict={
             "f1" : self.f1,
