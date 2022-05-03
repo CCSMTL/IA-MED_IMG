@@ -50,10 +50,11 @@ class CustomImageDataset(Dataset):
 
         if os.path.exists(label_file) :
             with open(label_file) as f:
-                line=f.readlines()
-                if len(line)>0 : # if file no empty
-
-                    category_ids.append(line[0])
+                lines=f.readlines()
+                if len(lines)>0 : # if file no empty
+                    for line in lines :
+                        line=line.split(" ")
+                        category_ids.append(line[0])
                 else :
                     category_ids.append(14) # if the txt file is missing, we presume empty image
         else :

@@ -81,6 +81,7 @@ def main() :
     # -----------model initialisation------------------------------
 
     model=torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True)
+    model.classifier[6] = torch.nn.Linear(model.classifier[6].in_features, 14, bias=True)
     max_batch_size=8 # defines the maximum batch_size supported by your gpu
     accumulate=args.batch_size//max_batch_size
     print(f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times")
@@ -96,7 +97,7 @@ def main() :
     # -------data initialisation-------------------------------
     #os.environ["WANDB_MODE"] = "offline"
 
-    extra_data_augmentation=[torchvision.transforms.RandAugment]
+    #extra_data_augmentation=[torchvision.transforms.RandAugment]
     prepro = preprocessing(img_size=args.img_size)
     preprocess = prepro.preprocessing()
 

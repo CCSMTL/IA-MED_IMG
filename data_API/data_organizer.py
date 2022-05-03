@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 data_folder="../data/images"
 final_folder="../data/"
-n_images=30805
+n_images=30805+1
 
 
 #training 70 , val 20, test 10 %
@@ -48,8 +48,6 @@ def reformat_labels(labels) :
 
 
 labels=pd.read_csv("../data/Data_Entry_2017_v2020.csv")
-bboxes=pd.read_csv("../data/BBox_list_2017.csv")
-bboxes.set_index("Image Index",drop=True,inplace=True)
 labels.set_index("Image Index",drop=True,inplace=True)
 
 count=0
@@ -68,7 +66,7 @@ for i in range(0,n_images) :
 
         label=labels.loc[file].values
         label_ids=reformat_labels(label)
-        #bbox=bboxes.loc[file].values
+
         if count< n_train :
             #add to training set
             shutil.copy(f"{root}/{file}",f"{final_folder}/training/images/{file}")
@@ -88,7 +86,7 @@ for i in range(0,n_images) :
             f.write(string)
             f.write("\n") #multiple diseases = multiple lines
         j+=1
-        file = f"0000000{i}_{j:03}.png"
+        file = f"{i:08}_{j:03}.png"
 
     count+=1
 
