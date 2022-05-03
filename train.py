@@ -97,8 +97,8 @@ def main() :
     # -------data initialisation-------------------------------
     #os.environ["WANDB_MODE"] = "offline"
 
-    #extra_data_augmentation=[torchvision.transforms.RandAugment]
-    prepro = preprocessing(img_size=args.img_size)
+    extra_data_augmentation=[torchvision.transforms.RandAugment(2,9)]
+    prepro = preprocessing(img_size=args.img_size,other=extra_data_augmentation)
     preprocess = prepro.preprocessing()
 
 

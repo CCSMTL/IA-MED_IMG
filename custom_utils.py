@@ -55,12 +55,15 @@ class preprocessing() :
         temp=[
             transforms.Resize(self.img_size),
             transforms.CenterCrop(self.img_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 
         ]
         if self.added_transform :
-            temp.append(self.added_transform)
+            for transform in self.added_transform :
+                temp.append(transform)
+        temp=temp + [
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+]
         preprocess = transforms.Compose(temp)
         return preprocess
 #-----------------------------------------------------------------------------------
