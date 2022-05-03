@@ -4,10 +4,11 @@ import torch
 import wandb
 import os
 import argparse
+import torchvision
 #-----local imports---------------------------------------
 from training.training import training
-from training.dataloaders.cct_dataloader import CustomImageDataset
-from custom_utils import set_parameter_requires_grad,Experiment,preprocessing,metrics
+from training.dataloaders.cxray_dataloader import CustomImageDataset
+from custom_utils import set_parameter_requires_grad,Experiment,preprocessing
 
 
 
@@ -31,14 +32,7 @@ def init_parser() :
                         choices=["alexnet","resnext50_32x4d","vgg19"],
                         required=True,
                         help='Choice of the model')
-    parser.add_argument('--dataset',
-                        default='2',
-                        const='all',
-                        type=str,
-                        nargs='?',
-                        choices=['1', '2', '3',"4"],
-                        required=True,
-                        help='Version of the dataset')
+
     parser.add_argument('--img_size',
                         default=320,
                         const='all',
@@ -59,6 +53,21 @@ def init_parser() :
                         nargs='?',
                         required=False,
                         help="Number of epochs to train ; a patiance of 5 is implemented by default")
+    parser.add_argument('--batch_size',
+                        default=50,
+                        const='all',
+                        type=int,
+                        nargs='?',
+                        required=False,
+                        help="The batch size to use. If > max_batch_size,gradient accumulation will be used")
+
+    parser.add_argument('--tags',
+                        default=[],
+                        const='all',
+                        type=list,
+                        nargs='?',
+                        required=False,
+                        help="The batch size to use. If > max_batch_size,gradient accumulation will be used")
 
     return parser
 
@@ -72,9 +81,11 @@ def main() :
     # -----------model initialisation------------------------------
 
     model=torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True)
-    batch_size=8
+    max_batch_size=8 # defines the maximum batch_size supported by your gpu
+    accumulate=args.batch_size//max_batch_size
+    print(f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times")
     if torch.cuda.is_available():
-        device = "cuda:0"
+        device = "cuda:0" # The id of the gpu (e.g. 0 , can change on multi gpu devices)
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
@@ -85,16 +96,19 @@ def main() :
     # -------data initialisation-------------------------------
     #os.environ["WANDB_MODE"] = "offline"
 
+    extra_data_augmentation=[torchvision.transforms.RandAugment]
     prepro = preprocessing(img_size=args.img_size)
     preprocess = prepro.preprocessing()
 
-    num_classes = 14
 
-    train_dataset = CustomImageDataset(f"data/data_split{version}/train", transform=preprocess)
-    val_dataset = CustomImageDataset(f"data/data_split{version}/valid", transform=preprocess)
+    from custom_utils import metrics
+    train_dataset = CustomImageDataset(f"data/training",num_classes=14, transform=preprocess)
+    val_dataset = CustomImageDataset(f"data//validation",num_classes=14, transform=preprocess)
 
-    training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=int(os.cpu_count()/3),pin_memory=True)
-    validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(batch_size*2), shuffle=False, num_workers=int(os.cpu_count()/3),pin_memory=True)
+    #rule of thumb : num_worker = 4 * number of gpu
+    #batch_size : maximum possible without crashing
+    training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=max_batch_size, shuffle=True, num_workers=0,pin_memory=True)
+    validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(max_batch_size*2), shuffle=False, num_workers=0,pin_memory=True)
     print("The data has now been loaded successfully into memory")
     # ------------training--------------------------------------------
     print("Starting training now")
@@ -107,15 +121,15 @@ def main() :
     #initialize metrics loggers
 
     if args.wandb :
-        wandb.init(project='mila-prof-master-gang', tags=[args.model,args.version])
+        wandb.init(project="test-project", entity="ai-chexnet")
         wandb.watch(model)
 
-    experiment = Experiment(f"{model._get_name()}/v{version}",is_wandb=args.wandb)
+    experiment = Experiment(f"{model._get_name()}",is_wandb=args.wandb,tags=args.tags)
 
     optimizer = torch.optim.AdamW(model.parameters())
     metric=metrics(num_classes=14)
     metrics=metric.metrics()
-    training(model,optimizer,criterion,training_loader,validation_loader,device,minibatch_accumulate=1,epoch_max=args.epoch,patience=5,experiment=experiment,metrics=metrics)
+    training(model,optimizer,criterion,training_loader,validation_loader,device,minibatch_accumulate=accumulate,epoch_max=args.epoch,patience=5,experiment=experiment,metrics=metrics)
 
 if __name__ == "__main__":
      main()

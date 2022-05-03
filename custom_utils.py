@@ -8,10 +8,13 @@ from  sklearn.metrics import top_k_accuracy_score
 import wandb
 #-----------------------------------------------------------------------------------
 class Experiment() :
-    def __init__(self,directory,is_wandb=False):
+    def __init__(self,directory,is_wandb=False,tags=[]):
         self.is_wandb=is_wandb
         self.directory="log/"+directory
-        self.weight_dir="models/models_weights/"+directory
+        self.weight_dir = "models/models_weights/" + directory
+        for tag in tags :
+            self.directory  += f"/{tag}"
+            self.weight_dir += f"/{tag}"
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         path=pathlib.Path(self.weight_dir)
