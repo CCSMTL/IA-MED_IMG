@@ -40,6 +40,9 @@ class Experiment() :
 
         torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
 
+        if self.is_wandb :
+            wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
+
 #-----------------------------------------------------------------------------------
 def set_parameter_requires_grad(model, feature_extract):
     if feature_extract:

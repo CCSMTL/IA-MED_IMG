@@ -6,6 +6,7 @@ import os
 import argparse
 import torchvision
 #-----local imports---------------------------------------
+from models.FCN import FCN
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
 from custom_utils import set_parameter_requires_grad,Experiment,preprocessing
@@ -29,7 +30,7 @@ def init_parser() :
                         const='all',
                         type=str,
                         nargs='?',
-                        choices=["alexnet","resnext50_32x4d","vgg19"],
+                        choices=torch.hub.list('pytorch/vision:v0.10.0'),
                         required=True,
                         help='Choice of the model')
 
@@ -79,9 +80,7 @@ def main() :
     criterion = torch.nn.CrossEntropyLoss()
 
     # -----------model initialisation------------------------------
-
-    model=torch.hub.load('pytorch/vision:v0.10.0', args.model, pretrained=True)
-    model.classifier[6] = torch.nn.Linear(model.classifier[6].in_features, 14, bias=True)
+    model=FCN(args.model,14)
     max_batch_size=8 # defines the maximum batch_size supported by your gpu
     accumulate=args.batch_size//max_batch_size
     print(f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times")
@@ -99,12 +98,12 @@ def main() :
 
     extra_data_augmentation=[torchvision.transforms.RandAugment(2,9)]
     prepro = preprocessing(img_size=args.img_size,other=extra_data_augmentation)
-    preprocess = prepro.preprocessing()
+
 
 
     from custom_utils import metrics
-    train_dataset = CustomImageDataset(f"data/training",num_classes=14, transform=preprocess)
-    val_dataset = CustomImageDataset(f"data//validation",num_classes=14, transform=preprocess)
+    train_dataset = CustomImageDataset(f"data/training",num_classes=14, transform=prepro.preprocessing())
+    val_dataset = CustomImageDataset(f"data//validation",num_classes=14, transform=prepro.preprocessing())
 
     #rule of thumb : num_worker = 4 * number of gpu
     #batch_size : maximum possible without crashing
@@ -125,7 +124,7 @@ def main() :
         wandb.init(project="test-project", entity="ai-chexnet")
         wandb.watch(model)
 
-    experiment = Experiment(f"{model._get_name()}",is_wandb=args.wandb,tags=args.tags)
+    experiment = Experiment(f"{args.model}",is_wandb=args.wandb,tags=args.tags)
 
     optimizer = torch.optim.AdamW(model.parameters())
     metric=metrics(num_classes=14)
