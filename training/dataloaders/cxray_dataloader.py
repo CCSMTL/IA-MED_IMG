@@ -26,7 +26,7 @@ class CustomImageDataset(Dataset):
 
 
     def __len__(self):
-        if  bool(os.environ["DEBUG"]) :
+        if  os.environ["DEBUG"]=="True" :
             return 100
         return len(self.files)
 
