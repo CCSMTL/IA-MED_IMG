@@ -26,6 +26,8 @@ class CustomImageDataset(Dataset):
 
 
     def __len__(self):
+        if  bool(os.environ["DEBUG"]) :
+            return 100
         return len(self.files)
 
     def label_transform(self,label_ids): # encode one_hot
@@ -62,7 +64,8 @@ class CustomImageDataset(Dataset):
 
 
 
-        image = cv.imread(img_path)
+        image = cv.imread(img_path,cv.IMREAD_GRAYSCALE)
+        image=np.stack((image,)*3,axis=-1)
         if self.transform:
             image=Image.fromarray(np.uint8(image))
             image = self.transform(image)

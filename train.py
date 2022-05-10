@@ -5,6 +5,7 @@ import wandb
 import os
 import argparse
 import torchvision
+import numpy as np
 #-----local imports---------------------------------------
 from models.FCN import FCN
 from training.training import training
@@ -68,14 +69,18 @@ def init_parser() :
                         type=list,
                         nargs='?',
                         required=False,
-                        help="The batch size to use. If > max_batch_size,gradient accumulation will be used")
+                        help="extra tags to add to the logs")
+    parser.add_argument('--debug',
+                        action=argparse.BooleanOptionalAction,
+                        default=False,
+                        help='do you wish  execute small train set in debug mode')
 
     return parser
 
 def main() :
     parser=init_parser()
     args = parser.parse_args()
-
+    os.environ["DEBUG"] = str(args.debug)
 
     criterion = torch.nn.CrossEntropyLoss()
 
@@ -102,11 +107,18 @@ def main() :
 
 
     from custom_utils import metrics
+
+
     train_dataset = CustomImageDataset(f"data/training",num_classes=14, transform=prepro.preprocessing())
     val_dataset = CustomImageDataset(f"data//validation",num_classes=14, transform=prepro.preprocessing())
 
     #rule of thumb : num_worker = 4 * number of gpu
     #batch_size : maximum possible without crashing
+
+    # samples_weight=
+    # samples_weight=torch.tensor(samples_weight)
+    # sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weight, len(samples_weight))
+
     training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=max_batch_size, shuffle=True, num_workers=0,pin_memory=True)
     validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(max_batch_size*2), shuffle=False, num_workers=0,pin_memory=True)
     print("The data has now been loaded successfully into memory")
@@ -127,7 +139,7 @@ def main() :
     experiment = Experiment(f"{args.model}",is_wandb=args.wandb,tags=args.tags)
 
     optimizer = torch.optim.AdamW(model.parameters())
-    metric=metrics(num_classes=14)
+    metric=metrics(num_classes=14,threshold=np.zeros((14))+0.5)
     metrics=metric.metrics()
     training(model,optimizer,criterion,training_loader,validation_loader,device,minibatch_accumulate=accumulate,epoch_max=args.epoch,patience=5,experiment=experiment,metrics=metrics)
 

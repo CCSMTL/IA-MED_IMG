@@ -33,7 +33,7 @@ def training_loop(model,loader,optimizer,criterion,device,minibatch_accumulate) 
         outputs = model(inputs)
         loss = criterion(outputs, labels)
 
-        results[1] = torch.cat((results[1], torch.nn.functional.softmax(outputs,dim=1).detach().cpu()),dim=0)
+        results[1] = torch.cat((results[1], torch.sigmoid(outputs).detach().cpu()),dim=0)
 
         loss.backward()
         running_loss+=loss.detach()/batch_size
@@ -75,7 +75,7 @@ def validation_loop(model,loader,criterion,device):
 
         outputs = model(inputs)
         loss = criterion(outputs, labels)
-        results[1] = torch.cat((results[1], torch.nn.functional.softmax(outputs,dim=1).detach().cpu()),dim=0)
+        results[1] = torch.cat((results[1], torch.sigmoid(outputs).detach().cpu()),dim=0)
 
         running_loss+=loss.detach()/batch_size
 
@@ -110,7 +110,9 @@ def training(model,optimizer,criterion,training_loader,validation_loader,device=
             experiment.log_metric("validation_loss", val_loss.tolist(),epoch=epoch)
 
             for key in metrics :
-                experiment.log_metric(key,metrics[key](results[1].numpy(),results[0].numpy()),epoch=epoch)
+                pred=results[1].numpy()
+                true=results[0].numpy()
+                experiment.log_metric(key,metrics[key](true,pred),epoch=epoch)
 
         if val_loss<best_loss :
             best_loss=val_loss

@@ -83,49 +83,70 @@ num_classes = 14 #+empty
 
 
 class metrics :
-    def __init__(self,num_classes):
+    def __init__(self,num_classes,threshold):
         self.num_classes=num_classes
+        self.threshold=threshold
+
+        self.f1_list=np.zeros((14))
+        self.mvg_avg=0.99
 
 
-    def top1(self,true, pred):
-        true = np.argmax(true, axis=1)
-        # labels=np.unique(true)
-        labels = np.arange(0, self.num_classes)
+    def accuracy(self,true, pred):
+        pred=np.where(pred>self.threshold,1,0)
 
-        return top_k_accuracy_score(true, pred, k=1, labels=labels)
 
-    def top5(self,true, pred):
-        true = np.argmax(true, axis=1)
-        labels = np.arange(0, self.num_classes)
 
-        return top_k_accuracy_score(true, pred, k=5, labels=labels)
+        return np.mean(np.where(pred==true,1,0))
+
 
     def f1(self,true, pred):
-        true = np.argmax(true, axis=1)
-        pred = np.argmax(pred, axis=1)
+        pred=np.where(pred>self.threshold,1,0)
 
         return sklearn.metrics.f1_score(true, pred, average='macro')  # weighted??
 
     def precision(self,true, pred):
-        true = np.argmax(true, axis=1)
-        pred = np.argmax(pred, axis=1)
+        pred = np.where(pred > self.threshold,1,0)
         return sklearn.metrics.precision_score(true, pred, average='macro')
 
     def recall(self,true, pred):
-        true = np.argmax(true, axis=1)
-        pred = np.argmax(pred, axis=1)
+        pred = np.where(pred > self.threshold,1,0)
         return sklearn.metrics.recall_score(true, pred, average='macro')
 
     def auc(self,true,pred):
-        #TODO : verify auc works well
-        return sklearn.metrics.auc(true,pred)
+        #TODO :  implement auc
+        true,pred=true.T,pred.T
+        auc=0
+        n=len(true)
+        tpr_list,fpr_list=[],[]
+        cat=0
+        for t,p in zip(true,pred) : #for each class
+            best_auc=0
+            range_list=np.arange(0,1.01,0.01)
+            for ex,threshold in enumerate(range_list) :
+                p=np.where(p>threshold,1,0)
+                tpr=np.mean(np.where(np.logical_and(t==p,t==1),1,0))
+                tnr=np.mean(np.where(np.logical_and(t==p,t==0),1,0))
+                fnr = np.mean(np.where(np.logical_and(t != p, t == 0), 1, 0))
+                fpr = np.mean(np.where(np.logical_and(t != p, t == 1), 1, 0))
+                fpr_list.append(fpr)
+                tpr_list.append(tpr)
+
+                f1=tpr/(tpr+0.5*(fpr+fnr))
+                if f1>self.f1_list[cat] :
+                    self.threshold[cat]=self.mvg_avg*self.threshold[cat]+(1-self.mvg_avg)*threshold
+                    self.f1_list[cat]=f1
+
+            auc+=np.trapz(tpr_list,fpr_list)
+            cat+=1
+
+        return auc/n
 
     def metrics(self):
         dict={
             "f1" : self.f1,
-            "top1" : self.top1,
-            "top5" : self.top5,
+            "auc" : self.auc,
             "recall" : self.recall,
-            "precision" : self.precision
+            "precision" : self.precision,
+            "accuracy" : self.accuracy
         }
         return dict
