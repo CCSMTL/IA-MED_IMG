@@ -33,7 +33,7 @@ class Metrics :
         return sklearn.metrics.recall_score(true, pred, average='macro')
 
     def auc(self,true,pred):
-        #TODO :  implement auc
+        #TODO :  verify auc
         true,pred=true.T,pred.T
         auc=0
         n=len(true)

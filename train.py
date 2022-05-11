@@ -108,11 +108,13 @@ def main() :
 
     from Metrics import Metrics
 
-    train_dataset = CustomImageDataset(f"data/training",num_classes=14,img_size=args.img_size,prob=0.1,intensity=0.1,label_smoothing=0.05)
+    train_dataset = CustomImageDataset(f"data/training",num_classes=14,img_size=args.img_size,prob=0.1,intensity=0.1,label_smoothing=0.1)
     val_dataset = CustomImageDataset(f"data//validation",num_classes=14,img_size=args.img_size)
 
     #rule of thumb : num_worker = 4 * number of gpu
     #batch_size : maximum possible without crashing
+
+    #TODO : IMPLEMENT SAMPLE WEIGHT
 
     # samples_weight=
     # samples_weight=torch.tensor(samples_weight)

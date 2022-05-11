@@ -40,12 +40,19 @@ class CutMix(object):
         image1, landmarks1 = samples['image'], samples['landmarks']
         image2, landmarks2 = samples['image2'], samples['landmarks2']
         n=image1.shape[1]
-        bbox=torch.cat((torch.rand(2)*n,torch.randn(2)*n/5)).int()
+        bbox = torch.cat((torch.rand(2) * n, torch.abs(torch.randn(2) * n / 5))).int()
         x,y,w,h=bbox
-        ratio=w*h/n**2
+        if torch.rand(1) < self.prob:
+            x2 = min(x + w, n) if w > 0 else max(x + w, 0)
+            y2 = min(y + h, n) if h > 0 else max(y + h, 0)
+            if x2 < x:
+                x, x2 = x2, x
+            if y2 < y:
+                y, y2 = y2, y
+        ratio=(x2-x)*(y2-y)/n**2
         #TODO : make sure bbox!=0
         if torch.rand(1) < self.prob:
-            image1[:,x:x+w,y:y+h]=image2[:,x:x+w,y:y+h]
+            image1[:,x:x2,y:y2]=image2[:,x:x2,y:y2]
             landmarks1 = (1 - ratio) * landmarks1 + ratio * landmarks2
 
         samples['image'], samples['landmarks']=image1,landmarks1
