@@ -10,7 +10,7 @@ import numpy as np
 from models.FCN import FCN
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
-from custom_utils import set_parameter_requires_grad,Experiment,preprocessing
+from custom_utils import set_parameter_requires_grad,Experiment
 
 
 
@@ -101,16 +101,15 @@ def main() :
     # -------data initialisation-------------------------------
     #os.environ["WANDB_MODE"] = "offline"
 
-    extra_data_augmentation=[torchvision.transforms.RandAugment(2,9)]
-    prepro = preprocessing(img_size=args.img_size,other=extra_data_augmentation)
 
 
 
-    from custom_utils import metrics
 
 
-    train_dataset = CustomImageDataset(f"data/training",num_classes=14, transform=prepro.preprocessing())
-    val_dataset = CustomImageDataset(f"data//validation",num_classes=14, transform=prepro.preprocessing())
+    from Metrics import Metrics
+
+    train_dataset = CustomImageDataset(f"data/training",num_classes=14,img_size=args.img_size,prob=0.1,intensity=0.1,label_smoothing=0.05)
+    val_dataset = CustomImageDataset(f"data//validation",num_classes=14,img_size=args.img_size)
 
     #rule of thumb : num_worker = 4 * number of gpu
     #batch_size : maximum possible without crashing
@@ -139,7 +138,7 @@ def main() :
     experiment = Experiment(f"{args.model}",is_wandb=args.wandb,tags=args.tags)
 
     optimizer = torch.optim.AdamW(model.parameters())
-    metric=metrics(num_classes=14,threshold=np.zeros((14))+0.5)
+    metric=Metrics(num_classes=14,threshold=np.zeros((14))+0.5)
     metrics=metric.metrics()
     training(model,optimizer,criterion,training_loader,validation_loader,device,minibatch_accumulate=accumulate,epoch_max=args.epoch,patience=5,experiment=experiment,metrics=metrics)
 
