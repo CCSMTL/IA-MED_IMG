@@ -9,10 +9,10 @@ import argparse
 import torchvision
 import numpy as np
 #-----local imports---------------------------------------
-from models.FCN import FCN
+from models.CNN import CNN
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
-from custom_utils import set_parameter_requires_grad,Experiment
+from custom_utils import Experiment,set_parameter_requires_grad
 
 
 
@@ -83,11 +83,14 @@ def main() :
     parser=init_parser()
     args = parser.parse_args()
     os.environ["DEBUG"] = str(args.debug)
-
-    criterion = torch.nn.CrossEntropyLoss()
+    from Sampler import Sampler
+    Sampler=Sampler()
+    criterion = torch.nn.BCEWithLogitsLoss()
 
     # -----------model initialisation------------------------------
-    model=FCN(args.model,14)
+    model=CNN(args.model,14)
+    n = len([param for param in model.named_parameters()])
+    set_parameter_requires_grad(model,n-2)
     max_batch_size=8 # defines the maximum batch_size supported by your gpu
     accumulate=args.batch_size//max_batch_size
     print(f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times")
@@ -103,48 +106,18 @@ def main() :
     # -------data initialisation-------------------------------
     #os.environ["WANDB_MODE"] = "offline"
 
-
-
-
-
-
     from Metrics import Metrics
 
     train_dataset = CustomImageDataset(f"data/training",num_classes=14,img_size=args.img_size,prob=0.1,intensity=0.1,label_smoothing=0.1)
     val_dataset = CustomImageDataset(f"data/validation",num_classes=14,img_size=args.img_size)
 
-    #rule of thumb : num_worker = 4 * number of gpu
+    #rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
     #batch_size : maximum possible without crashing
-    #------------------------------------------------------------------
-    #TODO : IMPLEMENT SAMPLE WEIGHT
-
-    data=pd.read_csv("data/data_table.csv")
-    data=data[data["assignation"]=="training"]
-    if os.environ["DEBUG"]=="True" :
-        data=data.iloc[0:100]
-    names = ['Cardiomegaly', 'Emphysema', 'Effusion', 'Consolidation', 'Hernia', 'Infiltration', 'Mass', 'Nodule',
-             'Atelectasis', 'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema', 'No Finding']
-    count=[]
-    for name in names :
-        count.append(np.sum(data[name]))
-    count=1/np.array(count)
-    count[np.isinf(count)] = 0
-
-    count=torch.nn.functional.softmax(torch.tensor(count))
-    m=data[names].values.T
-    m=np.vstack([m,np.ones_like(m[0])])
-    classes=np.argmax(m,axis=0)
-
-    for i in range(0,15) :
-        classes=np.where(classes==i,count[i],classes)
-
-    samples_weight=torch.tensor(classes)
-    sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weight, len(samples_weight))
 
 
-    # ------------------------------------------------------------------
-    training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=max_batch_size, num_workers=0,pin_memory=True,sampler=sampler)
-    validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(max_batch_size*2), num_workers=0,pin_memory=True,sampler=sampler)
+
+    training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=max_batch_size, num_workers=0,pin_memory=True,sampler=Sampler.sampler())
+    validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(max_batch_size*2), num_workers=0,pin_memory=True,sampler=Sampler.sampler())
     print("The data has now been loaded successfully into memory")
     # ------------training--------------------------------------------
     print("Starting training now")

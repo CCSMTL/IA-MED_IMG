@@ -1,12 +1,13 @@
 import torch
 import torchvision
+from custom_utils import set_parameter_requires_grad
 
-
-class FCN(torch.nn.Module) :
+class CNN(torch.nn.Module) :
     def __init__(self,backbone,num_classes):
         super().__init__()
         #TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
+
         layers=[]
         for name, param in self.backbone.named_parameters():
             if param.requires_grad:
@@ -19,6 +20,8 @@ class FCN(torch.nn.Module) :
         else :
             size = x.in_features
             x = torch.nn.Linear(size, num_classes, bias=True)
+
+
         setattr(self.backbone, name[0],x)
 
     def forward(self,x):

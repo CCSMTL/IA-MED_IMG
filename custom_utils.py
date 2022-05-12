@@ -37,6 +37,8 @@ class Experiment() :
 
         if self.is_wandb :
             wandb.log({metric_name: value})
+        else:
+            print({metric_name: value})
     def save_weights(self,model):
 
         torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
@@ -44,11 +46,14 @@ class Experiment() :
         if self.is_wandb :
             wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
 
+
 #-----------------------------------------------------------------------------------
-def set_parameter_requires_grad(model, feature_extract):
-    if feature_extract:
-        for param in model.parameters():
-            param.requires_grad = False
+def set_parameter_requires_grad(model, feature_extract_len):
+        for ex,param in enumerate(model.parameters()):
+            if ex<feature_extract_len :
+                param.requires_grad = False
+            else :
+                param.requires_grad = True
 #-----------------------------------------------------------------------------------
 
 def collate_fn(batch):
