@@ -1,5 +1,7 @@
 #------python import------------------------------------
 import warnings
+
+import pandas as pd
 import torch
 import wandb
 import os
@@ -109,19 +111,40 @@ def main() :
     from Metrics import Metrics
 
     train_dataset = CustomImageDataset(f"data/training",num_classes=14,img_size=args.img_size,prob=0.1,intensity=0.1,label_smoothing=0.1)
-    val_dataset = CustomImageDataset(f"data//validation",num_classes=14,img_size=args.img_size)
+    val_dataset = CustomImageDataset(f"data/validation",num_classes=14,img_size=args.img_size)
 
     #rule of thumb : num_worker = 4 * number of gpu
     #batch_size : maximum possible without crashing
-
+    #------------------------------------------------------------------
     #TODO : IMPLEMENT SAMPLE WEIGHT
 
-    # samples_weight=
-    # samples_weight=torch.tensor(samples_weight)
-    # sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weight, len(samples_weight))
+    data=pd.read_csv("data/data_table.csv")
+    data=data[data["assignation"]=="training"]
+    if os.environ["DEBUG"]=="True" :
+        data=data.iloc[0:100]
+    names = ['Cardiomegaly', 'Emphysema', 'Effusion', 'Consolidation', 'Hernia', 'Infiltration', 'Mass', 'Nodule',
+             'Atelectasis', 'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema', 'No Finding']
+    count=[]
+    for name in names :
+        count.append(np.sum(data[name]))
+    count=1/np.array(count)
+    count[np.isinf(count)] = 0
 
-    training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=max_batch_size, shuffle=True, num_workers=0,pin_memory=True)
-    validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(max_batch_size*2), shuffle=False, num_workers=0,pin_memory=True)
+    count=torch.nn.functional.softmax(torch.tensor(count))
+    m=data[names].values.T
+    m=np.vstack([m,np.ones_like(m[0])])
+    classes=np.argmax(m,axis=0)
+
+    for i in range(0,15) :
+        classes=np.where(classes==i,count[i],classes)
+
+    samples_weight=torch.tensor(classes)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weight, len(samples_weight))
+
+
+    # ------------------------------------------------------------------
+    training_loader = torch.utils.data.DataLoader(train_dataset, batch_size=max_batch_size, num_workers=0,pin_memory=True,sampler=sampler)
+    validation_loader = torch.utils.data.DataLoader(val_dataset, batch_size=int(max_batch_size*2), num_workers=0,pin_memory=True,sampler=sampler)
     print("The data has now been loaded successfully into memory")
     # ------------training--------------------------------------------
     print("Starting training now")

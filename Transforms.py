@@ -49,11 +49,11 @@ class CutMix(object):
                 x, x2 = x2, x
             if y2 < y:
                 y, y2 = y2, y
-        ratio=(x2-x)*(y2-y)/n**2
-        #TODO : make sure bbox!=0
-        if torch.rand(1) < self.prob:
-            image1[:,x:x2,y:y2]=image2[:,x:x2,y:y2]
-            landmarks1 = (1 - ratio) * landmarks1 + ratio * landmarks2
+            ratio=(x2-x)*(y2-y)/n**2
+            #TODO : make sure bbox!=0
+            if torch.rand(1) < self.prob:
+                image1[:,x:x2,y:y2]=image2[:,x:x2,y:y2]
+                landmarks1 = (1 - ratio) * landmarks1 + ratio * landmarks2
 
         samples['image'], samples['landmarks']=image1,landmarks1
         return samples

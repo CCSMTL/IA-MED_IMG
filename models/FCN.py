@@ -5,6 +5,7 @@ import torchvision
 class FCN(torch.nn.Module) :
     def __init__(self,backbone,num_classes):
         super().__init__()
+        #TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
         layers=[]
         for name, param in self.backbone.named_parameters():

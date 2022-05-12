@@ -24,9 +24,10 @@ class CustomImageDataset(Dataset):
         self.prob=prob
         self.intensity=intensity
         self.img_size=img_size
+
+
         for file in os.listdir(img_dir+"/images") :
                 self.files.append(f"{self.img_dir}/images/{file}")
-
 
 
     def __len__(self):
@@ -62,7 +63,7 @@ class CustomImageDataset(Dataset):
             if int(label_id)==self.num_classes : # the empty class!
                 pass # we do nothing
             else :
-                one_hot[int(label_id)]=1-self.label_smoothing
+                one_hot[int(label_id)]=1-2*self.label_smoothing
         return one_hot
 
     def retrieve_cat(self,keyname):
