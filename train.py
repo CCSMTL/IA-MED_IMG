@@ -91,7 +91,7 @@ def main() :
     model=CNN(args.model,14)
     n = len([param for param in model.named_parameters()])
     set_parameter_requires_grad(model,n-2)
-    max_batch_size=8 # defines the maximum batch_size supported by your gpu
+    max_batch_size=8 # defines the maximum batch_size supported by your gpu for a specific model.
     accumulate=args.batch_size//max_batch_size
     print(f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times")
     if torch.cuda.is_available():

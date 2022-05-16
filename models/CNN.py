@@ -15,15 +15,17 @@ class CNN(torch.nn.Module) :
         name=layers[::-1][0].split(".")
         x = getattr(self.backbone, name[0])
         if len(name)>2 :
-            size=x[int(name[1])].in_features
-            x[int(name[1])]=torch.nn.Linear(size,num_classes,bias=True)
+            size=x[int(name[1])].out_features
+            #x[int(name[1])]=torch.nn.Linear(size,num_classes,bias=True)
         else :
-            size = x.in_features
-            x = torch.nn.Linear(size, num_classes, bias=True)
+            size = x.out_features
+            #x = torch.nn.Linear(size, num_classes, bias=True)
 
 
-        setattr(self.backbone, name[0],x)
+        #setattr(self.backbone, name[0],x)
+        self.classifier=torch.nn.Linear(size,14,bias=True)
 
     def forward(self,x):
-
-        return self.backbone(x)
+        x=self.backbone(x)
+        x=self.classifier(x)
+        return x

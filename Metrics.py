@@ -13,15 +13,11 @@ class Metrics :
 
     def accuracy(self,true, pred):
         pred=np.where(pred>self.threshold,1,0)
-
-
-
         return np.mean(np.where(pred==true,1,0))
 
 
     def f1(self,true, pred):
         pred=np.where(pred>self.threshold,1,0)
-
         return sklearn.metrics.f1_score(true, pred, average='macro')  # weighted??
 
     def precision(self,true, pred):
@@ -40,7 +36,7 @@ class Metrics :
         tpr_list,fpr_list=[],[]
         cat=0
         for t,p in zip(true,pred) : #for each class
-            best_auc=0
+
             range_list=np.arange(0,1.01,0.01)
             for ex,threshold in enumerate(range_list) :
                 p=np.where(p>threshold,1,0)

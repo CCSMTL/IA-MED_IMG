@@ -49,8 +49,8 @@ class Experiment() :
 
 #-----------------------------------------------------------------------------------
 def set_parameter_requires_grad(model, feature_extract_len):
-        for ex,param in enumerate(model.parameters()):
-            if ex<feature_extract_len :
+        for ex,param in enumerate(model.parameters()[::-1]):
+            if ex>feature_extract_len :
                 param.requires_grad = False
             else :
                 param.requires_grad = True
