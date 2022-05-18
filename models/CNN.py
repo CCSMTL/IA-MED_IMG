@@ -29,3 +29,4 @@ class CNN(torch.nn.Module) :
         x=self.backbone(x)
         x=self.classifier(x)
         return x
+

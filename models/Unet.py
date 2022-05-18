@@ -5,7 +5,6 @@ https://github.com/mkisantal/backboned-unet/blob/master/backboned_unet/unet.py
 
 
 import torch
-import torchvision
 from custom_utils import set_parameter_requires_grad
 
 
@@ -14,37 +13,61 @@ class UpsampleBlock(torch.torch.nn.Module):
     # TODO: separate parametric and non-parametric classes?
     # TODO: skip connection concatenated OR added
 
-    def __init__(self, ch_in, ch_out=None, skip_in=0, use_bn=True, parametric=True):
+    def __init__(self, ch_in, ch_out=None, skip_in=0, use_bn=True, parametric=False):
         super(UpsampleBlock, self).__init__()
 
         self.parametric = parametric
-        ch_out = ch_in/2 if ch_out is None else ch_out
+        ch_out = int(ch_in / 2) if ch_out is None else ch_out
 
         # first convolution: either transposed conv, or conv following the skip connection
         if parametric:
             # versions: kernel=4 padding=1, kernel=2 padding=0
-            self.up = torch.nn.ConvTranspose2d(in_channels=ch_in, out_channels=ch_out, kernel_size=(4, 4),
-                                         stride=2, padding=1, output_padding=0, bias=(not use_bn))
+            self.up = torch.nn.ConvTranspose2d(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=(4, 4),
+                stride=2,
+                padding=1,
+                output_padding=0,
+                bias=(not use_bn),
+            )
             self.bn1 = torch.nn.BatchNorm2d(ch_out) if use_bn else None
         else:
             self.up = None
             ch_in = ch_in + skip_in
-            self.conv1 = torch.nn.Conv2d(in_channels=ch_in, out_channels=ch_out, kernel_size=(3, 3),
-                                   stride=1, padding=1, bias=(not use_bn))
+            self.conv1 = torch.nn.Conv2d(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                bias=(not use_bn),
+            )
             self.bn1 = torch.nn.BatchNorm2d(ch_out) if use_bn else None
 
         self.relu = torch.nn.ReLU(inplace=True)
 
         # second convolution
         conv2_in = ch_out if not parametric else ch_out + skip_in
-        self.conv2 = torch.nn.Conv2d(in_channels=conv2_in, out_channels=ch_out, kernel_size=(3, 3),
-                               stride=1, padding=1, bias=(not use_bn))
+        self.conv2 = torch.nn.Conv2d(
+            in_channels=conv2_in,
+            out_channels=ch_out,
+            kernel_size=(3, 3),
+            stride=1,
+            padding=1,
+            bias=(not use_bn),
+        )
         self.bn2 = torch.nn.BatchNorm2d(ch_out) if use_bn else None
 
     def forward(self, x, skip_connection=None):
 
-        x = self.up(x) if self.parametric else torch.nn.functional.interpolate(x, size=None, scale_factor=2, mode='bilinear',
-                                                             align_corners=None)
+        x = (
+            self.up(x)
+            if self.parametric
+            else torch.nn.functional.interpolate(
+                x, size=None, scale_factor=2, mode="bilinear", align_corners=None
+            )
+        )
         if self.parametric:
             x = self.bn1(x) if self.bn1 is not None else x
             x = self.relu(x)
@@ -62,60 +85,88 @@ class UpsampleBlock(torch.torch.nn.Module):
 
         return x
 
-class Unet(torch.torch.nn.Module) :
-    def __init__(self,backbone_name="densenet101",encoder_freeze=False,pretrained=True, decoder_filters=(256, 128, 64, 32, 16),classes=14):
 
-        self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone_name, pretrained=pretrained).features
-        self.decoder_filters=decoder_filters
+class Unet(torch.torch.nn.Module):
+    def __init__(
+        self,
+        backbone_name="densenet101",
+        encoder_freeze=False,
+        pretrained=True,
+        decoder_filters=[4, 8, 16, 32, 64, 128, 256, 512],
+        classes=14,
+    ):
+        super(Unet, self).__init__()
 
-        if encoder_freeze :
-            set_parameter_requires_grad(self.backbone,-1)
+        self.classes = classes
 
-        self.classes=classes
+        # lets define the decoder
 
-        #lets define the decoder
-        self.upsample_blocks=torch.nn.ModuleList()
-        self.features_name=self.get_backbone()
-        backbone_out_channels,skips_in = self.backbone[self.features_name[-1:]].out_features
+        self.backbone, self.features_name = self.get_backbone(backbone_name, pretrained)
+        _, features = self.forward_encoder(
+            torch.randint(0, 255, (1, 3, 320, 320)).float()
+        )  # dynamically look at the channels of the model
+        self.features = features
+        previous_size = 0
+        temp = []
+        for feature_name, feature in zip(self.features_name, features.values()):
+            if feature.shape[2] != previous_size:
+                temp.append(
+                    feature_name
+                )  # only keep feature that change the size of the input
+                previous_size = feature.shape[2]
+        self.features_name = temp
+        self.skips_in = [features[feature].shape[1] for feature in self.features_name]
 
-        decoder_filters_in = [backbone_out_channels] + decoder_filters
-        decoder_filters_out = decoder_filters[:len(self.backbone)]
-        for in_channels,out_channels,skip_in in zip(decoder_filters_in,decoder_filters_out.skips_in) :
+        self.decoder_filters = decoder_filters[: len(self.features_name)][::-1]
+        self.upsample_blocks = self.get_decoder(decoder_filters)
 
-            self.upsample_blocks.append(UpsampleBlock(in_channels,out_channels,skip_in=skip_in))
+        if encoder_freeze:
+            set_parameter_requires_grad(self.backbone, -1)
 
-        self.features=None
+    def forward_encoder(self, x):
+        features = {}
+        for name, child in self.backbone.named_children():
+            x = child(x)
+            if name in self.features_name:
+                features[name] = x
+        return x, features
 
-    def forward_encoder(self,x):
-        features={}
-        for name,layer in self.backbone.named_children() :
-            x = layer(x)
-            if name in self.features_name :
-                features[name]=x
+    def get_backbone(self, backbone_name, pretrained):
+        features_name = []
+        backbone = torch.hub.load(
+            "pytorch/vision:v0.10.0", backbone_name, pretrained=pretrained
+        )
+        for item_name, item in backbone.features._modules.items():
 
-        return x,features
+            if len(item._modules) > 0:  # if its a block the author implemented
+                features_name.append(item_name)
 
-    def get_backbone(self):
-        features_name=[]
-        skips_in=[]
-        for item in self.backbone :
-            if len(item._modules)> 0 : #if its a block the author implemented
-                features_name.append(item._get_name())
+        return backbone.features, features_name
 
-        _,features=self.forward_encoder(torch.randint(0,255,(3,320,320))) #dynamically look at the channels of the model
-        skips_in=[feature.shape[0] for feature in features]
-        return features_name,skips_in
+    def get_decoder(self, decoder_filters):
+        # self.backbone=backbone.features
+        upsample_blocks = torch.nn.ModuleList()
 
-    def forward_decoder(self,x,features):
+        in_channels = list(self.features.values())[::-1][0].shape[1]
+        for ex, skip_in in enumerate(self.skips_in[::-1][1::]):
+            print(ex, in_channels, skip_in)
+            upsample_blocks.append(UpsampleBlock(in_channels, skip_in=skip_in))
+            in_channels = int((in_channels / 2))
 
+        # final_layer = UpsampleBlock(in_channels,ch_out=3,skip_in=0)
+        return upsample_blocks
 
-        for block,feature in zip(self.upsample_blocks,features) :
-            x=block(x,feature)
+    def forward_decoder(self, x, features):
+
+        for block, feature_name in zip(
+            self.upsample_blocks, self.features_name[::-1][1::]
+        ):
+            skip_connection = features[feature_name]
+            x = block(x, skip_connection)
 
         return x
 
-
-    def forward(self,x):
-        x,self.features=self.forward_encoder(x)
-        x=self.forward_decoder(x,self.features)
+    def forward(self, x):
+        x, self.features = self.forward_encoder(x)
+        x = self.forward_decoder(x, self.features)
         return x

@@ -40,11 +40,11 @@ class Experiment() :
         else:
             print({metric_name: value})
     def save_weights(self,model):
+        if os.environ["DEBUG"]=="False" :
+            torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
 
-        torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
-
-        if self.is_wandb :
-            wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
+            if self.is_wandb :
+                wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
 
 
 #-----------------------------------------------------------------------------------
