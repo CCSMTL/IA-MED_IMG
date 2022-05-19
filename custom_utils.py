@@ -6,14 +6,14 @@ import json
 
 # -----------------------------------------------------------------------------------
 class Experiment:
-    def __init__(self, directory, is_wandb=False, tags=[], config=None):
+    def __init__(self, directory, is_wandb=False, tags=None, config=None):
         self.is_wandb = is_wandb
         self.directory = "log/" + directory
         self.weight_dir = "models/models_weights/" + directory
+        if tags is not None:
 
-        for tag in tags:
-            self.directory += f"/{tag}"
-            self.weight_dir += f"/{tag}"
+            self.directory += f"/{tags[0]}"
+            self.weight_dir += f"/{tags[0]}"
 
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
@@ -26,8 +26,11 @@ class Experiment:
         for f in files:
             os.remove(root + "/" + f)
 
-        if config:
-            json.dumps(config, f"{self.directory}/config.json")
+        if config is not None:
+            for key, value in config.items():
+                config[key] = str(value)
+            with open(f"{self.directory}/config.json", "w") as f:
+                json.dump(config, f)
 
     def log_metric(self, metric_name, value, epoch):
 

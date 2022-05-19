@@ -8,10 +8,11 @@ import os
 import argparse
 import torchvision
 import numpy as np
+import copy
 
 # -----local imports---------------------------------------
 from models.CNN import CNN
-from training.training import training
+from training.training2 import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
 from custom_utils import Experiment, set_parameter_requires_grad
 
@@ -33,7 +34,8 @@ def init_parser():
         const="all",
         type=str,
         nargs="?",
-        choices=torch.hub.list("pytorch/vision:v0.10.0"),
+        choices=torch.hub.list("pytorch/vision:v0.10.0", force_reload=True)
+        + torch.hub.list("facebookresearch/deit:main", force_reload=True),
         required=True,
         help="Choice of the model",
     )
@@ -76,10 +78,8 @@ def init_parser():
 
     parser.add_argument(
         "--tags",
-        default=[],
-        const="all",
-        type=list,
-        nargs="?",
+        default=None,
+        nargs="+",
         required=False,
         help="extra tags to add to the logs",
     )
@@ -120,10 +120,10 @@ def main():
     Sampler = Sampler()
 
     # -----------model initialisation------------------------------
-    # model = CNN(args.model, 14)
-    from models.Unet import Unet
+    model = CNN(args.model, 14)
+    # from models.Unet import Unet
 
-    model = Unet(args.model)
+    # model = Unet(args.model)
     # n = len([param for param in model.named_parameters()])
     # set_parameter_requires_grad(model,n-2)
 
@@ -182,13 +182,16 @@ def main():
     optimizer = config["optimizer"](model.parameters())
 
     config = config | vars(args)
+
     if args.wandb:
-        wandb.init(project="test-project", entity="ai-chexnet", config=config)
+        wandb.init(
+            project="test-project", entity="ai-chexnet", config=copy.copy(config)
+        )
 
         wandb.watch(model)
 
     experiment = Experiment(
-        f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=config
+        f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
     )
 
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
