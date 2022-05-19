@@ -97,10 +97,27 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
     os.environ["DEBUG"] = str(args.debug)
+    max_batch_size = (
+        8
+    )  # defines the maximum batch_size supported by your gpu for a specific model.
+    accumulate = args.batch_size // max_batch_size
+    # ----------- hyperparameters-------------------------------------
+    config = {
+        #   "beta1"
+        #   "beta2"
+        "optimizer": torch.optim.AdamW,
+        "criterion": torch.nn.BCEWithLogitsLoss(),
+        "augment prob": 0.1,
+        "augment intensity": 0.1,
+        "label smoothing": 0.05,
+        # "sampler"
+        "gradient accum": accumulate,
+        "num_worker": 0,
+    }
+    # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
     Sampler = Sampler()
-    criterion = torch.nn.BCEWithLogitsLoss()
 
     # -----------model initialisation------------------------------
     # model = CNN(args.model, 14)
@@ -109,10 +126,7 @@ def main():
     model = Unet(args.model)
     # n = len([param for param in model.named_parameters()])
     # set_parameter_requires_grad(model,n-2)
-    max_batch_size = (
-        8
-    )  # defines the maximum batch_size supported by your gpu for a specific model.
-    accumulate = args.batch_size // max_batch_size
+
     print(
         f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times"
     )
@@ -135,9 +149,9 @@ def main():
         f"data/training",
         num_classes=14,
         img_size=args.img_size,
-        prob=0.1,
-        intensity=0.1,
-        label_smoothing=0.1,
+        prob=config["augment prob"],
+        intensity=config["augment intensity"],
+        label_smoothing=config["label smoothing"],
     )
     val_dataset = CustomImageDataset(
         f"data/validation", num_classes=14, img_size=args.img_size
@@ -149,7 +163,7 @@ def main():
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=max_batch_size,
-        num_workers=0,
+        num_workers=config["num_worker"],
         pin_memory=True,
         sampler=Sampler.sampler(),
     )
@@ -157,6 +171,7 @@ def main():
         val_dataset, batch_size=int(max_batch_size * 2), num_workers=0, pin_memory=True
     )
     print("The data has now been loaded successfully into memory")
+
     # ------------training--------------------------------------------
     print("Starting training now")
 
@@ -164,20 +179,24 @@ def main():
     model = model.to(device)
 
     # initialize metrics loggers
+    optimizer = config["optimizer"](model.parameters())
 
+    config = config | vars(args)
     if args.wandb:
-        wandb.init(project="test-project", entity="ai-chexnet")
+        wandb.init(project="test-project", entity="ai-chexnet", config=config)
+
         wandb.watch(model)
 
-    experiment = Experiment(f"{args.model}", is_wandb=args.wandb, tags=args.tags)
+    experiment = Experiment(
+        f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=config
+    )
 
-    optimizer = torch.optim.AdamW(model.parameters())
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
     training(
         model,
         optimizer,
-        criterion,
+        config["criterion"],
         training_loader,
         validation_loader,
         device,

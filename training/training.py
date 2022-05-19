@@ -18,7 +18,6 @@ def training_loop(
     """
     running_loss = 0
 
-    results = [torch.tensor([]), torch.tensor([])]
     model.train()
     i = 0
     for inputs, labels in loader:
@@ -32,6 +31,9 @@ def training_loop(
         # forward + backward + optimize
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
+            if model._get_name() == "Unet":
+                labels = inputs
+
             loss = criterion(outputs, labels)
 
         scaler.scale(loss).backward()
@@ -87,6 +89,8 @@ def validation_loop(model, loader, criterion, device):
         # forward + backward + optimize
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
+            if model._get_name() == "Unet":
+                labels = inputs
             loss = criterion(outputs, labels)
 
         if inputs.shape != labels.shape:
