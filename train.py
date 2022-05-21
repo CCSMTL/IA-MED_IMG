@@ -120,10 +120,10 @@ def main():
     Sampler = Sampler()
 
     # -----------model initialisation------------------------------
-    model = CNN(args.model, 14)
-    # from models.Unet import Unet
+    # model = CNN(args.model, 14)
+    from models.Unet import Unet
 
-    # model = Unet(args.model)
+    model = Unet(args.model)
     # n = len([param for param in model.named_parameters()])
     # set_parameter_requires_grad(model,n-2)
 
