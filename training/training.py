@@ -19,7 +19,7 @@ def training_loop(
     running_loss = 0
 
     model.train()
-    i = 0
+    i = 1
     for inputs, labels in loader:
         # get the inputs; data is a list of [inputs, labels]
 
@@ -29,19 +29,19 @@ def training_loop(
         )
 
         # forward + backward + optimize
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            if model._get_name() == "Unet":
-                labels = inputs
+        #with torch.cuda.amp.autocast():
+        outputs = model(inputs)
+        if model._get_name() == "Unet":
+            labels = inputs
 
-            loss = criterion(outputs, labels)
+        loss = criterion(outputs, labels)
 
         scaler.scale(loss).backward()
         running_loss += loss.detach()
 
         # gradient accumulation
         if i % minibatch_accumulate == 0:
-            i = 0
+            i = 1
 
             # Unscales the gradients of optimizer's assigned params in-place
             # scaler.unscale_(optimizer)
@@ -87,11 +87,11 @@ def validation_loop(model, loader, criterion, device):
         )
 
         # forward + backward + optimize
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            if model._get_name() == "Unet":
-                labels = inputs
-            loss = criterion(outputs, labels)
+        #with torch.cuda.amp.autocast():
+        outputs = model(inputs)
+        if model._get_name() == "Unet":
+            labels = inputs
+        loss = criterion(outputs, labels)
 
         if inputs.shape != labels.shape:
             results[1] = torch.cat(
@@ -175,3 +175,6 @@ def training(
         epoch += 1
         pbar.update(1)
     print("Finished Training")
+
+
+    model.sav

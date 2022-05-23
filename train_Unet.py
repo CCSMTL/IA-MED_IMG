@@ -9,7 +9,7 @@ import argparse
 import torchvision
 import numpy as np
 import copy
-
+from models.Unet import Unet
 # -----local imports---------------------------------------
 from models.CNN import CNN
 from training.training import training
@@ -104,10 +104,10 @@ def main():
         #   "beta1"
         #   "beta2"
         "optimizer": torch.optim.AdamW,
-        "criterion": torch.nn.BCEWithLogitsLoss(),
-        "augment prob": 0.1,
-        "augment intensity": 0.1,
-        "label smoothing": 0.05,
+        "criterion": torch.nn.CrossEntropyLoss(),
+        "augment prob": 0,
+        "augment intensity": 0,
+        "label smoothing": 0,
         # "sampler"
         "gradient accum": accumulate,
         "num_worker": 8,
@@ -118,12 +118,7 @@ def main():
     Sampler = Sampler()
 
     # -----------model initialisation------------------------------
-    model = CNN(args.model, 14,freeze_backbone=True)
-    # from models.Unet import Unet
-
-    # model = Unet(args.model)
-    # n = len([param for param in model.named_parameters()])
-    # set_parameter_requires_grad(model,n-2)
+    model = Unet(args.model)
 
     print(
         f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times"
@@ -189,7 +184,7 @@ def main():
         wandb.watch(model)
 
     experiment = Experiment(
-        f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
+        "Unet", is_wandb=args.wandb, tags=[args.model], config=copy.copy(config)
     )
 
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
@@ -205,7 +200,7 @@ def main():
         epoch_max=args.epoch,
         patience=5,
         experiment=experiment,
-        metrics=metrics,
+        metrics=[],
     )
 
 

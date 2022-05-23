@@ -1,8 +1,8 @@
 import torch
-
+from custom_utils import set_parameter_requires_grad
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone, num_classes):
+    def __init__(self, backbone, num_classes,freeze_backbone=False):
         super().__init__()
         # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
@@ -16,8 +16,9 @@ class CNN(torch.nn.Module):
             pass
 
         self.backbone = torch.hub.load(
-            repo, backbone, pretrained=True, force_reload=True
+            repo, backbone, pretrained=True
         )
+
 
         # -------------------------------------------------------------
         # finds the size of the last layer of the model
@@ -35,7 +36,9 @@ class CNN(torch.nn.Module):
             # x = torch.nn.Linear(size, num_classes, bias=True)
         # -------------------------------------------------------------
         # setattr(self.backbone, name[0],x)
-        self.classifier = torch.nn.Linear(size, 14, bias=True)
+        if freeze_backbone:
+            set_parameter_requires_grad(self.backbone)
+        self.classifier = torch.nn.Linear(size, num_classes, bias=True)
 
     def forward(self, x):
         x = self.backbone(x)
