@@ -11,7 +11,7 @@ import numpy as np
 import copy
 from models.Unet import Unet
 # -----local imports---------------------------------------
-from models.CNN import CNN
+
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
 from custom_utils import Experiment, set_parameter_requires_grad
@@ -161,7 +161,7 @@ def main():
         sampler=Sampler.sampler(),
     )
     validation_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=int(max_batch_size * 2), num_workers=0, pin_memory=True
+        val_dataset, batch_size=int(max_batch_size * 2), num_workers=config["num_worker"], pin_memory=True
     )
     print("The data has now been loaded successfully into memory")
 

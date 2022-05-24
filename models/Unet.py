@@ -10,7 +10,7 @@ def get_backbone(name, pretrained=True):
 
     # TODO: More backbones
     repo = "pytorch/vision:v0.10.0"
-    self.backbone = torch.hub.load(repo, name, pretrained=True, force_reload=True)
+    backbone = torch.hub.load(repo, name, pretrained=True, force_reload=True)
 
     # specifying skip feature and output names
     if name.startswith("resnet"):
