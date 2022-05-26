@@ -10,7 +10,7 @@ def get_backbone(name, pretrained=True):
 
     # TODO: More backbones
     repo = "pytorch/vision:v0.10.0"
-    backbone = torch.hub.load(repo, name, pretrained=True, force_reload=True)
+    backbone = torch.hub.load(repo, name, pretrained=True)
 
     # specifying skip feature and output names
     if name.startswith("resnet"):
@@ -225,12 +225,15 @@ class Unet(nn.Module):
 
         # forward run in backbone to count channels (dirty solution but works for *any* Module)
         for name, child in self.backbone.named_children():
-            x = child(x)
-            if name in self.shortcut_features:
-                channels.append(x.shape[1])
-            if name == self.bb_out_name:
-                out_channels = x.shape[1]
-                break
+
+            for grandchild in list([child]):
+                name = grandchild._get_name()
+                x = grandchild(x)
+                if name in self.shortcut_features:
+                    channels.append(x.shape[1])
+                if name == self.bb_out_name:
+                    out_channels = x.shape[1]
+                    break
         return channels, out_channels
 
     def get_pretrained_parameters(self):

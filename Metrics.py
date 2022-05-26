@@ -27,7 +27,7 @@ class Metrics:
         return metrics.recall_score(true, pred, average="macro")
 
     def auc(self, true, pred):
-        # TODO :  verify auc
+        # TODO :  fix auc for multiclass
         true, pred = true.T, pred.T
         auc = 0
         n = len(true)
@@ -61,7 +61,7 @@ class Metrics:
     def metrics(self):
         dict = {
             "f1": self.f1,
-            "auc": self.auc,
+            #    "auc": self.auc,
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,

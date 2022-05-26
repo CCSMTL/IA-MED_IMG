@@ -97,7 +97,10 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
     os.environ["DEBUG"] = str(args.debug)
-    max_batch_size = 8  # defines the maximum batch_size supported by your gpu for a specific model.
+    os.environ["CLUSTERING"] = "False"
+    max_batch_size = (
+        8
+    )  # defines the maximum batch_size supported by your gpu for a specific model.
     accumulate = args.batch_size // max_batch_size
     # ----------- hyperparameters-------------------------------------
     config = {
@@ -118,7 +121,11 @@ def main():
     Sampler = Sampler()
 
     # -----------model initialisation------------------------------
-    model = CNN(args.model, 14,freeze_backbone=True)
+    # model = CNN(args.model, 14,freeze_backbone=True)
+
+    import torchxrayvision as xrv
+
+    model = xrv.models.DenseNet(weights="densenet121-res224-all")
     # from models.Unet import Unet
 
     # model = Unet(args.model)
