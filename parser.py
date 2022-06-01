@@ -43,6 +43,8 @@ def init_parser():
         help="do you wish (and did you setup) wandb? You will need to add the project name in the initialization of wandb in train.py",
     )
 
+
+
     parser.add_argument(
         "--epoch",
         default=50,
@@ -51,6 +53,33 @@ def init_parser():
         nargs="?",
         required=False,
         help="Number of epochs to train ; a patiance of 5 is implemented by default",
+    )
+    parser.add_argument(
+        "--augment_prob",
+        default=0,
+        const="all",
+        type=float,
+        nargs="?",
+        required=False,
+        help="the probability of an augmentation. Between 0 and 1",
+    )
+    parser.add_argument(
+        "--augment_intensity",
+        default=0,
+        const="all",
+        type=float,
+        nargs="?",
+        required=False,
+        help="The intensity of the data augmentation.Between 0 and 1",
+    )
+    parser.add_argument(
+        "--label-smoothing",
+        default=0,
+        const="all",
+        type=int,
+        nargs="?",
+        required=False,
+        help="Label smoothing. Should be small. Try 0.05",
     )
     parser.add_argument(
         "--batch_size",
@@ -93,6 +122,12 @@ def init_parser():
         action=argparse.BooleanOptionalAction,
         default=False,
         help="do you wish  to freeze the backbone?",
+    )
+    parser.add_argument(
+        "--cache",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="do you wish  to cache the data into ram?",
     )
     parser.add_argument(
         "--debug",

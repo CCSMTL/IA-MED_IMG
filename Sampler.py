@@ -1,34 +1,19 @@
-# TODO : verify SAMPLE WEIGHT
-
 import pandas as pd
 import numpy as np
 import os
 import torch
+import yaml
 
-
+with open("data/data.yaml","r") as stream :
+    names=yaml.safe_load(stream)["names"]
+names+=["No Finding"]
 class Sampler:
     def __init__(self):
         data = pd.read_csv("data/data_table.csv")
         data = data[data["assignation"] == "training"]
         if os.environ["DEBUG"] == "True":
             data = data.iloc[0:100]
-        names = [
-            "Cardiomegaly",
-            "Emphysema",
-            "Effusion",
-            "Consolidation",
-            "Hernia",
-            "Infiltration",
-            "Mass",
-            "Nodule",
-            "Atelectasis",
-            "Pneumothorax",
-            "Pleural_Thickening",
-            "Pneumonia",
-            "Fibrosis",
-            "Edema",
-            "No Finding",
-        ]
+
         self.count = []
 
         for name in names:
