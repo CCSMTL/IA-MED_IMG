@@ -6,6 +6,8 @@ import yaml
 
 with open("data/data.yaml","r") as stream :
     names=yaml.safe_load(stream)["names"]
+
+names+=["No Finding"]
 class Metrics:
     def __init__(self, num_classes, threshold):
         self.num_classes = num_classes

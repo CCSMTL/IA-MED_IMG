@@ -12,7 +12,7 @@ class CustomImageDataset(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
     """
-    def __init__(self,img_dir,num_classes, img_size=240,prob=0,intensity=0,label_smoothing=0):
+    def __init__(self,img_dir,num_classes, img_size=240,prob=0,intensity=0,label_smoothing=0,cache=False):
 
         self.img_dir = img_dir
 
@@ -25,8 +25,15 @@ class CustomImageDataset(Dataset):
         self.intensity=intensity
         self.img_size=img_size
 
+        self.cache=False
+
+        self.labels=[]
 
         for file in os.listdir(img_dir+"/images") :
+            if self.cache:
+                self.files.append(transforms.Resize(self.img_size)(cv.imread(f"{self.img_dir}/images/{file}")))
+                self.labels.append(f"{file.split(' / ')[0]}/labels/{file.split(' / ')[2]}")
+            else :
                 self.files.append(f"{self.img_dir}/images/{file}")
 
 
@@ -84,17 +91,18 @@ class CustomImageDataset(Dataset):
         return self.label_transform(category_ids)
 
     def __getitem__(self, idx):
-        img_path=self.files[idx]
 
-        patterns=img_path.split("/")[::-1]
+        if self.cache :
+            image=self.files[idx]
+            label=self.labels[idx]
+        else :
+            img_path = self.files[idx]
 
-        keyname = patterns[0]
-        label=self.retrieve_cat(keyname)
+            patterns = img_path.split("/")[::-1]
 
-
-
-
-        image = cv.imread(img_path,cv.IMREAD_GRAYSCALE)
+            keyname = patterns[0]
+            label = self.retrieve_cat(keyname)
+            image = cv.imread(img_path,cv.IMREAD_GRAYSCALE)
 
 
 
@@ -102,9 +110,14 @@ class CustomImageDataset(Dataset):
 
 
         if self.prob>0:
-            random_image = self.files[torch.randint(0, len(self), (1,))]
-            random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
-            random_image = cv.imread(random_image, cv.IMREAD_GRAYSCALE)
+            if self.cache :
+                idx=torch.randint(0, len(self), (1,))
+                image = self.files[idx]
+                label = self.labels[idx]
+            else :
+                random_image = self.files[torch.randint(0, len(self), (1,))]
+                random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
+                random_image = cv.imread(random_image, cv.IMREAD_GRAYSCALE)
 
             image=Image.fromarray(np.uint8(image))  #downsized to 8 bit
             image2 = Image.fromarray(np.uint8(random_image))
