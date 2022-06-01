@@ -67,8 +67,8 @@ def main():
     os.environ["CLUSTERING"] = "True"
     results = pd.DataFrame()
     # 1) load Unet encoder
-
-    encoder = load_model("densenet201", pretrained=False)
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    encoder = load_model("densenet201", pretrained=False).to(device)
     # 2) load dataset
     train_dataset = CustomImageDataset(
         f"../data/training", num_classes=14, img_size=320  # ?
@@ -93,6 +93,7 @@ def main():
     labels = torch.tensor([])
 
     for image, label in tqdm.tqdm(training_loader):
+        image = image.to(device)
         x = encoder(image)
         # x = x.flatten(start_dim=2)
         encodings = torch.cat((x, encodings), dim=0)
@@ -110,12 +111,12 @@ def main():
     labels_val = labels_val.numpy()
     # ----------------------------------------
     import umap
-
-    pca = PCA(n_components=2)
     from umap.parametric_umap import ParametricUMAP
 
     reducer = ParametricUMAP()
+
     # reducer = umap.UMAP()
+    # pca = PCA(n_components=2)
     # pca_encodings = pca.fit_transform(encodings.flatten(start_dim=1).numpy())
     # pca_encodings_val = pca.transform(encodings_val.flatten(start_dim=1).numpy())
     pca_encodings = reducer.fit_transform(encodings.flatten(start_dim=1).numpy())

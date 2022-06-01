@@ -3,7 +3,7 @@ from custom_utils import set_parameter_requires_grad
 
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone, num_classes, freeze_backbone=False):
+    def __init__(self, backbone, num_classes=14, freeze_backbone=False):
         super().__init__()
         # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
@@ -14,7 +14,9 @@ class CNN(torch.nn.Module):
         elif backbone in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
         else:
-            pass
+            raise NotImplemented(
+                "The directory for this specific model has yet to be added."
+            )
 
         self.backbone = torch.hub.load(repo, backbone, pretrained=True)
 
@@ -37,10 +39,11 @@ class CNN(torch.nn.Module):
         if freeze_backbone:
             set_parameter_requires_grad(self.backbone)
         self.classifier = torch.nn.Linear(size, num_classes, bias=True)
-        self.first_layer = torch.nn.Conv2d(1, 3, (7, 7), padding_mode="same")
+        self.first_layer = torch.nn.Conv2d(1, 3, (7, 7), padding_mode="replicate")
 
     def forward(self, x):
         x = self.first_layer(x)
+
         x = self.backbone(x)
         x = self.classifier(x)
         return x

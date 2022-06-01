@@ -1,5 +1,5 @@
 import torch
-import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 
 
@@ -29,7 +29,7 @@ def training_loop(
         )
 
         # forward + backward + optimize
-        #with torch.cuda.amp.autocast():
+        # with torch.cuda.amp.autocast():
         outputs = model(inputs)
         if model._get_name() == "Unet":
             labels = inputs
@@ -44,7 +44,7 @@ def training_loop(
             i = 1
 
             # Unscales the gradients of optimizer's assigned params in-place
-            # scaler.unscale_(optimizer)
+            scaler.unscale_(optimizer)
 
             # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
             # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
@@ -87,7 +87,7 @@ def validation_loop(model, loader, criterion, device):
         )
 
         # forward + backward + optimize
-        #with torch.cuda.amp.autocast():
+        # with torch.cuda.amp.autocast():
         outputs = model(inputs)
         if model._get_name() == "Unet":
             labels = inputs
@@ -131,7 +131,7 @@ def training(
     best_loss = np.inf
 
     patience_init = patience
-    pbar = tqdm.tqdm(total=epoch_max)
+    pbar = tqdm(total=epoch_max)
 
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
@@ -140,7 +140,7 @@ def training(
 
         train_loss = training_loop(
             model,
-            tqdm.tqdm(training_loader, leave=False),
+            tqdm(training_loader, leave=False),
             optimizer,
             criterion,
             device,
@@ -148,7 +148,7 @@ def training(
             scaler,
         )
         val_loss, results = validation_loop(
-            model, tqdm.tqdm(validation_loader, leave=False), criterion, device
+            model, tqdm(validation_loader, leave=False), criterion, device
         )
 
         # LOGGING DATA
@@ -175,6 +175,3 @@ def training(
         epoch += 1
         pbar.update(1)
     print("Finished Training")
-
-
-

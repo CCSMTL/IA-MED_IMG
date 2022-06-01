@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision import models, datasets, transforms
+
 from torch.nn import functional as F
 
 
@@ -10,7 +10,7 @@ def get_backbone(name, pretrained=True):
 
     # TODO: More backbones
     repo = "pytorch/vision:v0.10.0"
-    backbone = torch.hub.load(repo, name, pretrained=True)
+    backbone = torch.hub.load(repo, name, pretrained=pretrained)
 
     # specifying skip feature and output names
     if name.startswith("resnet"):
@@ -23,9 +23,9 @@ def get_backbone(name, pretrained=True):
     elif name == "vgg19":
         feature_names = ["5", "12", "25", "38", "51"]
         backbone_output = "52"
-    # elif name == 'inception_v3':
-    #     feature_names = [None, 'Mixed_5d', 'Mixed_6e']
-    #     backbone_output = 'Mixed_7c'
+    elif name == "inception_v3":
+        feature_names = [None, "Conv2d_4a_3x3", "Mixed_5d"]
+        backbone_output = "Mixed_6e"
     elif name.startswith("densenet"):
         feature_names = [None, "relu0", "denseblock1", "denseblock2", "denseblock3"]
         backbone_output = "denseblock4"
@@ -131,7 +131,7 @@ class Unet(nn.Module):
         decoder_use_batchnorm=True,
     ):
         super(Unet, self).__init__()
-
+        self.first_layer = torch.nn.Conv2d(1, 3, (7, 7), padding_mode="replicate")
         self.backbone_name = backbone_name
 
         self.backbone, self.shortcut_features, self.bb_out_name = get_backbone(
@@ -185,8 +185,8 @@ class Unet(nn.Module):
     def forward(self, *input):
 
         """ Forward propagation in U-Net. """
-
-        x, features = self.forward_backbone(*input)
+        input = self.first_layer(input)
+        x, features = self.forward_backbone(input)
 
         for skip_name, upsample_block in zip(
             self.shortcut_features[::-1], self.upsample_blocks
@@ -225,15 +225,13 @@ class Unet(nn.Module):
 
         # forward run in backbone to count channels (dirty solution but works for *any* Module)
         for name, child in self.backbone.named_children():
-
-            for grandchild in list([child]):
-                name = grandchild._get_name()
-                x = grandchild(x)
-                if name in self.shortcut_features:
-                    channels.append(x.shape[1])
-                if name == self.bb_out_name:
-                    out_channels = x.shape[1]
-                    break
+            print(name)
+            x = child(x)
+            if name in self.shortcut_features:
+                channels.append(x.shape[1])
+            if name == self.bb_out_name:
+                out_channels = x.shape[1]
+                break
         return channels, out_channels
 
     def get_pretrained_parameters(self):

@@ -121,14 +121,14 @@ def main():
     Sampler = Sampler()
 
     # -----------model initialisation------------------------------
-    # model = CNN(args.model, 14,freeze_backbone=True)
+    # model = CNN(args.model, 14, freeze_backbone=True)
 
-    import torchxrayvision as xrv
+    # import torchxrayvision as xrv
 
-    model = xrv.models.DenseNet(weights="densenet121-res224-all")
-    # from models.Unet import Unet
+    # model = xrv.models.DenseNet(weights="densenet121-res224-all")
+    from models.Unet import Unet
 
-    # model = Unet(args.model)
+    model = Unet(args.model)
     # n = len([param for param in model.named_parameters()])
     # set_parameter_requires_grad(model,n-2)
 
