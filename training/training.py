@@ -33,10 +33,9 @@ def training_loop(
         outputs = model(inputs)
         if model._get_name() == "Unet":
             labels = inputs
-
         loss = criterion(outputs, labels)
-
-        scaler.scale(loss).backward()
+        loss.backward()
+        #scaler.scale(loss).backward()
         running_loss += loss.detach()
 
         # gradient accumulation
@@ -48,9 +47,9 @@ def training_loop(
 
             # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
             # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
-
-            scaler.step(optimizer)
-            scaler.update()
+            optimizer.step()
+            #scaler.step(optimizer)
+            #scaler.update()
             optimizer.zero_grad(set_to_none=True)
         # ending loop
         del (
@@ -97,7 +96,7 @@ def validation_loop(model, loader, criterion, device):
             results[1] = torch.cat(
                 (results[1], torch.sigmoid(outputs).detach().cpu()), dim=0
             )
-            results[0] = torch.cat((results[0], labels), dim=0)
+            results[0] = torch.cat((results[0], labels.cpu()), dim=0)
         running_loss += loss.detach()
 
         del (

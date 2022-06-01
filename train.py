@@ -15,6 +15,8 @@ from models.CNN import CNN
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
 from custom_utils import Experiment, set_parameter_requires_grad
+from parser import init_parser
+
 
 
 # -----------cuda optimization tricks-------------------------
@@ -22,98 +24,43 @@ from custom_utils import Experiment, set_parameter_requires_grad
 # torch.autograd.set_detect_anomaly(False)
 # torch.autograd.profiler.profile(False)
 # torch.autograd.profiler.emit_nvtx(False)
-# torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.benchmark = True
 
 # ----------- parse arguments----------------------------------
-def init_parser():
-    parser = argparse.ArgumentParser(description="Launch training for a specific model")
 
-    parser.add_argument(
-        "--model",
-        default="alexnet",
-        const="all",
-        type=str,
-        nargs="?",
-        choices=torch.hub.list("pytorch/vision:v0.10.0")
-        + torch.hub.list("facebookresearch/deit:main"),
-        required=True,
-        help="Choice of the model",
-    )
-
-    parser.add_argument(
-        "--img_size",
-        default=320,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-
-    parser.add_argument(
-        "--wandb",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish (and did you setup) wandb? You will need to add the project name in the initialization of wandb in train.py",
-    )
-
-    parser.add_argument(
-        "--epoch",
-        default=50,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="Number of epochs to train ; a patiance of 5 is implemented by default",
-    )
-    parser.add_argument(
-        "--batch_size",
-        default=50,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="The batch size to use. If > max_batch_size,gradient accumulation will be used",
-    )
-
-    parser.add_argument(
-        "--tags",
-        default=None,
-        nargs="+",
-        required=False,
-        help="extra tags to add to the logs",
-    )
-    parser.add_argument(
-        "--debug",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish  execute small train set in debug mode",
-    )
-
-    return parser
 
 
 def main():
+    from six.moves import urllib
+
+    proxy = urllib.request.ProxyHandler(
+        {
+            'https': 'http://ccsmtl.proxy.mtl.rtss.qc.ca:8080',
+            'http': 'http://ccsmtl.proxy.mtl.rtss.qc.ca:8080',
+    })
+    os.environ["HTTPS_PROXY"]='http://ccsmtl.proxy.mtl.rtss.qc.ca:8080'
+    os.environ["HTTP_PROXY"]='http://ccsmtl.proxy.mtl.rtss.qc.ca:8080'
+    # construct a new opener using your proxy settings
+    opener = urllib.request.build_opener(proxy)
+    # install the openen on the module-level
+    urllib.request.install_opener(opener)
+
+
     parser = init_parser()
     args = parser.parse_args()
     os.environ["DEBUG"] = str(args.debug)
-    os.environ["CLUSTERING"] = "False"
-    max_batch_size = (
-        8
-    )  # defines the maximum batch_size supported by your gpu for a specific model.
-    accumulate = args.batch_size // max_batch_size
+
     # ----------- hyperparameters-------------------------------------
     config = {
         #   "beta1"
         #   "beta2"
         "optimizer": torch.optim.AdamW,
         "criterion": torch.nn.BCEWithLogitsLoss(),
-        "augment prob": 0.1,
-        "augment intensity": 0.1,
-        "label smoothing": 0.05,
+        "augment prob": 0,
+        "augment intensity": 0,
+        "label smoothing": 0,
         # "sampler"
-        "gradient accum": accumulate,
-        "num_worker": 8,
+
     }
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
@@ -121,24 +68,20 @@ def main():
     Sampler = Sampler()
 
     # -----------model initialisation------------------------------
-    # model = CNN(args.model, 14, freeze_backbone=True)
+    model = CNN(args.model, 14,freeze_backbone=True)
+    if args.device=="parallel" :
+        model = torch.nn.DataParallel(model)
+    # from models.Unet import Unet
 
-    # import torchxrayvision as xrv
+    # model = Unet(args.model)
+    if args.frozen :
+        set_parameter_requires_grad(model.backbone)
 
-    # model = xrv.models.DenseNet(weights="densenet121-res224-all")
-    from models.Unet import Unet
 
-    model = Unet(args.model)
-    # n = len([param for param in model.named_parameters()])
-    # set_parameter_requires_grad(model,n-2)
-
-    print(
-        f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times"
-    )
+    #model = torch.nn.DataParallel(model)
     if torch.cuda.is_available():
-        device = (
-            "cuda:0"
-        )  # The id of the gpu (e.g. 0 , can change on multi gpu devices)
+        device= f"cuda:{args.device}" if args.device!="parallel"  else "cuda:0"
+
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
@@ -167,13 +110,13 @@ def main():
 
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=max_batch_size,
-        num_workers=config["num_worker"],
+        batch_size=args.batch_size,
+        num_workers=args.num_worker,
         pin_memory=True,
         sampler=Sampler.sampler(),
     )
     validation_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=int(max_batch_size * 2), num_workers=0, pin_memory=True
+        val_dataset, batch_size=args.batch_size, num_workers=args.num_worker, pin_memory=True
     )
     print("The data has now been loaded successfully into memory")
 
@@ -199,6 +142,7 @@ def main():
         f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
     )
 
+
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
     training(
@@ -208,7 +152,7 @@ def main():
         training_loader,
         validation_loader,
         device,
-        minibatch_accumulate=accumulate,
+        minibatch_accumulate=args.accumulate,
         epoch_max=args.epoch,
         patience=5,
         experiment=experiment,
