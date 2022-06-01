@@ -29,20 +29,20 @@ class Sampler:
             "Edema",
             "No Finding",
         ]
-        count = []
+        self.count = []
 
         for name in names:
-            count.append(np.sum(data[name]))
-        count = 1 / np.array(count)
-        count[np.isinf(count)] = 0
+            self.count.append(np.sum(data[name]))
+        self.count = 1 / np.array(self.count)
+        self.count[np.isinf(self.count)] = 0
 
-        count = torch.nn.functional.softmax(torch.tensor(count))
+        #self.count = torch.nn.functional.softmax(torch.tensor(self.count))
         m = data[names].values.T
         m = np.vstack([m, np.ones_like(m[0])])
         classes = np.argmax(m, axis=0)
 
         for i in range(0, 15):
-            classes = np.where(classes == i, count[i], classes)
+            classes = np.where(classes == i, self.count[i], classes)
 
         self.samples_weight = torch.tensor(classes)
 

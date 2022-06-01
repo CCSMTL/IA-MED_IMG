@@ -95,7 +95,7 @@ class CustomImageDataset(Dataset):
 
 
         image = cv.imread(img_path,cv.IMREAD_GRAYSCALE)
-        image=np.stack((image,)*3,axis=-1) #TODO : Find better use for rgb channels
+
 
 
 
@@ -105,16 +105,16 @@ class CustomImageDataset(Dataset):
             random_image = self.files[torch.randint(0, len(self), (1,))]
             random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
             random_image = cv.imread(random_image, cv.IMREAD_GRAYSCALE)
-            random_image = np.stack((random_image,) * 3, axis=-1)#TODO : Find better use for rgb channels
-            image=Image.fromarray(np.uint8(image))
+
+            image=Image.fromarray(np.uint8(image))  #downsized to 8 bit
             image2 = Image.fromarray(np.uint8(random_image))
             sample={"image" : image,"landmarks" : label,"image2" : image2,"landmarks2" : random_label}
             image,label = self.transform(sample)
         else : # basic tranformation
-            image = Image.fromarray(np.uint8(image))
+            image = Image.fromarray(np.uint8(image)) #downsized to 8 bit
             image = transforms.Resize(self.img_size)(image)
             image = transforms.ToTensor()(image)
-            image = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(image)
+            image = transforms.Normalize(mean=[0.456], std=[0.224])(image)
 
 
 

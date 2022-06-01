@@ -39,8 +39,13 @@ class CNN(torch.nn.Module):
         if freeze_backbone:
             set_parameter_requires_grad(self.backbone)
         self.classifier = torch.nn.Linear(size, num_classes, bias=True)
-
+        #--------------------------------------------------------------
+        self.first_layer=torch.nn.Conv2d(1,3,(7,7),padding_mode="replicate")
+        self.batch_norm=torch.nn.BatchNorm2d(3)
     def forward(self, x):
+        x = self.first_layer(x)
+        x = torch.relu_(x)
+        x = self.batch_norm(x)
         x = self.backbone(x)
         x = self.classifier(x)
         return x
