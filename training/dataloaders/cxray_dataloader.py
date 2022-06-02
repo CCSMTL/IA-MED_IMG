@@ -63,10 +63,15 @@ class CustomImageDataset(Dataset):
         samples["image2"] = transforms.Resize(self.img_size)(samples["image2"])
         # transforms.CenterCrop(self.img_size)(image) #redundant?
 
-        samples["image"] = transforms.RandomHorizontalFlip()(
-            samples["image"]
-        )  # default 0.5 prob
-
+        # samples["image"] = transforms.RandomHorizontalFlip()(
+        #    samples["image"]
+        # )  # default 0.5 prob
+        samples["image"] = transforms.RandAugment(
+            14, magnitude=int(10 * self.intensity)
+        )(samples["image"])
+        samples["image2"] = transforms.RandAugment(
+            14, magnitude=int(10 * self.intensity)
+        )(samples["image2"])
         samples["image"] = transforms.ToTensor()(samples["image"])
         samples["image2"] = transforms.ToTensor()(samples["image2"])
         samples = Transforms.Mixing(self.prob, self.intensity)(samples)
