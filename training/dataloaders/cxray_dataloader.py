@@ -43,7 +43,7 @@ class CustomImageDataset(Dataset):
             if self.cache:
                 self.files.append(
                     transforms.Resize(self.img_size)(
-                        image=Image.fromarray(
+                        Image.fromarray(
                             np.uint8(cv.imread(f"{self.img_dir}/images/{file}"))
                         )
                     )
