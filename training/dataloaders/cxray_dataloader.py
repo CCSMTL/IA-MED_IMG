@@ -74,9 +74,9 @@ class CustomImageDataset(Dataset):
         )(samples["image2"])
         samples["image"] = transforms.ToTensor()(samples["image"])
         samples["image2"] = transforms.ToTensor()(samples["image2"])
-        samples = Transforms.Mixing(self.prob, self.intensity)(samples)
-        samples = Transforms.CutMix(self.prob)(samples)
-        samples = Transforms.RandomErasing(self.prob)(samples)
+        # samples = Transforms.Mixing(self.prob, self.intensity)(samples)
+        # samples = Transforms.CutMix(self.prob)(samples)
+        # samples = Transforms.RandomErasing(self.prob)(samples)
 
         samples["image"] = transforms.Normalize(mean=[0.456], std=[0.224])(
             samples["image"]
