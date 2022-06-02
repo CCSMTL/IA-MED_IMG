@@ -102,7 +102,7 @@ def main():
         cache=args.cache,
     )
     val_dataset = CustomImageDataset(
-        f"data/validation", num_classes=14, img_size=args.img_size
+        f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
@@ -114,7 +114,6 @@ def main():
         num_workers=args.num_worker,
         pin_memory=True,
         sampler=Sampler.sampler(),
-        cache=args.cache,
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
