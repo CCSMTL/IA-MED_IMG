@@ -35,7 +35,7 @@ class CustomImageDataset(Dataset):
         self.intensity = intensity
         self.img_size = img_size
 
-        self.cache = False
+        self.cache = cache
 
         self.labels = []
 
