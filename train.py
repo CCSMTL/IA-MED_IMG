@@ -15,6 +15,7 @@ from models.CNN import CNN
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
 from custom_utils import Experiment, set_parameter_requires_grad
+
 # ----------- parse arguments----------------------------------
 from parser import init_parser
 
@@ -26,33 +27,31 @@ from parser import init_parser
 torch.backends.cudnn.benchmark = True
 
 
-
-
-
 def main():
 
-
-    #-------- proxy config ---------------------------
+    # -------- proxy config ---------------------------
     from six.moves import urllib
+
     proxy = urllib.request.ProxyHandler(
         {
-            'https': 'http://ccsmtl.proxy.mtl.rtss.qc.ca:8080',
-            'http': 'http://ccsmtl.proxy.mtl.rtss.qc.ca:8080',
-    })
-    os.environ["HTTPS_PROXY"]='http://ccsmtl.proxy.mtl.rtss.qc.ca:8080'
-    os.environ["HTTP_PROXY"]='http://ccsmtl.proxy.mtl.rtss.qc.ca:8080'
+            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+        }
+    )
+    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
     # construct a new opener using your proxy settings
     opener = urllib.request.build_opener(proxy)
     # install the openen on the module-level
     urllib.request.install_opener(opener)
 
-    #------------ parsing & Debug -------------------------------------
+    # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
     os.environ["DEBUG"] = str(args.debug)
 
     # ----------- hyperparameters-------------------------------------
-    #TODO : move config to json or to parsing
+    # TODO : move config to json or to parsing
     config = {
         #   "beta1"
         #   "beta2"
@@ -63,8 +62,10 @@ def main():
     from Sampler import Sampler
 
     Sampler = Sampler()
-    if not args.sampler :
-        Sampler.samples_weight=torch.ones_like(Sampler.samples_weight) # set all weights equal
+    if not args.sampler:
+        Sampler.samples_weight = torch.ones_like(
+            Sampler.samples_weight
+        )  # set all weights equal
     # ------- device selection ----------------------------
     if torch.cuda.is_available():
         device = f"cuda:{args.device}" if args.device != "parallel" else "cuda:0"
@@ -76,19 +77,18 @@ def main():
     print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
-    model = CNN(args.model, 14,freeze_backbone=True)
-    if args.device=="parallel" :
+    model = CNN(args.model, 14, freeze_backbone=True)
+    if args.device == "parallel":
         model = torch.nn.DataParallel(model)
 
-    #remove the gradient for the backbone
-    if args.frozen :
+    # remove the gradient for the backbone
+    if args.frozen:
         set_parameter_requires_grad(model.backbone)
 
     # send model to gpu
     model = model.to(device)
 
     # -------data initialisation-------------------------------
-
 
     from Metrics import Metrics
 
@@ -99,7 +99,7 @@ def main():
         prob=args.augment_prob,
         intensity=args.augment_intensity,
         label_smoothing=args.label_smoothing,
-        cache=args.cache
+        cache=args.cache,
     )
     val_dataset = CustomImageDataset(
         f"data/validation", num_classes=14, img_size=args.img_size
@@ -114,9 +114,13 @@ def main():
         num_workers=args.num_worker,
         pin_memory=True,
         sampler=Sampler.sampler(),
+        cache=args.cache,
     )
     validation_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=args.batch_size, num_workers=args.num_worker, pin_memory=True
+        val_dataset,
+        batch_size=args.batch_size,
+        num_workers=args.num_worker,
+        pin_memory=True,
     )
     print("The data has now been loaded successfully into memory")
 
@@ -133,7 +137,6 @@ def main():
     experiment = Experiment(
         f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
     )
-
 
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()

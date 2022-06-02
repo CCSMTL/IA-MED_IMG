@@ -46,7 +46,10 @@ class CustomImageDataset(Dataset):
                 file = transforms.Resize(self.img_size)(
                     Image.fromarray(
                         np.uint8(
-                            cv.imread(f"{self.img_dir}/images/{file}")[:, :, 0] * 255
+                            cv.imread(
+                                f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE
+                            )
+                            * 255
                         )
                     )
                 )
@@ -137,7 +140,7 @@ class CustomImageDataset(Dataset):
             patterns = img_path.split("/")[::-1]
             keyname = patterns[0]
             label = self.retrieve_cat(keyname)
-            image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)[:, :, 0]
+            image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
 
             image = Image.fromarray(np.uint8(image * 255))
 
@@ -150,9 +153,7 @@ class CustomImageDataset(Dataset):
                 random_image = self.files[torch.randint(0, len(self), (1,))]
                 random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
                 image2 = Image.fromarray(
-                    np.uint8(
-                        cv.imread(random_image * 255, cv.IMREAD_GRAYSCALE)[:, :, 0]
-                    )
+                    np.uint8(cv.imread(random_image * 255, cv.IMREAD_GRAYSCALE))
                 )
 
             sample = {
