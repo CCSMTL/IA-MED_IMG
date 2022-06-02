@@ -130,15 +130,14 @@ class CustomImageDataset(Dataset):
             if torch.rand((1,)) < self.prob:
                 if self.cache:
                     idx = torch.randint(0, len(self), (1,))
-                    image = self.files[idx]
-                    label = self.labels[idx]
+                    image2 = Image.fromarray(np.uint8(self.files[idx]))
                 else:
                     random_image = self.files[torch.randint(0, len(self), (1,))]
                     random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
-                    random_image = cv.imread(random_image, cv.IMREAD_GRAYSCALE)
+                    image2 = Image.fromarray(
+                        np.uint8(cv.imread(random_image, cv.IMREAD_GRAYSCALE))
+                    )
 
-                image = Image.fromarray(np.uint8(image))  # downsized to 8 bit
-                image2 = Image.fromarray(np.uint8(random_image))
                 sample = {
                     "image": image,
                     "landmarks": label,
