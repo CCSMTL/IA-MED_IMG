@@ -62,8 +62,7 @@ class CustomImageDataset(Dataset):
             list,
             zip(
                 *Parallel(n_jobs=8)(
-                    delayed(caching)(i)
-                    for i in tqdm(os.listdir(img_dir + "/images")[0:100])
+                    delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images"))
                 )
             ),
         )
