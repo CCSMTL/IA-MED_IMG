@@ -126,26 +126,25 @@ class CustomImageDataset(Dataset):
             label = self.retrieve_cat(keyname)
             image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
 
-        if self.prob > 0:
-            if torch.rand((1,)) < self.prob:
-                if self.cache:
-                    idx = torch.randint(0, len(self), (1,))
-                    image2 = Image.fromarray(np.uint8(self.files[idx]))
-                else:
-                    random_image = self.files[torch.randint(0, len(self), (1,))]
-                    random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
-                    image2 = Image.fromarray(
-                        np.uint8(cv.imread(random_image, cv.IMREAD_GRAYSCALE))
-                    )
+        if torch.rand((1,)) < self.prob:
+            if self.cache:
+                idx = torch.randint(0, len(self), (1,))
+                image2 = Image.fromarray(np.uint8(self.files[idx]))
+            else:
+                random_image = self.files[torch.randint(0, len(self), (1,))]
+                random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
+                image2 = Image.fromarray(
+                    np.uint8(cv.imread(random_image, cv.IMREAD_GRAYSCALE))
+                )
 
-                sample = {
-                    "image": image,
-                    "landmarks": label,
-                    "image2": image2,
-                    "landmarks2": random_label,
-                }
+            sample = {
+                "image": image,
+                "landmarks": label,
+                "image2": image2,
+                "landmarks2": random_label,
+            }
 
-                image, label = self.transform(sample)
+            image, label = self.transform(sample)
         else:  # basic tranformation
             image = Image.fromarray(np.uint8(image))  # downsized to 8 bit
             image = transforms.Resize(self.img_size)(image)
