@@ -46,8 +46,11 @@ class CustomImageDataset(Dataset):
                         cv.imread(f"{self.img_dir}/images/{file}")
                     )
                 )
+
                 self.labels.append(
-                    f"{file.split(' / ')[0]}/labels/{file.split(' / ')[2]}"
+                    self.retrieve_cat(
+                        f"{file.split(' / ')[0]}/labels/{file.split(' / ')[2]}"
+                    )
                 )
             else:
                 self.files.append(f"{self.img_dir}/images/{file}")
