@@ -127,24 +127,26 @@ class CustomImageDataset(Dataset):
             image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
 
         if self.prob > 0:
-            if self.cache:
-                idx = torch.randint(0, len(self), (1,))
-                image = self.files[idx]
-                label = self.labels[idx]
-            else:
-                random_image = self.files[torch.randint(0, len(self), (1,))]
-                random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
-                random_image = cv.imread(random_image, cv.IMREAD_GRAYSCALE)
+            if torch.rand((1,)) < self.prob:
+                if self.cache:
+                    idx = torch.randint(0, len(self), (1,))
+                    image = self.files[idx]
+                    label = self.labels[idx]
+                else:
+                    random_image = self.files[torch.randint(0, len(self), (1,))]
+                    random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
+                    random_image = cv.imread(random_image, cv.IMREAD_GRAYSCALE)
 
-            image = Image.fromarray(np.uint8(image))  # downsized to 8 bit
-            image2 = Image.fromarray(np.uint8(random_image))
-            sample = {
-                "image": image,
-                "landmarks": label,
-                "image2": image2,
-                "landmarks2": random_label,
-            }
-            image, label = self.transform(sample)
+                image = Image.fromarray(np.uint8(image))  # downsized to 8 bit
+                image2 = Image.fromarray(np.uint8(random_image))
+                sample = {
+                    "image": image,
+                    "landmarks": label,
+                    "image2": image2,
+                    "landmarks2": random_label,
+                }
+
+                image, label = self.transform(sample)
         else:  # basic tranformation
             image = Image.fromarray(np.uint8(image))  # downsized to 8 bit
             image = transforms.Resize(self.img_size)(image)
