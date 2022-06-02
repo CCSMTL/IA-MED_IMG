@@ -45,7 +45,9 @@ class CustomImageDataset(Dataset):
             if self.cache:
                 file = transforms.Resize(self.img_size)(
                     Image.fromarray(
-                        np.uint8(cv.imread(f"{self.img_dir}/images/{file}"))
+                        np.uint8(
+                            cv.imread(f"{self.img_dir}/images/{file}")[:, :, 0] * 255
+                        )
                     )
                 )
 
@@ -60,7 +62,8 @@ class CustomImageDataset(Dataset):
             list,
             zip(
                 *Parallel(n_jobs=8)(
-                    delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images"))
+                    delayed(caching)(i)
+                    for i in tqdm(os.listdir(img_dir + "/images")[0:100])
                 )
             ),
         )
@@ -132,23 +135,25 @@ class CustomImageDataset(Dataset):
             label = self.labels[idx]
         else:
             img_path = self.files[idx]
-
             patterns = img_path.split("/")[::-1]
-
             keyname = patterns[0]
             label = self.retrieve_cat(keyname)
-            image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
-            image = Image.fromarray(np.uint8(image))
+            image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)[:, :, 0]
+
+            image = Image.fromarray(np.uint8(image * 255))
+
         if torch.rand((1,)) < self.prob:
             if self.cache:
                 idx = torch.randint(0, len(self), (1,))
-                image2 = Image.fromarray(np.uint8(self.files[idx]))
+                image2 = self.files[idx]
                 random_label = self.labels[idx]
             else:
                 random_image = self.files[torch.randint(0, len(self), (1,))]
                 random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
                 image2 = Image.fromarray(
-                    np.uint8(cv.imread(random_image, cv.IMREAD_GRAYSCALE))
+                    np.uint8(
+                        cv.imread(random_image * 255, cv.IMREAD_GRAYSCALE)[:, :, 0]
+                    )
                 )
 
             sample = {
@@ -160,7 +165,7 @@ class CustomImageDataset(Dataset):
 
             image, label = self.transform(sample)
         else:  # basic tranformation
-            image = Image.fromarray(np.uint8(image))  # downsized to 8 bit
+
             image = transforms.Resize(self.img_size)(image)
             image = transforms.ToTensor()(image)
             image = transforms.Normalize(mean=[0.456], std=[0.224])(image)
