@@ -128,7 +128,7 @@ class CustomImageDataset(Dataset):
             keyname = patterns[0]
             label = self.retrieve_cat(keyname)
             image = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
-
+            image = Image.fromarray(np.uint8(image))
         if torch.rand((1,)) < self.prob:
             if self.cache:
                 idx = torch.randint(0, len(self), (1,))
