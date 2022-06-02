@@ -59,12 +59,9 @@ class CustomImageDataset(Dataset):
         self.files, self.labels = map(
             list,
             zip(
-                *[
-                    Parallel(n_jobs=8)(
-                        delayed(caching)(i)
-                        for i in tqdm(os.listdir(img_dir + "/images"))
-                    )
-                ]
+                *Parallel(n_jobs=8)(
+                    delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images"))
+                )
             ),
         )
 
@@ -146,6 +143,7 @@ class CustomImageDataset(Dataset):
             if self.cache:
                 idx = torch.randint(0, len(self), (1,))
                 image2 = Image.fromarray(np.uint8(self.files[idx]))
+                random_label = self.labels[idx]
             else:
                 random_image = self.files[torch.randint(0, len(self), (1,))]
                 random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
