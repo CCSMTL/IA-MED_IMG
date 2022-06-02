@@ -6,6 +6,7 @@ import numpy as np
 import cv2 as cv
 from PIL import Image
 import Transforms
+from tqdm.auto import tqdm
 
 
 class CustomImageDataset(Dataset):
@@ -39,7 +40,7 @@ class CustomImageDataset(Dataset):
 
         self.labels = []
 
-        for file in os.listdir(img_dir + "/images"):
+        for file in tqdm(os.listdir(img_dir + "/images")):
             if self.cache:
                 self.files.append(
                     transforms.Resize(self.img_size)(
