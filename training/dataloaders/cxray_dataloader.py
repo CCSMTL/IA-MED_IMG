@@ -49,11 +49,7 @@ class CustomImageDataset(Dataset):
                     )
                 )
 
-                self.labels.append(
-                    self.retrieve_cat(
-                        f"{file.split(' / ')[0]}/labels/{file.split(' / ')[2]}"
-                    )
-                )
+                self.labels.append(self.retrieve_cat(f"{img_dir}/labels/{file}"))
             else:
                 self.files.append(f"{self.img_dir}/images/{file}")
 
