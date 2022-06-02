@@ -39,7 +39,7 @@ class Metrics:
                 outAUROC[names[i]] = roc_auc_score(true[:, i], pred[:, i])
             outAUROC["mean"] = np.mean(list(outAUROC.values()))
         except ValueError as e:
-            warnings.warn(e)
+            warnings.warn(str(e))
             for i in names + ["mean"]:
                 outAUROC[i] = 0
         return outAUROC
