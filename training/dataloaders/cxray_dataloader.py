@@ -7,6 +7,7 @@ import cv2 as cv
 from PIL import Image
 import Transforms
 from tqdm.auto import tqdm
+from joblib import Parallel, delayed
 
 
 class CustomImageDataset(Dataset):
@@ -40,19 +41,32 @@ class CustomImageDataset(Dataset):
 
         self.labels = []
 
-        for file in tqdm(os.listdir(img_dir + "/images")):
+        def caching(file):
             if self.cache:
-                self.files.append(
-                    transforms.Resize(self.img_size)(
-                        Image.fromarray(
-                            np.uint8(cv.imread(f"{self.img_dir}/images/{file}"))
-                        )
+                file = transforms.Resize(self.img_size)(
+                    Image.fromarray(
+                        np.uint8(cv.imread(f"{self.img_dir}/images/{file}"))
                     )
                 )
 
-                self.labels.append(self.retrieve_cat(f"{img_dir}/labels/{file}"))
+                label = self.retrieve_cat(f"{self.img_dir}/labels/{file}")
             else:
-                self.files.append(f"{self.img_dir}/images/{file}")
+                file = f"{self.img_dir}/images/{file}"
+                label = self.retrieve_cat(f"{self.img_dir}/labels/{file}")
+
+            return file, label
+
+        self.files, self.labels = map(
+            list,
+            zip(
+                *[
+                    Parallel(n_jobs=8)(
+                        delayed(caching)(i)
+                        for i in tqdm(os.listdir(img_dir + "/images"))
+                    )
+                ]
+            ),
+        )
 
     def __len__(self):
         if os.environ["DEBUG"] == "True":
