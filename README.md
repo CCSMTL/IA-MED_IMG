@@ -10,6 +10,11 @@ TODO: Guide users through getting your code up and running on their own system. 
 
 ## Setup a Linux virtual machine
 If you are working from a machine using Linux, skip this step. 
+TODO
+start /windows feature/Activate : windows subsystem for Linux & Activate : Plateforme de l'hyperviseur windows
+Got ot microsoft store & download ubuntu 20.04.4 LTS 
+Launch ubuntu
+
 
 ## Create a virtual work environnement
 ### Linux
