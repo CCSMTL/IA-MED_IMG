@@ -23,15 +23,16 @@ def training_loop(
 
     model.train()
     i = 1
-    Profiler =  torch.profiler.profile(
-            # schedule=torch.profiler.schedule(
-            #     wait=2,
-            #     warmup=2,
-            #     active=6,
-            #     repeat=1),
-            on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
-            with_stack=True
-    ) if os.environ["DEBUG"]=="True" else dummy_context_mgr()
+    # Profiler =  torch.profiler.profile(
+    #         # schedule=torch.profiler.schedule(
+    #         #     wait=2,
+    #         #     warmup=2,
+    #         #     active=6,
+    #         #     repeat=1),
+    #         on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
+    #         with_stack=True
+    # ) if os.environ["DEBUG"]=="True" else dummy_context_mgr()
+    Profiler=dummy_context_mgr()
     with Profiler as profiler:
         for inputs, labels in loader:
             # get the inputs; data is a list of [inputs, labels]
@@ -43,8 +44,11 @@ def training_loop(
 
                 # forward + backward + optimize
             with torch.cuda.amp.autocast():
+
                 outputs = model(inputs)
                 if model._get_name() == "Unet":
+                    inputs=inputs[:,0,:,:]
+                    outputs=outputs[:,0,:,:]
                     labels = inputs
                 loss = criterion(outputs, labels)
                 #loss.backward()
@@ -102,6 +106,8 @@ def validation_loop(model, loader, criterion, device):
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
             if model._get_name() == "Unet":
+                inputs = inputs[:, 0, :, :]
+                outputs = outputs[:, 0, :, :]
                 labels = inputs
             loss = criterion(outputs, labels)
             running_loss += loss.detach()

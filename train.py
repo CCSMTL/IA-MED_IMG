@@ -100,9 +100,10 @@ def main():
         intensity=args.augment_intensity,
         label_smoothing=args.label_smoothing,
         cache=args.cache,
+        num_worker=args.num_worker
     )
     val_dataset = CustomImageDataset(
-        f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache
+        f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0

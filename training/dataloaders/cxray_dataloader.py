@@ -24,6 +24,7 @@ class CustomImageDataset(Dataset):
         intensity=0,
         label_smoothing=0,
         cache=False,
+        num_worker=0
     ):
 
         self.img_dir = img_dir
@@ -60,15 +61,22 @@ class CustomImageDataset(Dataset):
                 label = self.retrieve_cat(f"{self.img_dir}/labels/{file}")
 
             return file, label
+
+
+
         a = 100 if os.environ["DEBUG"]=="True" else len(os.listdir(img_dir + "/images"))
-        self.files, self.labels = map(
-            list,
-            zip(
-                *Parallel(n_jobs=8)(
-                    delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images")[0:a])
-                )
-            ),
-        )
+        num_worker=max(num_worker,1)
+        if os.name.lower()=="nt" :# windows doesnt deal well with parallel
+            self.files, self.labels = map(zip(* caching ,os.listdir(img_dir + "/images")[0:a]))
+        else :
+            self.files, self.labels = map(
+                list,
+                zip(
+                    *Parallel(n_jobs=num_worker)(
+                        delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images")[0:a])
+                    )
+                ),
+            )
 
     def __len__(self):
         if os.environ["DEBUG"] == "True":

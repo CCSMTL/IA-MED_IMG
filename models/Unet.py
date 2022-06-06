@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from torch.nn import functional as F
-
+from torch.autograd import Variable
 
 def get_backbone(name, pretrained=True):
 
@@ -35,6 +35,13 @@ def get_backbone(name, pretrained=True):
             "{} backbone model is not implemented so far.".format(name)
         )
 
+    #we need to remove the extra inputs channels
+    weight1 = backbone[0].weight.clone()
+    old= backbone[0]
+    new_first_layer = torch.nn.Conv2d(1, old.out_channels, kernel_size=old.kernel_size, stride=old.stride, padding=old.padding, bias=old.bias).requires_grad_()
+
+    new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:,1:2,:,:], requires_grad=True)
+    backbone[0]=new_first_layer
     return backbone, feature_names, backbone_output
 
 
@@ -132,7 +139,7 @@ class Unet(nn.Module):
         decoder_use_batchnorm=True,
     ):
         super(Unet, self).__init__()
-        self.first_layer = torch.nn.Conv2d(1, 3, (7, 7), padding_mode="replicate")
+
         self.backbone_name = backbone_name
 
         self.backbone, self.shortcut_features, self.bb_out_name = get_backbone(
@@ -186,8 +193,8 @@ class Unet(nn.Module):
     def forward(self, *input):
 
         """ Forward propagation in U-Net. """
-        input = self.first_layer(input)
-        x, features = self.forward_backbone(input)
+
+        x, features = self.forward_backbone(*input)
 
         for skip_name, upsample_block in zip(
             self.shortcut_features[::-1], self.upsample_blocks
@@ -216,7 +223,7 @@ class Unet(nn.Module):
 
         """ Getting the number of channels at skip connections and at the output of the encoder. """
 
-        x = torch.zeros(1, 3, 224, 224)
+        x = torch.zeros(1, 1, 224, 224).float()
         has_fullres_features = (
             self.backbone_name.startswith("vgg") or self.backbone_name == "unet_encoder"
         )

@@ -15,7 +15,7 @@ from models.Unet import Unet
 from training.training import training
 from training.dataloaders.cxray_dataloader import CustomImageDataset
 from custom_utils import Experiment, set_parameter_requires_grad
-
+from parser import init_parser
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -25,92 +25,29 @@ from custom_utils import Experiment, set_parameter_requires_grad
 # torch.backends.cudnn.benchmark = True
 
 # ----------- parse arguments----------------------------------
-def init_parser():
-    parser = argparse.ArgumentParser(description="Launch training for a specific model")
 
-    parser.add_argument(
-        "--model",
-        default="alexnet",
-        const="all",
-        type=str,
-        nargs="?",
-        choices=torch.hub.list("pytorch/vision:v0.10.0")
-        + torch.hub.list("facebookresearch/deit:main"),
-        required=True,
-        help="Choice of the model",
-    )
 
-    parser.add_argument(
-        "--img_size",
-        default=320,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
 
-    parser.add_argument(
-        "--wandb",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish (and did you setup) wandb? You will need to add the project name in the initialization of wandb in train.py",
-    )
-
-    parser.add_argument(
-        "--epoch",
-        default=50,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="Number of epochs to train ; a patiance of 5 is implemented by default",
-    )
-    parser.add_argument(
-        "--batch_size",
-        default=50,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="The batch size to use. If > max_batch_size,gradient accumulation will be used",
-    )
-
-    parser.add_argument(
-        "--tags",
-        default=None,
-        nargs="+",
-        required=False,
-        help="extra tags to add to the logs",
-    )
-    parser.add_argument(
-        "--debug",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish  execute small train set in debug mode",
-    )
-
-    return parser
 
 
 def main():
     parser = init_parser()
     args = parser.parse_args()
     os.environ["DEBUG"] = str(args.debug)
-    max_batch_size = 8  # defines the maximum batch_size supported by your gpu for a specific model.
-    accumulate = args.batch_size // max_batch_size
+    max_batch_size = args.batch_size  # defines the maximum batch_size supported by your gpu for a specific model.
+    accumulate = args.accumulate
     # ----------- hyperparameters-------------------------------------
     config = {
         #   "beta1"
         #   "beta2"
         "optimizer": torch.optim.AdamW,
-        "criterion": torch.nn.CrossEntropyLoss(),
+        "criterion": torch.nn.CrossEntropyLoss(),#reduction='none'),
         "augment prob": 0,
         "augment intensity": 0,
         "label smoothing": 0,
         # "sampler"
         "gradient accum": accumulate,
-        "num_worker": 8,
+        "num_worker": args.num_worker,
     }
     # -------- proxy config ---------------------------
     from six.moves import urllib
