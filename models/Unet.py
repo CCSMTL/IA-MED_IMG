@@ -27,7 +27,8 @@ def get_backbone(name, pretrained=True):
         feature_names = [None, "Conv2d_4a_3x3", "Mixed_5d"]
         backbone_output = "Mixed_6e"
     elif name.startswith("densenet"):
-        feature_names = [None, "relu0", "denseblock1", "denseblock2", "denseblock3"]
+        backbone=backbone.features
+        feature_names = [None,"relu0", "denseblock1", "denseblock2", "denseblock3"]
         backbone_output = "denseblock4"
     else:
         raise NotImplemented(
@@ -225,7 +226,6 @@ class Unet(nn.Module):
 
         # forward run in backbone to count channels (dirty solution but works for *any* Module)
         for name, child in self.backbone.named_children():
-            print(name)
             x = child(x)
             if name in self.shortcut_features:
                 channels.append(x.shape[1])

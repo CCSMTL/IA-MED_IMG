@@ -60,12 +60,12 @@ class CustomImageDataset(Dataset):
                 label = self.retrieve_cat(f"{self.img_dir}/labels/{file}")
 
             return file, label
-
+        a = 100 if os.environ["DEBUG"]=="True" else len(os.listdir(img_dir + "/images"))
         self.files, self.labels = map(
             list,
             zip(
                 *Parallel(n_jobs=8)(
-                    delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images"))
+                    delayed(caching)(i) for i in tqdm(os.listdir(img_dir + "/images")[0:a])
                 )
             ),
         )
