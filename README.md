@@ -8,8 +8,25 @@ TODO: Guide users through getting your code up and running on their own system. 
 3.	Latest releases
 4.	API references
 
+## Setup a Linux virtual machine
+If you are working from a machine using Linux, skip this step. 
+
+## Create a virtual work environnement
+### Linux
+source venv/bin/activate
+
+## Install the dependencies
+
+## Connect to the proxy
+
+## Download the data
+
+
 # Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+TODO: Describe and show how to build your code and run the tests.
+
+sudo pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r requirements.txt
+python train.py --model densenet201 
 
 # Contribute
 TODO: Explain how other users and developers can contribute to make your code better. 
