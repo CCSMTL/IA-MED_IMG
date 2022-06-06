@@ -112,6 +112,22 @@ def main():
         "gradient accum": accumulate,
         "num_worker": 8,
     }
+    # -------- proxy config ---------------------------
+    from six.moves import urllib
+
+    proxy = urllib.request.ProxyHandler(
+        {
+            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+        }
+    )
+    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # construct a new opener using your proxy settings
+    opener = urllib.request.build_opener(proxy)
+    # install the openen on the module-level
+    urllib.request.install_opener(opener)
+
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 

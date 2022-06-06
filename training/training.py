@@ -20,54 +20,54 @@ def training_loop(
 
     model.train()
     i = 1
-    # with torch.profiler.profile(
-    #         # schedule=torch.profiler.schedule(
-    #         #     wait=2,
-    #         #     warmup=2,
-    #         #     active=6,
-    #         #     repeat=1),
-    #         on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
-    #         with_stack=True
-    # ) as profiler:
-    for inputs, labels in loader:
-        # get the inputs; data is a list of [inputs, labels]
+    with torch.profiler.profile(
+            # schedule=torch.profiler.schedule(
+            #     wait=2,
+            #     warmup=2,
+            #     active=6,
+            #     repeat=1),
+            on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
+            with_stack=True
+    ) as profiler:
+        for inputs, labels in loader:
+            # get the inputs; data is a list of [inputs, labels]
 
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
-            labels.to(device, non_blocking=True),
-        )
+            inputs, labels = (
+                inputs.to(device, non_blocking=True),
+                labels.to(device, non_blocking=True),
+            )
 
-            # forward + backward + optimize
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            if model._get_name() == "Unet":
-                labels = inputs
-            loss = criterion(outputs, labels)
-            loss.backward()
-            #scaler.scale(loss).backward()
-            running_loss += loss.detach()
+                # forward + backward + optimize
+            with torch.cuda.amp.autocast():
+                outputs = model(inputs)
+                if model._get_name() == "Unet":
+                    labels = inputs
+                loss = criterion(outputs, labels)
+                #loss.backward()
+                scaler.scale(loss).backward()
+                running_loss += loss.detach()
 
-            # gradient accumulation
-            if i % minibatch_accumulate == 0:
-                i = 1
+                # gradient accumulation
+                if i % minibatch_accumulate == 0:
+                    i = 1
 
-                # Unscales the gradients of optimizer's assigned params in-place
-                # scaler.unscale_(optimizer)
+                    # Unscales the gradients of optimizer's assigned params in-place
+                    scaler.unscale_(optimizer)
 
-                # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                # torch.nn.utils.clip_grad_norm_(model.parameters(), 5)#max_norm)
-                optimizer.step()
-                #scaler.step(optimizer)
-                #scaler.update()
-                optimizer.zero_grad(set_to_none=True)
-            # ending loop
-            del (
-                inputs,
-                labels,
-                loss,
-                outputs,
-            )  # garbage management sometimes fails with cuda
-            i += 1
+                    # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
+                    #optimizer.step()
+                    scaler.step(optimizer)
+                    scaler.update()
+                    optimizer.zero_grad(set_to_none=True)
+                # ending loop
+                del (
+                    inputs,
+                    labels,
+                    loss,
+                    outputs,
+                )  # garbage management sometimes fails with cuda
+                i += 1
     return running_loss
 
 

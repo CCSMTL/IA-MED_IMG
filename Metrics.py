@@ -21,15 +21,15 @@ class Metrics:
 
     def f1(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.f1_score(true, pred, average="macro")  # weighted??
+        return metrics.f1_score(true, pred, average="macro",zero_division=0)  # weighted??
 
     def precision(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.precision_score(true, pred, average="macro")
+        return metrics.precision_score(true, pred, average="macro",zero_division=0)
 
     def recall(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.recall_score(true, pred, average="macro")
+        return metrics.recall_score(true, pred, average="macro",zero_division=0)
 
     def computeAUROC(self, true, pred):
         try:

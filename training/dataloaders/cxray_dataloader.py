@@ -153,7 +153,7 @@ class CustomImageDataset(Dataset):
                 random_image = self.files[torch.randint(0, len(self), (1,))]
                 random_label = self.retrieve_cat(random_image.split("/")[::-1][0])
                 image2 = Image.fromarray(
-                    np.uint8(cv.imread(random_image * 255, cv.IMREAD_GRAYSCALE))
+                    np.uint8(cv.imread(random_image , cv.IMREAD_GRAYSCALE)* 255)
                 )
 
             sample = {

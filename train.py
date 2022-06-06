@@ -155,7 +155,7 @@ def main():
         device,
         minibatch_accumulate=args.accumulate,
         epoch_max=args.epoch,
-        patience=5,
+        patience=10,
         experiment=experiment,
         metrics=metrics,
     )
