@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from torch.nn import functional as F
 from torch.autograd import Variable
-
+from functools import reduce
 def get_backbone(name, pretrained=True):
 
     """ Loading backbone, defining names for skip-connections and encoder output. """
@@ -40,7 +40,7 @@ def get_backbone(name, pretrained=True):
         break
 
     name = name[:-7]  # removed the .weight of first conv
-    first_layer = getattr(backbone, name)
+    first_layer = reduce(getattr, [backbone]+name.split("."))
 
 
     new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size, stride=first_layer.stride, padding=first_layer.padding, bias=first_layer.bias).requires_grad_()
@@ -137,7 +137,7 @@ class Unet(nn.Module):
         backbone_name="resnet50",
         pretrained=True,
         encoder_freeze=False,
-        classes=3,
+        classes=1,
         decoder_filters=(256, 128, 64, 32, 16),
         parametric_upsampling=True,
         shortcut_features="default",

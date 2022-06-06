@@ -146,7 +146,7 @@ def main():
 
     # initialize metrics loggers
     optimizer = config["optimizer"](model.parameters())
-
+    print(model._get_name())
     training(
         model,
         optimizer,

@@ -1,7 +1,7 @@
 import torch
 from custom_utils import set_parameter_requires_grad
 from torch.autograd import Variable
-
+from functools import reduce
 class CNN(torch.nn.Module):
     def __init__(self, backbone, num_classes,freeze_backbone=False):
         super().__init__()
@@ -24,7 +24,9 @@ class CNN(torch.nn.Module):
             break
 
         name=name[:-7] #removed the .weight of first conv
-        first_layer= getattr(backbone,name)
+
+        first_layer = reduce(getattr, [backbone]+name.split("."))
+
         try :
             first_layer=first_layer[0]
         except :
