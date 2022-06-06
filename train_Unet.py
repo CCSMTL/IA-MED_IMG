@@ -72,17 +72,19 @@ def main():
 
     # -----------model initialisation------------------------------
     model = Unet(args.model)
-
+    if args.device == "parallel":
+        model = torch.nn.DataParallel(model)
     print(
         f"mini batch size : {max_batch_size}. The gradient will be accumulated {accumulate} times"
     )
     if torch.cuda.is_available():
-        device = (
-            "cuda:0"
-        )  # The id of the gpu (e.g. 0 , can change on multi gpu devices)
+        device = f"cuda:{args.device}" if args.device != "parallel" else "cuda:0"
+
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
+
+
 
     print("The model has now been successfully loaded into memory")
 

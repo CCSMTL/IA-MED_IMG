@@ -1,5 +1,6 @@
 import torch
 from custom_utils import set_parameter_requires_grad
+from torch.autograd import Variable
 
 class CNN(torch.nn.Module):
     def __init__(self, backbone, num_classes,freeze_backbone=False):
@@ -15,13 +16,31 @@ class CNN(torch.nn.Module):
         else:
             pass
 
-        self.backbone = torch.hub.load(
+        backbone = torch.hub.load(
             repo, backbone, pretrained=True
         )
 
+        for name, weight1 in backbone.named_parameters():
+            break
+
+        name=name[:-7] #removed the .weight of first conv
+        first_layer= getattr(backbone,name)
+        try :
+            first_layer=first_layer[0]
+        except :
+            pass
+
+
+        new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size, stride=first_layer.stride,
+                                          padding=first_layer.padding, bias=first_layer.bias).requires_grad_()
+
+        new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:, 1:2, :, :], requires_grad=True)
+        setattr(backbone,name,new_first_layer)
+        self.backbone = backbone
 
         # -------------------------------------------------------------
-        # finds the size of the last layer of the model
+
+        # finds the size of the last layer of the model, and name of the first
         layers = []
         for name, param in self.backbone.named_parameters():
             if param.requires_grad:
@@ -34,18 +53,18 @@ class CNN(torch.nn.Module):
         else:
             size = x.out_features
             # x = torch.nn.Linear(size, num_classes, bias=True)
+
         # -------------------------------------------------------------
-        # setattr(self.backbone, name[0],x)
+
+
         if freeze_backbone:
             set_parameter_requires_grad(self.backbone)
-        self.classifier = torch.nn.Linear(size, num_classes, bias=True)
+
         #--------------------------------------------------------------
-        self.first_layer=torch.nn.Conv2d(1,3,(7,7),padding_mode="replicate")
-        self.batch_norm=torch.nn.BatchNorm2d(3)
+        self.classifier = torch.nn.Sequential(torch.nn.Linear(size, num_classes, bias=True))
+
     def forward(self, x):
-        x = self.first_layer(x)
-        x = torch.relu_(x)
-        x = self.batch_norm(x)
+
         x = self.backbone(x)
         x = self.classifier(x)
         return x

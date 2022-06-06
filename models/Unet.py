@@ -36,12 +36,17 @@ def get_backbone(name, pretrained=True):
         )
 
     #we need to remove the extra inputs channels
-    weight1 = backbone[0].weight.clone()
-    old= backbone[0]
-    new_first_layer = torch.nn.Conv2d(1, old.out_channels, kernel_size=old.kernel_size, stride=old.stride, padding=old.padding, bias=old.bias).requires_grad_()
+    for name, weight1 in backbone.named_parameters():
+        break
+
+    name = name[:-7]  # removed the .weight of first conv
+    first_layer = getattr(backbone, name)
+
+
+    new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size, stride=first_layer.stride, padding=first_layer.padding, bias=first_layer.bias).requires_grad_()
 
     new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:,1:2,:,:], requires_grad=True)
-    backbone[0]=new_first_layer
+    setattr(backbone, name, new_first_layer)
     return backbone, feature_names, backbone_output
 
 
