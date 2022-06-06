@@ -3,7 +3,7 @@ import torch
 import pathlib
 import wandb
 import json
-
+import contextlib
 # -----------------------------------------------------------------------------------
 class Experiment:
     def __init__(self, directory, is_wandb=False, tags=None, config=None):
@@ -72,3 +72,6 @@ def collate_fn(batch):
 
 
 # -----------------------------------------------------------------------------------
+@contextlib.contextmanager
+def dummy_context_mgr():
+    yield None

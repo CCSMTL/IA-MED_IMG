@@ -1,6 +1,9 @@
+import os
+
 import torch
 import tqdm
 import numpy as np
+from custom_utils import dummy_context_mgr
 
 
 def training_loop(
@@ -20,7 +23,7 @@ def training_loop(
 
     model.train()
     i = 1
-    with torch.profiler.profile(
+    Profiler =  torch.profiler.profile(
             # schedule=torch.profiler.schedule(
             #     wait=2,
             #     warmup=2,
@@ -28,7 +31,8 @@ def training_loop(
             #     repeat=1),
             on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
             with_stack=True
-    ) as profiler:
+    ) if os.environ["DEBUG"]=="True" else dummy_context_mgr()
+    with Profiler as profiler:
         for inputs, labels in loader:
             # get the inputs; data is a list of [inputs, labels]
 
