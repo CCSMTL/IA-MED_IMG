@@ -26,8 +26,8 @@ class CxrayDataloader(Dataset):
         label_smoothing=0,
         cache=False,
         num_worker=0,
-        channels=3
-
+        channels=3,
+        unet=False
     ):
         #----- Variable definition ------------------------------------------------------
         self.img_dir = img_dir
@@ -43,6 +43,7 @@ class CxrayDataloader(Dataset):
         self.cache = cache
         self.channels=channels
         self.labels = []
+        self.unet=unet
 
         # ----- Transform definition ------------------------------------------------------
         if self.channels==1 :
@@ -202,11 +203,10 @@ class CxrayDataloader(Dataset):
             image,label,image2,label2 = self.advanced_transform(samples).values
 
 
-
-
-
         image=self.preprocess(image.float())
 
+        if self.unet :
+            return image
         return image, label.float()
 
 

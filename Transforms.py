@@ -97,15 +97,15 @@ class RandomErasing(object):
         return samples
 
 
-        class RandAugment :
-            def __init__(self,prob,intensity):
-                self.p=prob
+class RandAugment :
+    def __init__(self,prob,intensity):
+        self.p=prob
 
-                self.augment=transforms.RandAugment(num_ops=2, magnitude=int(10 * intensity))#TODO : ADD N,M as hyperparameters
-            def __call__(self,x):
+        self.augment=transforms.RandAugment(num_ops=2, magnitude=int(10 * intensity))#TODO : ADD N,M as hyperparameters
+    def __call__(self,x):
 
-                if torch.randn((1,))<self.p :
-                     x["image"]=self.augment(x["image"].type(torch.uint8))
-                     x["image2"]=self.augment(x["image2"].type(torch.uint8))
+        if torch.randn((1,))<self.p :
+             x["image"]=self.augment(x["image"].type(torch.uint8))
+             x["image2"]=self.augment(x["image2"].type(torch.uint8))
 
-                return x
+        return x

@@ -4,10 +4,52 @@ import torch
 import tqdm
 import numpy as np
 from custom_utils import dummy_context_mgr
+from functools import singledispatch
+
+
+@singledispatch
+def training_core(model, inputs: tuple, scaler, criterion,device):
+    inputs,labels=inputs
+    inputs, labels = (
+        inputs.to(device, non_blocking=True),
+        labels.to(device, non_blocking=True),
+    )
+    with torch.cuda.amp.autocast():
+        outputs = model(inputs)
+        if model._get_name() == "Unet":  # TODO : Find way to remove ugly if. Plus get_name doesnt work with DataParallel
+            inputs = inputs[:, 0, :, :]
+            outputs = outputs[:, 0, :, :]
+            labels = inputs
+
+        assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
+
+        loss = criterion(outputs, labels)
+
+        scaler.scale(loss).backward()
+
+        return loss
+
+    @training_core.register
+    def _(model, inputs: type(torch.tensor([])), scaler, criterion,device):
+        inputs=inputs.to(device,non_blocking=True)
+        with torch.cuda.amp.autocast():
+            outputs = model(inputs)
+
+            inputs = inputs[:, 0, :, :]
+            outputs = outputs[:, 0, :, :]
+            labels = inputs
+
+            assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
+
+            loss = criterion(outputs, labels)
+
+            scaler.scale(loss).backward()
+
+        return loss
 
 
 def training_loop(
-    model, loader, optimizer, criterion, device, minibatch_accumulate, scaler
+        model, loader, optimizer, criterion, device, minibatch_accumulate, scaler
 ):
     """
 
@@ -32,53 +74,36 @@ def training_loop(
     #         on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
     #         with_stack=True
     # )
-    Profiler=dummy_context_mgr()
+    Profiler = dummy_context_mgr()
     with Profiler as profiler:
-        for inputs, labels in loader:
+        for inputs in loader:
             # get the inputs; data is a list of [inputs, labels]
 
-            inputs, labels = (
-                inputs.to(device, non_blocking=True),
-                labels.to(device, non_blocking=True),
-            )
 
-                # forward + backward + optimize
-            with torch.cuda.amp.autocast():
+            # forward + backward + optimize
+            loss = training_core(model, inputs, scaler, criterion,device)
+            running_loss += loss.detach()
 
-                outputs = model(inputs)
-                if model._get_name() == "Unet": #TODO : Find way to remove ugly if. Plus get_name doesnt work with DataParallel
-                    inputs=inputs[:,0,:,:]
-                    outputs=outputs[:,0,:,:]
-                    labels = inputs
+            # gradient accumulation
+            if i % minibatch_accumulate == 0:
+                i = 1
 
-                assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
+                # Unscales the gradients of optimizer's assigned params in-place
+                scaler.unscale_(optimizer)
 
-                loss = criterion(outputs, labels)
+                # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 5)  # TODO : add norm c as hyperparameters
+                # optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad(set_to_none=True)
+            # ending loop
+            del (
+                inputs,
+                loss,
 
-                scaler.scale(loss).backward()
-                running_loss += loss.detach()
-
-                # gradient accumulation
-                if i % minibatch_accumulate == 0:
-                    i = 1
-
-                    # Unscales the gradients of optimizer's assigned params in-place
-                    scaler.unscale_(optimizer)
-
-                    # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 5) #TODO : add norm c as hyperparameters
-                    #optimizer.step()
-                    scaler.step(optimizer)
-                    scaler.update()
-                    optimizer.zero_grad(set_to_none=True)
-                # ending loop
-                del (
-                    inputs,
-                    labels,
-                    loss,
-                    outputs,
-                )  # garbage management sometimes fails with cuda
-                i += 1
+            )  # garbage management sometimes fails with cuda
+            i += 1
     return running_loss
 
 
@@ -121,7 +146,6 @@ def validation_loop(model, loader, criterion, device):
             )
             results[0] = torch.cat((results[0], labels.cpu()), dim=0)
 
-
         del (
             inputs,
             labels,
@@ -133,20 +157,19 @@ def validation_loop(model, loader, criterion, device):
 
 
 def training(
-    model,
-    optimizer,
-    criterion,
-    training_loader,
-    validation_loader,
-    device="cpu",
-    metrics=None,
-    minibatch_accumulate=1,
-    experiment=None,
-    patience=5,
-    epoch_max=50,
-    batch_size=1,
+        model,
+        optimizer,
+        criterion,
+        training_loader,
+        validation_loader,
+        device="cpu",
+        metrics=None,
+        minibatch_accumulate=1,
+        experiment=None,
+        patience=5,
+        epoch_max=50,
+        batch_size=1,
 ):
-
     epoch = 0
     train_loss_list = []
     val_loss_list = []
@@ -197,6 +220,3 @@ def training(
         epoch += 1
         pbar.update(1)
     print("Finished Training")
-
-
-
