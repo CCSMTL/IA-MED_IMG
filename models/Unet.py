@@ -4,7 +4,24 @@ import torch.nn as nn
 from torch.nn import functional as F
 from torch.autograd import Variable
 from functools import reduce
-def get_backbone(name, pretrained=True):
+
+def channels321(backbone,name) :
+    # we need to remove the extra inputs channels
+    for name, weight1 in backbone.named_parameters():
+        break
+
+    name = name[:-7]  # removed the .weight of first conv
+
+    first_layer = reduce(getattr, [backbone] + name.split("."))
+    new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size,
+                                      stride=first_layer.stride, padding=first_layer.padding,
+                                      bias=first_layer.bias).requires_grad_()
+
+    new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:, 1:2, :, :], requires_grad=True)
+    setattr(backbone, name, new_first_layer)
+
+
+def get_backbone(name, pretrained=True,channels=3):
 
     """ Loading backbone, defining names for skip-connections and encoder output. """
 
@@ -35,18 +52,9 @@ def get_backbone(name, pretrained=True):
             "{} backbone model is not implemented so far.".format(name)
         )
 
-    #we need to remove the extra inputs channels
-    for name, weight1 in backbone.named_parameters():
-        break
+    if channels==1 :
+        channels321(backbone)
 
-    name = name[:-7]  # removed the .weight of first conv
-    first_layer = reduce(getattr, [backbone]+name.split("."))
-
-
-    new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size, stride=first_layer.stride, padding=first_layer.padding, bias=first_layer.bias).requires_grad_()
-
-    new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:,1:2,:,:], requires_grad=True)
-    setattr(backbone, name, new_first_layer)
     return backbone, feature_names, backbone_output
 
 
@@ -137,7 +145,7 @@ class Unet(nn.Module):
         backbone_name="resnet50",
         pretrained=True,
         encoder_freeze=False,
-        classes=1,
+        channels=3,
         decoder_filters=(256, 128, 64, 32, 16),
         parametric_upsampling=True,
         shortcut_features="default",
@@ -148,7 +156,7 @@ class Unet(nn.Module):
         self.backbone_name = backbone_name
 
         self.backbone, self.shortcut_features, self.bb_out_name = get_backbone(
-            backbone_name, pretrained=pretrained
+            backbone_name, pretrained=pretrained,channels=channels
         )
         shortcut_chs, bb_out_chs = self.infer_skip_channels()
         if shortcut_features != "default":
@@ -179,7 +187,7 @@ class Unet(nn.Module):
                 )
             )
 
-        self.final_conv = nn.Conv2d(decoder_filters[-1], classes, kernel_size=(1, 1))
+        self.final_conv = nn.Conv2d(decoder_filters[-1], channels, kernel_size=(1, 1))
 
         if encoder_freeze:
             self.freeze_encoder()

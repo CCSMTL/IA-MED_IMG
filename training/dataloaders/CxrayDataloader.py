@@ -57,18 +57,7 @@ class CxrayDataloader(Dataset):
 
             normalize
         ])
-        class RandAugment : #TODO : clean this mess... +doesnt work. Once operationnal, move to Transform
-            def __init__(self,prob,intensity):
-                self.p=prob
 
-                self.augment=transforms.RandAugment(num_ops=2, magnitude=int(10 * intensity))#TODO : ADD N,M as hyperparameters
-            def __call__(self,x):
-
-                if torch.randn((1,))<self.p :
-                     x["image"]=self.augment(x["image"].type(torch.uint8))
-                     x["image2"]=self.augment(x["image2"].type(torch.uint8))
-
-                return x
 
         self.transform=transforms.Compose([
 
@@ -77,7 +66,7 @@ class CxrayDataloader(Dataset):
 
         ])
         self.advanced_transform=transforms.Compose([ #advanced/custom
-            RandAugment(prob=self.prob, intensity=self.intensity),  # p=0.5 by default
+            Transforms.RandAugment(prob=self.prob, intensity=self.intensity),  # p=0.5 by default
             Transforms.Mixing(self.prob, self.intensity),
             Transforms.CutMix(self.prob),
             Transforms.RandomErasing(self.prob),
