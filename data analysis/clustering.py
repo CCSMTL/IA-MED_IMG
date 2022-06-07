@@ -19,7 +19,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import xgboost as xgb
 from sklearn.preprocessing import label_binarize
-from training.dataloaders.cxray_dataloader import CustomImageDataset
+from training.dataloaders.CxrayDataloader import CustomImageDataset
 from sklearn.gaussian_process.kernels import RBF
 
 

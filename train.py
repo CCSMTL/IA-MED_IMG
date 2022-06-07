@@ -13,7 +13,7 @@ import copy
 # -----local imports---------------------------------------
 from models.CNN import CNN
 from training.training import training
-from training.dataloaders.cxray_dataloader import CustomImageDataset
+from training.dataloaders.CxrayDataloader import CxrayDataloader
 from custom_utils import Experiment, set_parameter_requires_grad
 
 # ----------- parse arguments----------------------------------
@@ -90,9 +90,9 @@ def main():
 
     # -------data initialisation-------------------------------
 
-    from Metrics import Metrics
 
-    train_dataset = CustomImageDataset(
+
+    train_dataset = CxrayDataloader(
         f"data/training",
         num_classes=14,
         img_size=args.img_size,
@@ -102,7 +102,7 @@ def main():
         cache=args.cache,
         num_worker=args.num_worker
     )
-    val_dataset = CustomImageDataset(
+    val_dataset = CxrayDataloader(
         f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker
     )
 
@@ -137,7 +137,7 @@ def main():
     experiment = Experiment(
         f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
     )
-
+    from Metrics import Metrics #sklearn f**ks my debug
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
 

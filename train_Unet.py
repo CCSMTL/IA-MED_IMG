@@ -13,7 +13,7 @@ from models.Unet import Unet
 # -----local imports---------------------------------------
 
 from training.training import training
-from training.dataloaders.cxray_dataloader import CustomImageDataset
+from training.dataloaders.CxrayDataloader import CxrayDataloader
 from custom_utils import Experiment, set_parameter_requires_grad
 from parser import init_parser
 
@@ -93,7 +93,7 @@ def main():
 
     from Metrics import Metrics
 
-    train_dataset = CustomImageDataset(
+    train_dataset = CxrayDataloader(
         f"data/training",
         num_classes=14,
         img_size=args.img_size,
@@ -101,7 +101,7 @@ def main():
         intensity=config["augment intensity"],
         label_smoothing=config["label smoothing"],
     )
-    val_dataset = CustomImageDataset(
+    val_dataset = CxrayDataloader(
         f"data/validation", num_classes=14, img_size=args.img_size
     )
 
