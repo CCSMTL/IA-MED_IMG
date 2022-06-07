@@ -10,6 +10,7 @@ from tqdm.auto import tqdm
 from joblib import Parallel, delayed
 
 #TODO : ADD PROBABILITY PER AUGMENT CATEGORY
+
 class CxrayDataloader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
@@ -92,12 +93,13 @@ class CxrayDataloader(Dataset):
                 ),
             )
         else :
-            self.files = [lambda : self.read_img(i) for i in self.filename]
+            self.files = [lambda : self.read_img(i) for i in self.filename] # lambda allows to create anonymous function
+                                                                            #here, i use it to "precall" "i" without actually loading the data!
 
 
 
     def __len__(self):
-        if os.environ["DEBUG"] == "True":
+        if __debug__ :
             return 100
         return len(self.files)
 

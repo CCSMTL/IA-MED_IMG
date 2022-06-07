@@ -31,7 +31,7 @@ def training_loop(
     #         #     repeat=1),
     #         on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
     #         with_stack=True
-    # ) if os.environ["DEBUG"]=="True" else dummy_context_mgr()
+    # )
     Profiler=dummy_context_mgr()
     with Profiler as profiler:
         for inputs, labels in loader:
@@ -46,12 +46,15 @@ def training_loop(
             with torch.cuda.amp.autocast():
 
                 outputs = model(inputs)
-                if model._get_name() == "Unet":
+                if model._get_name() == "Unet": #TODO : Find way to remove ugly if. Plus get_name doesnt work with DataParallel
                     inputs=inputs[:,0,:,:]
                     outputs=outputs[:,0,:,:]
                     labels = inputs
+
+                assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
+
                 loss = criterion(outputs, labels)
-                #loss.backward()
+
                 scaler.scale(loss).backward()
                 running_loss += loss.detach()
 
@@ -63,7 +66,7 @@ def training_loop(
                     scaler.unscale_(optimizer)
 
                     # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), 5)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 5) #TODO : add norm c as hyperparameters
                     #optimizer.step()
                     scaler.step(optimizer)
                     scaler.update()
