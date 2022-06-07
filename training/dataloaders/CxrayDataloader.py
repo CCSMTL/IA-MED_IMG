@@ -45,8 +45,10 @@ class CxrayDataloader(Dataset):
         self.labels = []
 
         # ----- Transform definition ------------------------------------------------------
-        normalize = transforms.Normalize(mean=[0.456], std=[0.224]) if self.channels == 1 else transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        if self.channels==1 :
+            normalize = transforms.Normalize(mean=[0.456], std=[0.224])
+        else :
+            normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
         self.preprocess= transforms.Compose([
             transforms.Resize(int(self.img_size*1.14)),  # 256/224 ratio
@@ -55,23 +57,27 @@ class CxrayDataloader(Dataset):
 
             normalize
         ])
-        class RandAugment : #TODO : clean this mess...
+        class RandAugment : #TODO : clean this mess... +doesnt work. Once operationnal, move to Transform
             def __init__(self,prob,intensity):
                 self.p=prob
 
                 self.augment=transforms.RandAugment(num_ops=2, magnitude=int(10 * intensity))#TODO : ADD N,M as hyperparameters
             def __call__(self,x):
+
                 if torch.randn((1,))<self.p :
-                    return self.augment(x)
+                     x["image"]=self.augment(x["image"].type(torch.uint8))
+                     x["image2"]=self.augment(x["image2"].type(torch.uint8))
+
                 return x
 
         self.transform=transforms.Compose([
 
-            RandAugment(prob=self.prob,intensity=self.intensity), #p=0.5 by default
+
             transforms.RandomErasing(p=self.prob),#TODO intensity to add
 
         ])
         self.advanced_transform=transforms.Compose([ #advanced/custom
+            RandAugment(prob=self.prob, intensity=self.intensity),  # p=0.5 by default
             Transforms.Mixing(self.prob, self.intensity),
             Transforms.CutMix(self.prob),
             Transforms.RandomErasing(self.prob),
@@ -104,7 +110,7 @@ class CxrayDataloader(Dataset):
         return len(self.files)
 
     def read_img(self,file):
-        totensor=transforms.ToTensor() #TODO fix ugly
+        totensor=transforms.PILToTensor() #TODO fix ugly
         image =  Image.fromarray(
                 np.uint8(
                     cv.imread(
@@ -119,8 +125,8 @@ class CxrayDataloader(Dataset):
         label = self.retrieve_cat(f"{self.img_dir}/labels/{file}")
         if self.channels == 3:
             image = image.convert('RGB')
-        image=totensor(image),
-
+        image=totensor(image)
+        image=image.type(torch.uint8)
         return image, label
 
     def transform(self, samples):
@@ -181,7 +187,7 @@ class CxrayDataloader(Dataset):
 
         else :
             (image, label) = self.files[idx]()
-            image=image[0]
+
 
         return image,label
         
@@ -210,27 +216,29 @@ class CxrayDataloader(Dataset):
 
 
 
-        image=self.preprocess(image)
+        image=self.preprocess(image.float())
 
-        return image.float(), label.float()
+        return image, label.float()
 
 
 if __name__=="__main__" :
 
-    cxraydataloader=CxrayDataloader(img_dir="../../data/test",num_classes=14) #TODO : build test repertory with 1 or 2 test image/labels
+    cxraydataloader=CxrayDataloader(img_dir="../../data/test",num_classes=14,channels=3) #TODO : build test repertory with 1 or 2 test image/labels
 
     #testing
-    x=np.uint8(np.random.random((224,224,3)))*255
-    img=Image.fromarray(x)
-    cxraydataloader.transform(img)
-    samples = {
-        "image": torch.tensor(x),
-        "landmarks": torch.zeros((14,)),
-        "image2": torch.tensor(x),
-        "landmarks2": torch.zeros((14,)),
-    }
+    x=np.uint8(np.random.random((224,224,3))*255)
+    to=transforms.ToTensor()
+    for i in range(5) :
+        img=Image.fromarray(x)
+        cxraydataloader.transform(img)
+        samples = {
+            "image": to(img),
+            "landmarks": torch.zeros((14,)),
+            "image2": to(img),
+            "landmarks2": torch.zeros((14,)),
+        }
 
-    cxraydataloader.advanced_transform(samples)
-    cxraydataloader[0]
+        cxraydataloader.advanced_transform(samples)
+        cxraydataloader[0]
 
 

@@ -11,7 +11,7 @@ class Sampler:
     def __init__(self):
         data = pd.read_csv("data/data_table.csv")
         data = data[data["assignation"] == "training"]
-        if os.environ["DEBUG"] == "True":
+        if __debug__ :
             data = data.iloc[0:100]
 
         self.count = []
@@ -21,7 +21,7 @@ class Sampler:
         self.count = 1 / np.array(self.count)
         self.count[np.isinf(self.count)] = 0
 
-        #self.count = torch.nn.functional.softmax(torch.tensor(self.count))
+
         m = data[names].values.T
         m = np.vstack([m, np.ones_like(m[0])])
         classes = np.argmax(m, axis=0)

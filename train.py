@@ -48,7 +48,7 @@ def main():
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
-    os.environ["DEBUG"] = str(args.debug)
+
 
     # ----------- hyperparameters-------------------------------------
     # TODO : move config to json or to parsing
