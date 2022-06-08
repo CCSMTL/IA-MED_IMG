@@ -129,12 +129,12 @@ def init_parser():
         default=False,
         help="do you wish  to cache the data into ram?",
     )
-    # parser.add_argument(
-    #     "--debug",
-    #     action=argparse.BooleanOptionalAction,
-    #     default=False,
-    #     help="do you wish to execute small train set in debug mode",
-    # )
+    parser.add_argument(
+        "--unet",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="do you wish to train the unet instead of the classifier",
+    )
 
     parser.add_argument(
         "--sampler",

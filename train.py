@@ -12,6 +12,7 @@ import copy
 
 # -----local imports---------------------------------------
 from models.CNN import CNN
+from models.Unet import Unet
 from training.training import training
 from training.dataloaders.CxrayDataloader import CxrayDataloader
 from custom_utils import Experiment, set_parameter_requires_grad
@@ -77,7 +78,11 @@ def main():
     print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
-    model = CNN(args.model, 14, freeze_backbone=True)
+    if args.unet :
+        model=Unet(args.model, 14)
+    else :
+        model = CNN(args.model, 14, freeze_backbone=False)
+
     if args.device == "parallel":
         model = torch.nn.DataParallel(model)
 
@@ -100,10 +105,13 @@ def main():
         intensity=args.augment_intensity,
         label_smoothing=args.label_smoothing,
         cache=args.cache,
-        num_worker=args.num_worker
+        num_worker=args.num_worker,
+        unet=args.unet,
+        channels=3
+
     )
     val_dataset = CxrayDataloader(
-        f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker
+        f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker,unet=args.unet,channels=3
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0

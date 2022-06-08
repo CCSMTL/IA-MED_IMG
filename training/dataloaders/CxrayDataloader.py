@@ -206,7 +206,7 @@ class CxrayDataloader(Dataset):
         image=self.preprocess(image.float())
 
         if self.unet :
-            return image
+            return image,image
         return image, label.float()
 
 
@@ -228,6 +228,7 @@ if __name__=="__main__" :
         }
 
         cxraydataloader.advanced_transform(samples)
-        cxraydataloader[0]
+        out=cxraydataloader[0]
+        stop=1
 
 

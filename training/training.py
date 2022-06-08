@@ -4,48 +4,6 @@ import torch
 import tqdm
 import numpy as np
 from custom_utils import dummy_context_mgr
-from functools import singledispatch
-
-
-@singledispatch
-def training_core(model, inputs: tuple, scaler, criterion,device):
-    inputs,labels=inputs
-    inputs, labels = (
-        inputs.to(device, non_blocking=True),
-        labels.to(device, non_blocking=True),
-    )
-    with torch.cuda.amp.autocast():
-        outputs = model(inputs)
-        if model._get_name() == "Unet":  # TODO : Find way to remove ugly if. Plus get_name doesnt work with DataParallel
-            inputs = inputs[:, 0, :, :]
-            outputs = outputs[:, 0, :, :]
-            labels = inputs
-
-        assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
-
-        loss = criterion(outputs, labels)
-
-        scaler.scale(loss).backward()
-
-        return loss
-
-    @training_core.register
-    def _(model, inputs: type(torch.tensor([])), scaler, criterion,device):
-        inputs=inputs.to(device,non_blocking=True)
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-
-            inputs = inputs[:, 0, :, :]
-            outputs = outputs[:, 0, :, :]
-            labels = inputs
-
-            assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
-
-            loss = criterion(outputs, labels)
-
-            scaler.scale(loss).backward()
-
-        return loss
 
 
 def training_loop(
@@ -76,12 +34,25 @@ def training_loop(
     # )
     Profiler = dummy_context_mgr()
     with Profiler as profiler:
-        for inputs in loader:
+        for inputs,labels in loader:
             # get the inputs; data is a list of [inputs, labels]
 
 
             # forward + backward + optimize
-            loss = training_core(model, inputs, scaler, criterion,device)
+            #loss = training_core(model, inputs, scaler, criterion,device)
+
+            inputs, labels = (
+                inputs.to(device, non_blocking=True),
+                labels.to(device, non_blocking=True),
+            )
+            with torch.cuda.amp.autocast():
+                outputs = model(inputs)
+
+                assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
+
+                loss = criterion(outputs, labels)
+
+                scaler.scale(loss).backward()
             running_loss += loss.detach()
 
             # gradient accumulation
