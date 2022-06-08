@@ -77,19 +77,19 @@ class CxrayDataloader(Dataset):
         a = 100 if __debug__ else len(os.listdir(img_dir + "/images"))
         num_worker=max(num_worker,1)
 
-        self.filename= tqdm(os.listdir(img_dir + "/images")[0:a])
+        self.filename= os.listdir(img_dir + "/images")[0:a]
 
         if self.cache :
             self.files,self.labels = map(
                 list,
                 zip(
                     *Parallel(n_jobs=num_worker)(
-                        delayed(self.read_img)(i) for i in self.filename
+                        delayed(self.read_img)(i) for i in tqdm(self.filename)
                     )
                 ),
             )
         else :
-            self.files = [lambda : self.read_img(i) for i in self.filename] # lambda allows to create anonymous function
+            self.files = [lambda : self.read_img(i) for i in tqdm(self.filename)] # lambda allows to create anonymous function
                                                                             #here, i use it to "precall" "i" without actually loading the data!
 
 
