@@ -1,16 +1,24 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+
+TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. And give the main sources
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+## Install 
 
-## Setup a Linux virtual machine
-If you are working from a machine using Linux, skip this step. 
-TODO \
+* [Visual Studio Code](https://code.visualstudio.com/)
+
+* [python3.9](https://www.python.org/downloads/release/python-3913/)
+
+* python extention for VS code
+
+* [Github Desktop](https://www.python.org/downloads/release/python-3913/)
+
+* [git](https://git-scm.com/downloads)
+
+* clone the project repo : http://csrsvr00116:8080/DefaultCollection/IA-MED_IMG/_git/IA-MED_IMG 
+
+* [create an account](https://wandb.ai/site) on weight and biases than ask to join the project
+---
 start /windows feature/Activate : windows subsystem for Linux & Activate : Plateforme de l'hyperviseur windows\
 Got ot microsoft store & download ubuntu 20.04.4 LTS \
 Launch ubuntu \
