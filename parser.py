@@ -76,7 +76,7 @@ def init_parser():
         "--label-smoothing",
         default=0,
         const="all",
-        type=int,
+        type=float,
         nargs="?",
         required=False,
         help="Label smoothing. Should be small. Try 0.05",

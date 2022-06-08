@@ -77,7 +77,7 @@ class CxrayDataloader(Dataset):
         a = 100 if __debug__ else len(os.listdir(img_dir + "/images"))
         num_worker=max(num_worker,1)
 
-        self.filename= os.listdir(img_dir + "/images")[0:a]
+        self.filename= tqdm(os.listdir(img_dir + "/images")[0:a])
 
         if self.cache :
             self.files,self.labels = map(
