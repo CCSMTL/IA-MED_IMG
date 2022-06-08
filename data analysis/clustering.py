@@ -12,19 +12,16 @@ import tqdm
 import torch
 import numpy as np
 import sklearn
-from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.svm import SVC
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import xgboost as xgb
-from sklearn.preprocessing import label_binarize
-from training.dataloaders.CxrayDataloader import CustomImageDataset
+from dataloaders.CxrayDataloader import CustomImageDataset
 from sklearn.gaussian_process.kernels import RBF
 
 
 import torchxrayvision as xrv
-from models.Unet import Unet
 
 RBF = RBF(1)
 
@@ -110,7 +107,6 @@ def main():
     labels = labels.numpy()
     labels_val = labels_val.numpy()
     # ----------------------------------------
-    import umap
     from umap.parametric_umap import ParametricUMAP
 
     reducer = ParametricUMAP()

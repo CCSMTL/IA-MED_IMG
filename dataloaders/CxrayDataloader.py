@@ -212,7 +212,7 @@ class CxrayDataloader(Dataset):
 
 if __name__=="__main__" :
 
-    cxraydataloader=CxrayDataloader(img_dir="../../data/test",num_classes=14,channels=3) #TODO : build test repertory with 1 or 2 test image/labels
+    cxraydataloader=CxrayDataloader(img_dir="../data/test", num_classes=14, channels=3) #TODO : build test repertory with 1 or 2 test image/labels
 
     #testing
     x=np.uint8(np.random.random((224,224,3))*255)

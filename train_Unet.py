@@ -1,20 +1,17 @@
 # ------python import------------------------------------
 import warnings
 
-import pandas as pd
 import torch
 import wandb
 import os
-import argparse
-import torchvision
 import numpy as np
 import copy
 from models.Unet import Unet
 # -----local imports---------------------------------------
 
 from training.training import training
-from training.dataloaders.CxrayDataloader import CxrayDataloader
-from custom_utils import Experiment, set_parameter_requires_grad
+from dataloaders.CxrayDataloader import CxrayDataloader
+from custom_utils import Experiment
 from parser import init_parser
 
 # -----------cuda optimization tricks-------------------------

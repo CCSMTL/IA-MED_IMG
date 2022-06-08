@@ -1,12 +1,9 @@
 # ------python import------------------------------------
 import warnings
 
-import pandas as pd
 import torch
 import wandb
 import os
-import argparse
-import torchvision
 import numpy as np
 import copy
 
@@ -14,7 +11,7 @@ import copy
 from models.CNN import CNN
 from models.Unet import Unet
 from training.training import training
-from training.dataloaders.CxrayDataloader import CxrayDataloader
+from dataloaders.CxrayDataloader import CxrayDataloader
 from custom_utils import Experiment, set_parameter_requires_grad
 
 # ----------- parse arguments----------------------------------
