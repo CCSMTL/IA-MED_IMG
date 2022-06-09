@@ -8,7 +8,7 @@ from PIL import Image
 import Transforms
 from tqdm.auto import tqdm
 from joblib import Parallel, delayed
-
+import warnings
 
 
 # TODO : ADD PROBABILITY PER AUGMENT CATEGORY
@@ -79,7 +79,7 @@ class CxrayDataloader(Dataset):
         a = 100 if __debug__ else len(os.listdir(img_dir + "/images"))
         num_worker = max(num_worker, 1)
 
-        self.filename = os.listdir(img_dir + "/images")[0:a]
+        self.filename = sorted(os.listdir(img_dir + "/images")[0:a])
 
         if self.cache:
             self.files, self.labels = map(
@@ -90,14 +90,10 @@ class CxrayDataloader(Dataset):
                     )
                 ),
             )
-        else:
-            self.files = [lambda: self.read_img(i) for i in
-                          tqdm(self.filename)]  # lambda allows to create anonymous function
-            # here, i use it to "precall" "i" without actually loading the data!
+
+
 
     def __len__(self):
-        if __debug__:
-            return 100
         return len(self.files)
 
     def read_img(self, file):
@@ -111,7 +107,7 @@ class CxrayDataloader(Dataset):
             )
         )
 
-        label = self.retrieve_cat(f"{self.img_dir}/labels/{file}")
+        label = self.label_transform(self.retrieve_cat(f"{self.img_dir}/labels/{file[:-4]}.txt")).float()
         if self.channels == 3:
             image = image.convert('RGB')
         image = totensor(image)
@@ -138,30 +134,35 @@ class CxrayDataloader(Dataset):
         one_hot = torch.zeros((self.num_classes)) + self.label_smoothing
 
         for label_id in label_ids:
+
             assert label_id <= self.num_classes, f"Please verify your class ID's! You have ID={label_id} with #class={self.num_classes}"
-            if int(label_id) < self.num_classes:  # the empty class!
-                one_hot[int(label_id)] = 1 - 2 * self.label_smoothing
+            if label_id < self.num_classes:  # the empty class!
+                one_hot[label_id] = 1 - self.label_smoothing
 
         return one_hot
 
-    def retrieve_cat(self, keyname):
+    def retrieve_cat(self, label_file):
         category_ids = []
-        label_file = f"{self.img_dir}/labels/{keyname[:-4]}.txt"
+
         if os.path.exists(label_file):
             with open(label_file) as f:
                 lines = f.readlines()
+
                 if len(lines) > 0:  # if file no empty
                     for line in lines:
                         line = line.split(" ")
-                        category_ids.append(line[0])
+                        category_ids.append(int(line[0]))
+
                 else:
+                    warnings.warn("Empty file! Assuming category=14!!!")
                     category_ids.append(
                         14
                     )  # if the txt file is missing, we presume empty image
         else:
+            warnings.warn("The file doesn't exists! Assuming category=14???")
             category_ids.append(14)  # the image is empty
 
-        return self.label_transform(category_ids)
+        return category_ids
 
     def get_image(self, idx):
         if self.cache:
@@ -169,7 +170,7 @@ class CxrayDataloader(Dataset):
 
 
         else:
-            (image, label) = self.files[idx]()
+            image,label = self.read_img(self.filename[idx])
 
         return image, label
 
@@ -196,7 +197,7 @@ class CxrayDataloader(Dataset):
 
         if self.unet:
             return image, image
-        return image, label.float()
+        return image, label
 
 
 if __name__ == "__main__":

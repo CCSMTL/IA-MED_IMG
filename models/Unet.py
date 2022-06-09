@@ -136,6 +136,31 @@ class UpsampleBlock(nn.Module):
         return x
 
 
+def channels321(backbone) :
+    for name, weight1 in backbone.named_parameters():
+        break
+
+    name = name[:-7]  # removed the .weight of first conv
+
+    first_layer = reduce(getattr, [backbone] + name.split("."))
+
+    try:
+        first_layer = first_layer[0]
+    except:
+        pass
+
+    new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size,
+                                      stride=first_layer.stride,
+                                      padding=first_layer.padding, bias=first_layer.bias).requires_grad_()
+
+    new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:, 1:2, :, :], requires_grad=True)
+    # change first layer attribute
+    name = name.split(".")
+    last_item = name.pop()
+    item = reduce(getattr, [backbone] + name)  # item is a pointer!
+    setattr(item, last_item, new_first_layer)
+
+
 class Unet(nn.Module):
 
     """ U-Net (https://arxiv.org/pdf/1505.04597.pdf) implementation with pre-trained torchvision backbones."""
@@ -152,12 +177,16 @@ class Unet(nn.Module):
         decoder_use_batchnorm=True,
     ):
         super(Unet, self).__init__()
+        self.channels=channels
+
 
         self.backbone_name = backbone_name
 
         self.backbone, self.shortcut_features, self.bb_out_name = get_backbone(
             backbone_name, pretrained=pretrained,channels=channels
         )
+        if channels == 1:
+            channels321(self.backbone)
         shortcut_chs, bb_out_chs = self.infer_skip_channels()
         if shortcut_features != "default":
             self.shortcut_features = shortcut_features
@@ -236,7 +265,7 @@ class Unet(nn.Module):
 
         """ Getting the number of channels at skip connections and at the output of the encoder. """
 
-        x = torch.zeros(1, 1, 224, 224).float()
+        x = torch.zeros(2, self.channels, 224, 224).float()
         has_fullres_features = (
             self.backbone_name.startswith("vgg") or self.backbone_name == "unet_encoder"
         )

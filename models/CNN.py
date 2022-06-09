@@ -61,7 +61,7 @@ class CNN(torch.nn.Module):
         # -------------------------------------------------------------
 
         # finds the size of the last layer of the model, and name of the first
-        x=torch.zeros((1,3,320,320))
+        x=torch.zeros((2,channels,320,320))
         size=get_output(self.backbone,x) # dirty way
 
 
