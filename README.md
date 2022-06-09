@@ -1,23 +1,67 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+
+TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. And give the main sources
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+## Install on Windows
 
-## Setup a Linux virtual machine
-If you are working from a machine using Linux, skip this step. 
-TODO \
-start /windows feature/Activate : windows subsystem for Linux & Activate : Windows Hyperviser Platform\
-Got ot microsoft store & download ubuntu 20.04.4 LTS \
+* [Visual Studio Code](https://code.visualstudio.com/)
+
+* [python3.9](https://www.python.org/downloads/release/python-3913/) (optional)
+
+* python extention for VS code
+
+* [Github Desktop](https://www.python.org/downloads/release/python-3913/)
+
+* [git](https://git-scm.com/downloads)
+
+
+## Set up Wsl
+Go the search bar in the bottom left of youre screen and type : Turn Windows features on or off. \
+Activate : Windows subsystem for Linux \
+Activate : Plateforme de l'hyperviseur Windows\
+Got to Microsoft Store and download Wsl Debian and open it to finish installation\
+Still from Microsoft store download ubuntu 20.04.4 LTS\
 Launch ubuntu \
-set username and password
+Set username and password \
+install [python](https://phoenixnap.com/kb/how-to-install-python-3-ubuntu) on unix \
+install pip
+```
+    sudo apt update
+    sudo apt install python3-pip
+```
+## On Windows
+open github desktop and clone the project's repository using Url : 
+```
+     http://csrsvr00116:8080/DefaultCollection/IA-MED_IMG/_git/IA-MED_IMG 
+```
+Use the short key Ctrl + shift + A to directly open the project in VS Code \
+In VS Code open a new terminal and on the top right of this terminal beside powershell select Debian (WSL). From there you will download packages in ubuntu and run everything in ubuntu WSL.\
+Install requirements
+```
+pip install -r requirement.txt
+```
+If you are using a proxy
+```
+pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca -r requirement.txt
+```
+## Proxy help
+```
+export HTTP_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca"
+export HTTPS_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca"
 
-### set up a proxy in wsl
+unset HTTP_PROXY 
+unset HTTPS_PROXY 
 
+git config --global http.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca    
+git config --global https.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca
+
+git config --global --unset http.proxy 
+git config --global --unset https.proxy 
+```
+## Does not go there
+
+[create an account](https://wandb.ai/site) on weight and biases than ask to join the project
 #### In settings 
 go to settings->network->proxy
 
