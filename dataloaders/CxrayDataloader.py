@@ -48,30 +48,12 @@ class CxrayDataloader(Dataset):
         self.unet = unet
 
         # ----- Transform definition ------------------------------------------------------
-        if self.channels == 1:
-            normalize = transforms.Normalize(mean=[0.456], std=[0.224])
-        else:
-            normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-        self.preprocess = transforms.Compose([
-            transforms.Resize(int(self.img_size * 1.14)),  # 256/224 ratio
-            transforms.CenterCrop(self.img_size),
 
-            normalize
-        ])
+        self.preprocess = self.get_preprocess(channels,img_size)
 
-        self.transform = transforms.Compose([
-
-            transforms.RandomErasing(p=self.prob),  # TODO intensity to add
-
-        ])
-        self.advanced_transform = transforms.Compose([  # advanced/custom
-            Transforms.RandAugment(prob=self.prob, intensity=self.intensity),  # p=0.5 by default
-            Transforms.Mixing(self.prob, self.intensity),
-            Transforms.CutMix(self.prob),
-            Transforms.RandomErasing(self.prob),
-
-        ])
+        self.transform = self.get_transform(prob)
+        self.advanced_transform = self.get_advanced_transform(prob,intensity)
 
         # ------- Caching & Reading -----------------------------------------------------------
 
@@ -95,40 +77,52 @@ class CxrayDataloader(Dataset):
 
     def __len__(self):
         return len(self.files)
+    @staticmethod
+    def get_transform(prob):
+        return  transforms.Compose([
 
+            transforms.RandomErasing(p=prob),  # TODO intensity to add
+
+        ])
+    @staticmethod
+    def get_advanced_transform(prob,intensity):
+        return transforms.Compose([  # advanced/custom
+            Transforms.RandAugment(prob=prob, intensity=intensity),  # p=0.5 by default
+            Transforms.Mixing(prob, intensity),
+            Transforms.CutMix(prob),
+            Transforms.RandomErasing(prob),
+
+        ])
+    @staticmethod
+    def get_preprocess(channels,img_size):
+        if channels == 1:
+            normalize = transforms.Normalize(mean=[0.456], std=[0.224])
+        else:
+            normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        return transforms.Compose([
+            transforms.Resize(int(img_size * 1.14)),  # 256/224 ratio
+            transforms.CenterCrop(img_size),
+
+            normalize
+        ])
     def read_img(self, file):
-        totensor = transforms.PILToTensor()  # TODO fix ugly
-        image = Image.fromarray(
-            np.uint8(
-                cv.imread(
-                    f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE
-                )
-                * 255
+
+
+        image=torch.tensor(
+            cv.imread(
+                f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE
             )
-        )
+            * 255
+        ,dtype=torch.uint8)[None,:,:]
+
 
         label = self.label_transform(self.retrieve_cat(f"{self.img_dir}/labels/{file[:-4]}.txt")).float()
         if self.channels == 3:
-            image = image.convert('RGB')
-        image = totensor(image)
-        image = image.type(torch.uint8)
+            image = image.repeat((3,1,1))
+
+
         return image, label
 
-    def transform(self, samples):
-
-        # samples["image"] = transforms.RandomHorizontalFlip()(
-        #    samples["image"]
-        # )  # default 0.5 prob
-        samples["image"] = self.preprocess(samples["image"])
-        samples["image2"] = self.preprocess(samples["image2"])
-        samples["image"] = transforms.RandAugment(
-            14, magnitude=int(10 * self.intensity)
-        )(samples["image"])
-        samples["image2"] = transforms.RandAugment(
-            14, magnitude=int(10 * self.intensity)
-        )(samples["image2"])
-
-        return samples["image"], samples["landmarks"]
 
     def label_transform(self, label_ids):  # encode one_hot
         one_hot = torch.zeros((self.num_classes)) + self.label_smoothing
@@ -141,7 +135,8 @@ class CxrayDataloader(Dataset):
 
         return one_hot
 
-    def retrieve_cat(self, label_file):
+    @staticmethod
+    def retrieve_cat(label_file):
         category_ids = []
 
         if os.path.exists(label_file):

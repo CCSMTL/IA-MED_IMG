@@ -136,30 +136,6 @@ class UpsampleBlock(nn.Module):
         return x
 
 
-def channels321(backbone) :
-    for name, weight1 in backbone.named_parameters():
-        break
-
-    name = name[:-7]  # removed the .weight of first conv
-
-    first_layer = reduce(getattr, [backbone] + name.split("."))
-
-    try:
-        first_layer = first_layer[0]
-    except:
-        pass
-
-    new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size,
-                                      stride=first_layer.stride,
-                                      padding=first_layer.padding, bias=first_layer.bias).requires_grad_()
-
-    new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:, 1:2, :, :], requires_grad=True)
-    # change first layer attribute
-    name = name.split(".")
-    last_item = name.pop()
-    item = reduce(getattr, [backbone] + name)  # item is a pointer!
-    setattr(item, last_item, new_first_layer)
-
 
 class Unet(nn.Module):
 
@@ -185,8 +161,7 @@ class Unet(nn.Module):
         self.backbone, self.shortcut_features, self.bb_out_name = get_backbone(
             backbone_name, pretrained=pretrained,channels=channels
         )
-        if channels == 1:
-            channels321(self.backbone)
+
         shortcut_chs, bb_out_chs = self.infer_skip_channels()
         if shortcut_features != "default":
             self.shortcut_features = shortcut_features
