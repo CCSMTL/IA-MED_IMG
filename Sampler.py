@@ -4,12 +4,14 @@ import os
 import torch
 import yaml
 
-with open("data/data.yaml","r") as stream :
-    names=yaml.safe_load(stream)["names"]
-names+=["No Finding"]
+
 class Sampler:
-    def __init__(self):
-        data = pd.read_csv("data/data_table.csv")
+    def __init__(self,datafolder):
+
+        with open(f"{datafolder}/data.yaml", "r") as stream:
+            names = yaml.safe_load(stream)["names"]
+        names += ["No Finding"]
+        data = pd.read_csv(f"{datafolder}/data_table.csv")
         data = data[data["assignation"] == "training"]
         if __debug__ :
             data = data.iloc[0:100]

@@ -59,7 +59,7 @@ def main():
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
-    Sampler = Sampler()
+    Sampler = Sampler("data")
     if not args.sampler:
         Sampler.samples_weight = torch.ones_like(
             Sampler.samples_weight

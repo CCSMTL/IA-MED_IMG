@@ -51,7 +51,7 @@ def test_dataloader_grayscale() :
     cxraydataloader = CxrayDataloader(img_dir="tests/data_test", num_classes=14, channels=1)
     for i,true in enumerate(vectors) :
         image,label=cxraydataloader[i]
-        assert image.shape[1]==1 , "images don't have the right number of channels!"
+        assert image.shape[0]==1 , "images don't have the right number of channels!"
         label=label.tolist()
         i+=1
 
@@ -70,7 +70,7 @@ def test_dataloader_RGB():
     cxraydataloader = CxrayDataloader(img_dir="tests/data_test", num_classes=14, channels=3)
     for i, true in enumerate(vectors):
         image, label = cxraydataloader[i]
-        assert image.shape[1] == 3, "images don't have the right number of channels!"
+        assert image.shape[0] == 3, "images don't have the right number of channels!"
         label = label.tolist()
         i += 1
 
@@ -153,7 +153,7 @@ def test_unet_grayscale(): # still in developpment
 
 def test_sampler() :
     from Sampler import Sampler
-    sampler=Sampler()
+    sampler=Sampler("data")
     samples=sampler.sampler()#probably gonna break?
 
 if __name__=="__main__" :
