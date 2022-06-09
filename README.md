@@ -20,9 +20,17 @@ TODO: Give a short introduction of your project. Let this section explain the ob
 * [create an account](https://wandb.ai/site) on weight and biases than ask to join the project
 ---
 start /windows feature/Activate : windows subsystem for Linux & Activate : Plateforme de l'hyperviseur windows\
-Got ot microsoft store & download ubuntu 20.04.4 LTS \
+Got ot microsoft store & download wsl debian open to finish installation &download ubuntu 20.04.4 LTS open to finish installation\
 Launch ubuntu \
-set username and password
+set username and password \
+install [python](https://phoenixnap.com/kb/how-to-install-python-3-ubuntu) on unix \
+install pip
+```
+    sudo apt update
+    sudo apt install python3-pip
+```
+clone the project \
+go to the file \
 
 
 ## Create a virtual work environnement
