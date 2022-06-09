@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from torch.autograd import Variable
 from functools import reduce
 
-def channels321(backbone,name) :
+def channels321(backbone) :
     # we need to remove the extra inputs channels
     for name, weight1 in backbone.named_parameters():
         break
