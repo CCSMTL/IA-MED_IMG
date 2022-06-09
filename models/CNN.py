@@ -34,7 +34,7 @@ def channels321(backbone) :
     setattr(item, last_item, new_first_layer)
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone_name, num_classes,freeze_backbone=False):
+    def __init__(self, backbone_name, num_classes,channels=3,freeze_backbone=False):
         super().__init__()
         # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
@@ -53,8 +53,9 @@ class CNN(torch.nn.Module):
         if backbone_name.startswith("inception") : #rip hardcode forced...
             backbone.transform_input=False
 
+        if channels == 1 :
+            channels321(backbone)
 
-        #channels321(backbone) #apparently bad...
         self.backbone = backbone
 
         # -------------------------------------------------------------

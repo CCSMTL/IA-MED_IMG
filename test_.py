@@ -4,13 +4,25 @@ from torchvision import transforms
 from PIL import Image
 
 
-def dataloader_test() :
-    from dataloaders import CxrayDataloader
-
+def test_dataloader() :
+    from dataloaders.CxrayDataloader import CxrayDataloader
+    GT=[[14],[14],[14],[14],[13,5,7],[14],[5],[5],[5],[13]]
     for channels in [1,3] :
-        cxraydataloader = CxrayDataloader(img_dir="/data_test", num_classes=14,channels=channels)
+        cxraydataloader = CxrayDataloader(img_dir="tests/data_test", num_classes=14, channels=channels)
 
-        # testing
+        # testing inputs
+        loader = torch.utils.data.DataLoader(
+            cxraydataloader,
+            batch_size=1,
+            num_workers=0,
+        )
+        labels=[]
+        for image,label in loader :
+            label=label.numpy()
+            labels.append(np.where(label==1))
+
+        assert GT==labels , "labels are not equal to ground truth!"
+        # testing outputs
         x = np.uint8(np.random.random((224, 224, 3)) * 255)
         to = transforms.ToTensor()
         for i in range(5):
@@ -27,7 +39,10 @@ def dataloader_test() :
             out = cxraydataloader[0]
 
 
-def cnn_test() :
+
+
+
+def test_cnn() :
 
     from models.CNN import CNN
     for channels in [1,3] :
@@ -38,7 +53,7 @@ def cnn_test() :
             y = cnn(x)  # test forward loop
 
 
-def unet_test() :
+def test_unet() :
     from models.Unet import Unet
     for channels in [1, 3]:
         x = torch.zeros((2, channels, 320, 320))
@@ -46,11 +61,20 @@ def unet_test() :
             unet = Unet(name, 14, channels=channels)
             y = unet(x)  # test forward loop
 
-def sampler_test() :
+def test_sampler() :
     from Sampler import Sampler
     sampler=Sampler()
     samples=sampler.sampler()#probably gonna break?
 
-def parser_test() :
+def test_parser() :
     from parser import init_parser
     parser=init_parser()
+
+
+
+if __name__=="__main__" :
+    test_dataloader()
+    test_parser()
+    test_sampler()
+    test_unet()
+    test_cnn()

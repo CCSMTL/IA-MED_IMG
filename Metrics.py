@@ -3,7 +3,7 @@ from sklearn import metrics
 from sklearn.metrics._ranking import roc_auc_score
 import warnings
 import yaml
-
+import sys
 with open("data/data.yaml", "r") as stream:
     names = yaml.safe_load(stream)["names"]
 
@@ -39,9 +39,9 @@ class Metrics:
                 outAUROC[names[i]] = roc_auc_score(true[:, i], pred[:, i])
             outAUROC["mean"] = np.mean(list(outAUROC.values()))
         except ValueError as e:
-            warnings.warn(str(e))
+            print(e, file=sys.stderr)
             for i in names + ["mean"]:
-                outAUROC[i] = 0
+                outAUROC[i] = 0 #TODO : set to something more meaningfull? aka -1?
         return outAUROC
 
     def metrics(self):

@@ -119,7 +119,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_worker,
         pin_memory=True,
-        sampler=Sampler.sampler(),
+        #sampler=Sampler.sampler(),
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
