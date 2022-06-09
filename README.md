@@ -106,9 +106,12 @@ source venv/bin/activate
 ## Install the dependencies
 pip install --proxy {proxy} -r requirements.txt
 
+## Setting up git hooks
 
-
-
+This will execute test before commiting to main
+``
+git config core.hooksPath .githooks
+``
 ## Download the data
 A data manager has been provided to both download the data and extract it .
 These require wget to be configure properly. 
