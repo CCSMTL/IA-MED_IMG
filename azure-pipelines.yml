@@ -7,7 +7,7 @@ trigger:
 - main
 
 pool:
-  name: SCSPool
+  name: MVSLocalPool
   strategy:
     matrix:
       Python39:
