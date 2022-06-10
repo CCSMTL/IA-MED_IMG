@@ -23,16 +23,16 @@ def training_loop(
 
     model.train()
     i = 1
-    # Profiler =  torch.profiler.profile(
-    #         # schedule=torch.profiler.schedule(
-    #         #     wait=2,
-    #         #     warmup=2,
-    #         #     active=6,
-    #         #     repeat=1),
-    #         on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
-    #         with_stack=True
-    # )
-    Profiler = dummy_context_mgr()
+    Profiler =  torch.profiler.profile(
+            # schedule=torch.profiler.schedule(
+            #     wait=2,
+            #     warmup=2,
+            #     active=6,
+            #     repeat=1),
+            on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
+            with_stack=True
+    )
+    #Profiler = dummy_context_mgr()
     with Profiler as profiler:
         for inputs,labels in loader:
             # get the inputs; data is a list of [inputs, labels]
