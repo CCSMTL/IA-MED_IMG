@@ -107,14 +107,17 @@ source venv/bin/activate
 pip install --proxy {proxy} -r requirements.txt
 
 
-
-
 ## Download the data
 A data manager has been provided to both download the data and extract it .
-These require wget to be configure properly. 
+These require wget to be configure properly. \
+
 run 
 ````
-data_api/data_downloader.py
+python3 data_api/data_downloader_chestXray.py 
+````
+For a smaller version only for testng on small setups use
+````
+python3 data_api/data_downloader_chestXray.py -s lts
 ````
 
 
