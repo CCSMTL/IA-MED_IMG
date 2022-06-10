@@ -95,7 +95,7 @@ def main():
 
 
     train_dataset = CxrayDataloader(
-        f"data/training",
+        f"/data/training",
         num_classes=14,
         img_size=args.img_size,
         prob=args.augment_prob,
@@ -108,7 +108,7 @@ def main():
 
     )
     val_dataset = CxrayDataloader(
-        f"data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker,unet=args.unet,channels=3
+        f"/data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker,unet=args.unet,channels=3
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
@@ -119,7 +119,7 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_worker,
         pin_memory=True,
-        #sampler=Sampler.sampler(),
+        sampler=Sampler.sampler(),
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,

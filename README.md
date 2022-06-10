@@ -47,6 +47,8 @@ for development, also run
 pip install -r requirements_dev.txt
 python -m pip install -e .
 pre-commit install -c pre-commit-config.yaml
+pre-commit install -c pre-merge-config.yaml -t pre-merge-commit
+
 ```
 If you are using a proxy
 ```
@@ -54,8 +56,8 @@ pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca -r requirement.txt
 ```
 ## Proxy help
 ```
-export HTTP_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca"
-export HTTPS_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca"
+export HTTP_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+export HTTPS_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 
 unset HTTP_PROXY 
 unset HTTPS_PROXY 
@@ -66,7 +68,7 @@ git config --add remote.origin.proxy ""
 git config --global --unset http.proxy 
 git config --global --unset https.proxy 
 
-pip config set global.proxy
+pip config set global.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080
 ```
 ## Does not go there
 

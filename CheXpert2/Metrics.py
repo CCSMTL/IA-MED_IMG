@@ -4,7 +4,7 @@ from sklearn.metrics._ranking import roc_auc_score
 import warnings
 import yaml
 import sys
-with open("data/data.yaml", "r") as stream:
+with open("data/data.yaml", "r") as stream: #TODO : remove hardcode
     names = yaml.safe_load(stream)["names"]
 
 names += ["No Finding"]
