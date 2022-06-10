@@ -15,13 +15,15 @@ pool:
 
 steps:
 
-
 #- task: UsePythonVersion@0
 #  inputs:
 #    versionSpec: '$(python.version)'
 #  displayName: 'Use Python $(python.version)'
 - task: UsePythonVersion@0
   displayName: 'Use Python 3.9'
+  inputs:
+    architecture: x64
+    versionSpec: 3.9
 
     
 - script: |
