@@ -39,7 +39,14 @@ Use the short key Ctrl + shift + A to directly open the project in VS Code \
 In VS Code open a new terminal and on the top right of this terminal beside powershell select Debian (WSL). From there you will download packages in ubuntu and run everything in ubuntu WSL.\
 Install requirements
 ```
-pip install -r requirement.txt
+pip install -r requirements.txt
+```
+
+for development, also run 
+```
+pip install -r requirements_dev.txt
+python -m pip install -e .
+pre-commit install -c pre-commit-config.yaml
 ```
 If you are using a proxy
 ```
@@ -55,9 +62,11 @@ unset HTTPS_PROXY
 
 git config --global http.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca    
 git config --global https.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca
-
+git config --add remote.origin.proxy ""
 git config --global --unset http.proxy 
 git config --global --unset https.proxy 
+
+pip config set global.proxy
 ```
 ## Does not go there
 

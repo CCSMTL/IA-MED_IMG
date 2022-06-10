@@ -5,10 +5,11 @@ import warnings
 import numpy as np
 import torch
 import tqdm
-from custom_utils import  Experiment,preprocessing
 from sklearn.metrics import confusion_matrix
-from training.training import validation_loop
-from dataloaders.CxrayDataloader import CustomImageDataset
+
+from CheXpert2.custom_utils import  Experiment,preprocessing
+from CheXpert2.training.training import validation_loop
+from CheXpert2.dataloaders.CxrayDataloader import CustomImageDataset
 def init_argparse() :
     parser = argparse.ArgumentParser(description='Launch testing for a specific model')
 
