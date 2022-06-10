@@ -22,7 +22,7 @@ steps:
 - task: UsePythonVersion@0
   displayName: 'Use Python 3.9'
   inputs:
-    architecture: x64
+    architecture: x86
     versionSpec: 3.x
     
 - script: |
