@@ -13,15 +13,16 @@ pool:
       Python39:
         python.version: '3.7.3'
 
-  env:
-    AGENT_TOOLSDIRECTORY: ${{ runner.tool_cache }}
-
 steps:
+
+
 #- task: UsePythonVersion@0
 #  inputs:
 #    versionSpec: '$(python.version)'
 #  displayName: 'Use Python $(python.version)'
 - task: UsePythonVersion@0
+  env:
+    AGENT_TOOLSDIRECTORY: ${{ runner.tool_cache }}
   displayName: 'Use Python 3.9'
   inputs:
     versionSpec: 3.9
