@@ -7,19 +7,23 @@ trigger:
 - main
 
 pool:
-  name: default
-strategy:
-  matrix:
-
-    Python39:
-      python.version: '3.9'
+  name: SCSPool
+  strategy:
+    matrix:
+      Python39:
+        python.version: '3.7.3'
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
 
+
+#- task: UsePythonVersion@0
+#  inputs:
+#    versionSpec: '$(python.version)'
+#  displayName: 'Use Python $(python.version)'
+- task: UsePythonVersion@0
+  displayName: 'Use Python 3.9'
+
+    
 - script: |
     python -m pip install --upgrade pip
     pip install -r requirements.txt
