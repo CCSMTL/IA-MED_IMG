@@ -8,6 +8,7 @@ trigger:
 
 pool:
   name: default
+
 strategy:
   matrix:
     Python27:
