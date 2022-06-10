@@ -21,9 +21,11 @@ exec 1>&2
 
 current_branch=`git branch | grep '*' | sed 's/* //'`
 
-if [ "$current_branch" = "master" ]; then
+if [ "$current_branch" = "master" ]|| [ "$current_branch" = "main" ] ; then
   echo "You are about to commit on master. I will run your tests first..."
-  python pytest -v --ignore=data
+  cd PROJECT_DIR
+  source venv/bin/activate
+  python -m pytest -v --ignore=data
   if [ $? -eq 0 ]; then
         # tests passed, proceed to prepare commit message
         exit 0
