@@ -13,6 +13,9 @@ pool:
       Python39:
         python.version: '3.7.3'
 
+  env:
+    AGENT_TOOLSDIRECTORY: ${{ runner.tool_cache }}
+
 steps:
 #- task: UsePythonVersion@0
 #  inputs:
