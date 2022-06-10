@@ -12,8 +12,7 @@ fi
 # If you want to allow non-ASCII filenames set this variable to true.
 allownonascii=$(git config --bool hooks.allownonascii)
 
-# Redirect output to stderr.
-exec 1>&2
+
 
 
 
@@ -23,9 +22,10 @@ current_branch=`git branch | grep '*' | sed 's/* //'`
 
 if [ "$current_branch" = "master" ]|| [ "$current_branch" = "main" ] ; then
   echo "You are about to commit on master. I will run your tests first..."
-  cd PROJECT_DIR
-  source venv/bin/activate
-  python -m pytest -v --ignore=data
+
+
+  exec pytest test_.py --ignore=data -v --tb=no
+
   if [ $? -eq 0 ]; then
         # tests passed, proceed to prepare commit message
         exit 0
