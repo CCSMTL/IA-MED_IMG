@@ -6,32 +6,35 @@
 trigger:
 - main
 
-pool:
-  name: MVSLocalPool
-  strategy:
-    matrix:
-      Python39:
-        python.version: '3.7.3'
+jobs:
+- job: Build
 
-steps:
+  pool:
+    name: MVSLocalPool
+    strategy:
+      matrix:
+        Python39:
+          python.version: '3.7.3'
+
+  steps:
 
 #- task: UsePythonVersion@0
 #  inputs:
 #    versionSpec: '$(python.version)'
-#  displayName: 'Use Python $(python.version)'
-- task: UsePythonVersion@0
-  displayName: 'Use Python 3.9'
-  inputs:
-    architecture: x86
-    versionSpec: 3.x
-    
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies'
+  #  displayName: 'Use Python $(python.version)'
+  - task: UsePythonVersion@0
+    displayName: 'Use Python 3.9'
+    inputs:
+      architecture: x86
+      versionSpec: 3.x
+      
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: 'Install dependencies'
 
-- script: |
-    pip install pytest pytest-azurepipelines
-    pytest
-  displayName: 'pytest'
+  - script: |
+      pip install pytest pytest-azurepipelines
+      pytest
+    displayName: 'pytest'
 
