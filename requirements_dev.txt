@@ -1,0 +1,5 @@
+black
+pylint
+pytest-run-changed
+pre-commit
+poetry
