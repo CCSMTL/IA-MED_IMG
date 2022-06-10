@@ -12,6 +12,7 @@ pool:
     matrix:
       Python39:
         python.version: '3.7.3'
+        architecture: x86
 
 steps:
 #- task: UsePythonVersion@0
