@@ -10,7 +10,7 @@ jobs:
 - job: Build
 
   pool:
-    name: MVSLocalPool
+    name: SCSPool
     strategy:
       matrix:
         Python39:
@@ -25,8 +25,8 @@ jobs:
   - task: UsePythonVersion@0
     displayName: 'Use Python 3.9'
     inputs:
-      architecture: x86
-      versionSpec: 3.9
+      architecture: x64
+      versionSpec: 3.x
       
   - script: |
       python -m pip install --upgrade pip
