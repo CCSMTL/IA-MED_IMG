@@ -1,5 +1,7 @@
 import argparse
 import torch
+
+
 def init_parser():
     parser = argparse.ArgumentParser(description="Launch training for a specific model")
 
@@ -29,7 +31,7 @@ def init_parser():
         "--device",
         default="0",
         const="all",
-        choices=["parallel","0","1"],
+        choices=["parallel", "0", "1"],
         type=str,
         nargs="?",
         required=False,
@@ -42,8 +44,6 @@ def init_parser():
         default=False,
         help="do you wish (and did you setup) wandb? You will need to add the project name in the initialization of wandb in train.py",
     )
-
-
 
     parser.add_argument(
         "--epoch",

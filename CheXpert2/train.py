@@ -47,7 +47,6 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
 
-
     # ----------- hyperparameters-------------------------------------
     # TODO : move config to json or to parsing
     config = {
@@ -75,9 +74,9 @@ def main():
     print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
-    if args.unet :
-        model=Unet(args.model, 14)
-    else :
+    if args.unet:
+        model = Unet(args.model, 14)
+    else:
         model = CNN(args.model, 14, freeze_backbone=False)
 
     if args.device == "parallel":
@@ -92,10 +91,8 @@ def main():
 
     # -------data initialisation-------------------------------
 
-
-
     train_dataset = CxrayDataloader(
-        f"/data/training",
+        f"data/training",
         num_classes=14,
         img_size=args.img_size,
         prob=args.augment_prob,
@@ -104,11 +101,16 @@ def main():
         cache=args.cache,
         num_worker=args.num_worker,
         unet=args.unet,
-        channels=3
-
+        channels=3,
     )
     val_dataset = CxrayDataloader(
-        f"/data/validation", num_classes=14, img_size=args.img_size, cache=args.cache,num_worker=args.num_worker,unet=args.unet,channels=3
+        f"data/validation",
+        num_classes=14,
+        img_size=args.img_size,
+        cache=args.cache,
+        num_worker=args.num_worker,
+        unet=args.unet,
+        channels=3,
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
@@ -142,7 +144,8 @@ def main():
     experiment = Experiment(
         f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
     )
-    from CheXpert2.Metrics import Metrics #sklearn f**ks my debug
+    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+
     metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
 

@@ -5,14 +5,14 @@ from torchvision import transforms
 from PIL import Image
 
 
-class Test(unittest.TestCase) :
-
-
+class Test(unittest.TestCase):
     def dataloader_test(self):
         from dataloaders import CxrayDataloader
 
         for channels in [1, 3]:
-            cxraydataloader = CxrayDataloader(img_dir="/data_test", num_classes=14, channels=channels)
+            cxraydataloader = CxrayDataloader(
+                img_dir="/data_test", num_classes=14, channels=channels
+            )
 
             # testing
             x = np.uint8(np.random.random((224, 224, 3)) * 255)
@@ -33,6 +33,7 @@ class Test(unittest.TestCase) :
     def cnn_test(self):
 
         from models.CNN import CNN
+
         for channels in [1, 3]:
             x = torch.zeros((2, channels, 320, 320))
             for name in ["resnet18", "densenet121", "inception_v3"]:
@@ -41,6 +42,7 @@ class Test(unittest.TestCase) :
 
     def unet_test(self):
         from models.Unet import Unet
+
         for channels in [1, 3]:
             x = torch.zeros((2, channels, 320, 320))
             for name in ["resnet18", "densenet121", "inception_v3"]:
@@ -49,13 +51,15 @@ class Test(unittest.TestCase) :
 
     def sampler_test(self):
         from Sampler import Sampler
+
         sampler = Sampler()
         samples = sampler.sampler()  # probably gonna break?
 
     def parser_test(self):
         from parser import init_parser
+
         parser = init_parser()
 
 
-if __name__=="__main__" :
+if __name__ == "__main__":
     unittest.main()

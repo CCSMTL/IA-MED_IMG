@@ -13,23 +13,24 @@ import warnings
 
 # TODO : ADD PROBABILITY PER AUGMENT CATEGORY
 
+
 class CxrayDataloader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
     """
 
     def __init__(
-            self,
-            img_dir,
-            num_classes,
-            img_size=240,
-            prob=0,
-            intensity=0,
-            label_smoothing=0,
-            cache=False,
-            num_worker=0,
-            channels=3,
-            unet=False
+        self,
+        img_dir,
+        num_classes,
+        img_size=240,
+        prob=0,
+        intensity=0,
+        label_smoothing=0,
+        cache=False,
+        num_worker=0,
+        channels=3,
+        unet=False,
     ):
         # ----- Variable definition ------------------------------------------------------
         self.img_dir = img_dir
@@ -49,14 +50,12 @@ class CxrayDataloader(Dataset):
 
         # ----- Transform definition ------------------------------------------------------
 
-
-        self.preprocess = self.get_preprocess(channels,img_size)
+        self.preprocess = self.get_preprocess(channels, img_size)
 
         self.transform = self.get_transform(prob)
-        self.advanced_transform = self.get_advanced_transform(prob,intensity)
+        self.advanced_transform = self.get_advanced_transform(prob, intensity)
 
         # ------- Caching & Reading -----------------------------------------------------------
-
 
         a = 100 if __debug__ else len(os.listdir(img_dir + "/images"))
         num_worker = max(num_worker, 1)
@@ -73,64 +72,69 @@ class CxrayDataloader(Dataset):
                 ),
             )
 
-
-
     def __len__(self):
-        return len(self.files)
+        return len(self.filename)
+
     @staticmethod
     def get_transform(prob):
-        return  transforms.Compose([
-
-            transforms.RandomErasing(p=prob),  # TODO intensity to add
-
-        ])
-    @staticmethod
-    def get_advanced_transform(prob,intensity):
-        return transforms.Compose([  # advanced/custom
-            Transforms.RandAugment(prob=prob, intensity=intensity),  # p=0.5 by default
-            Transforms.Mixing(prob, intensity),
-            Transforms.CutMix(prob),
-            Transforms.RandomErasing(prob),
-
-        ])
+        return transforms.Compose(
+            [
+                transforms.RandomErasing(p=prob),  # TODO intensity to add
+            ]
+        )
 
     @staticmethod
-    def get_preprocess(channels,img_size):
+    def get_advanced_transform(prob, intensity):
+        return transforms.Compose(
+            [  # advanced/custom
+                Transforms.RandAugment(
+                    prob=prob, intensity=intensity
+                ),  # p=0.5 by default
+                Transforms.Mixing(prob, intensity),
+                Transforms.CutMix(prob),
+                Transforms.RandomErasing(prob),
+            ]
+        )
+
+    @staticmethod
+    def get_preprocess(channels, img_size):
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.456], std=[0.224])
         else:
-            normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        return transforms.Compose([
-            transforms.Resize(int(img_size * 1.14)),  # 256/224 ratio
-            transforms.CenterCrop(img_size),
+            normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+        return transforms.Compose(
+            [
+                transforms.Resize(int(img_size * 1.14)),  # 256/224 ratio
+                transforms.CenterCrop(img_size),
+                normalize,
+            ]
+        )
 
-            normalize
-        ])
     def read_img(self, file):
 
+        image = torch.tensor(
+            cv.imread(f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE) * 255,
+            dtype=torch.uint8,
+        )[None, :, :]
 
-        image=torch.tensor(
-            cv.imread(
-                f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE
-            )
-            * 255
-        ,dtype=torch.uint8)[None,:,:]
-
-
-        label = self.label_transform(self.retrieve_cat(f"{self.img_dir}/labels/{file[:-4]}.txt")).float()
+        label = self.label_transform(
+            self.retrieve_cat(f"{self.img_dir}/labels/{file[:-4]}.txt")
+        ).float()
         if self.channels == 3:
-            image = image.repeat((3,1,1))
-
+            image = image.repeat((3, 1, 1))
 
         return image, label
-
 
     def label_transform(self, label_ids):  # encode one_hot
         one_hot = torch.zeros((self.num_classes)) + self.label_smoothing
 
         for label_id in label_ids:
 
-            assert label_id <= self.num_classes, f"Please verify your class ID's! You have ID={label_id} with #class={self.num_classes}"
+            assert (
+                label_id <= self.num_classes
+            ), f"Please verify your class ID's! You have ID={label_id} with #class={self.num_classes}"
             if label_id < self.num_classes:  # the empty class!
                 one_hot[label_id] = 1 - self.label_smoothing
 
@@ -164,9 +168,8 @@ class CxrayDataloader(Dataset):
         if self.cache:
             image, label = self.files[idx], self.labels[idx]
 
-
         else:
-            image,label = self.read_img(self.filename[idx])
+            image, label = self.read_img(self.filename[idx])
 
         return image, label
 
@@ -198,8 +201,9 @@ class CxrayDataloader(Dataset):
 
 if __name__ == "__main__":
 
-    cxraydataloader = CxrayDataloader(img_dir="../data/test", num_classes=14,
-                                      channels=3)  # TODO : build test repertory with 1 or 2 test image/labels
+    cxraydataloader = CxrayDataloader(
+        img_dir="../data/test", num_classes=14, channels=3
+    )  # TODO : build test repertory with 1 or 2 test image/labels
 
     # testing
     x = np.uint8(np.random.random((224, 224, 3)) * 255)
@@ -217,5 +221,3 @@ if __name__ == "__main__":
         cxraydataloader.advanced_transform(samples)
         out = cxraydataloader[0]
         stop = 1
-
-

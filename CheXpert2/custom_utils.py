@@ -4,6 +4,7 @@ import pathlib
 import wandb
 import json
 import contextlib
+
 # -----------------------------------------------------------------------------------
 class Experiment:
     def __init__(self, directory, is_wandb=False, tags=None, config=None):
@@ -46,7 +47,7 @@ class Experiment:
             print({metric_name: value})
 
     def save_weights(self, model):
-        if not __debug__ :
+        if not __debug__:
             torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
 
             if self.is_wandb:
@@ -56,8 +57,7 @@ class Experiment:
 # -----------------------------------------------------------------------------------
 def set_parameter_requires_grad(model):
     for ex, param in enumerate(model.parameters()):
-            param.requires_grad = False
-
+        param.requires_grad = False
 
 
 # -----------------------------------------------------------------------------------

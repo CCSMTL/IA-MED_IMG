@@ -3,11 +3,11 @@ import os
 import torch
 import tqdm
 import numpy as np
-from custom_utils import dummy_context_mgr
+from CheXpert2.custom_utils import dummy_context_mgr
 
 
 def training_loop(
-        model, loader, optimizer, criterion, device, minibatch_accumulate, scaler
+    model, loader, optimizer, criterion, device, minibatch_accumulate, scaler
 ):
     """
 
@@ -34,12 +34,11 @@ def training_loop(
     # )
     Profiler = dummy_context_mgr()
     with Profiler as profiler:
-        for inputs,labels in loader:
+        for inputs, labels in loader:
             # get the inputs; data is a list of [inputs, labels]
 
-
             # forward + backward + optimize
-            #loss = training_core(model, inputs, scaler, criterion,device)
+            # loss = training_core(model, inputs, scaler, criterion,device)
 
             inputs, labels = (
                 inputs.to(device, non_blocking=True),
@@ -63,7 +62,9 @@ def training_loop(
                 scaler.unscale_(optimizer)
 
                 # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), 5)  # TODO : add norm c as hyperparameters
+                torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), 5
+                )  # TODO : add norm c as hyperparameters
                 # optimizer.step()
                 scaler.step(optimizer)
                 scaler.update()
@@ -72,7 +73,6 @@ def training_loop(
             del (
                 inputs,
                 loss,
-
             )  # garbage management sometimes fails with cuda
             i += 1
     return running_loss
@@ -104,14 +104,10 @@ def validation_loop(model, loader, criterion, device):
         # forward + backward + optimize
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
-            if model._get_name() == "Unet":
-                inputs = inputs[:, 0, :, :]
-                outputs = outputs[:, 0, :, :]
-                labels = inputs
             loss = criterion(outputs, labels)
             running_loss += loss.detach()
 
-        if inputs.shape != labels.shape:
+        if inputs.shape != labels.shape:  # prevent storing images if training unets
             results[1] = torch.cat(
                 (results[1], torch.sigmoid(outputs).detach().cpu()), dim=0
             )
@@ -128,18 +124,18 @@ def validation_loop(model, loader, criterion, device):
 
 
 def training(
-        model,
-        optimizer,
-        criterion,
-        training_loader,
-        validation_loader,
-        device="cpu",
-        metrics=None,
-        minibatch_accumulate=1,
-        experiment=None,
-        patience=5,
-        epoch_max=50,
-        batch_size=1,
+    model,
+    optimizer,
+    criterion,
+    training_loader,
+    validation_loader,
+    device="cpu",
+    metrics=None,
+    minibatch_accumulate=1,
+    experiment=None,
+    patience=5,
+    epoch_max=50,
+    batch_size=1,
 ):
     epoch = 0
     train_loss_list = []

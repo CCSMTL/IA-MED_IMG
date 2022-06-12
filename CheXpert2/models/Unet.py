@@ -5,7 +5,8 @@ from torch.nn import functional as F
 from torch.autograd import Variable
 from functools import reduce
 
-def channels321(backbone) :
+
+def channels321(backbone):
     # we need to remove the extra inputs channels
     for name, weight1 in backbone.named_parameters():
         break
@@ -13,17 +14,24 @@ def channels321(backbone) :
     name = name[:-7]  # removed the .weight of first conv
 
     first_layer = reduce(getattr, [backbone] + name.split("."))
-    new_first_layer = torch.nn.Conv2d(1, first_layer.out_channels, kernel_size=first_layer.kernel_size,
-                                      stride=first_layer.stride, padding=first_layer.padding,
-                                      bias=first_layer.bias).requires_grad_()
+    new_first_layer = torch.nn.Conv2d(
+        1,
+        first_layer.out_channels,
+        kernel_size=first_layer.kernel_size,
+        stride=first_layer.stride,
+        padding=first_layer.padding,
+        bias=first_layer.bias,
+    ).requires_grad_()
 
-    new_first_layer.weight[:, :, :, :].data[...] = Variable(weight1[:, 1:2, :, :], requires_grad=True)
+    new_first_layer.weight[:, :, :, :].data[...] = Variable(
+        weight1[:, 1:2, :, :], requires_grad=True
+    )
     setattr(backbone, name, new_first_layer)
 
 
-def get_backbone(name, pretrained=True,channels=3):
+def get_backbone(name, pretrained=True, channels=3):
 
-    """ Loading backbone, defining names for skip-connections and encoder output. """
+    """Loading backbone, defining names for skip-connections and encoder output."""
 
     # TODO: More backbones
     repo = "pytorch/vision:v0.10.0"
@@ -44,15 +52,15 @@ def get_backbone(name, pretrained=True,channels=3):
         feature_names = [None, "Conv2d_4a_3x3", "Mixed_5d"]
         backbone_output = "Mixed_6e"
     elif name.startswith("densenet"):
-        backbone=backbone.features
-        feature_names = [None,"relu0", "denseblock1", "denseblock2", "denseblock3"]
+        backbone = backbone.features
+        feature_names = [None, "relu0", "denseblock1", "denseblock2", "denseblock3"]
         backbone_output = "denseblock4"
     else:
         raise NotImplemented(
             "{} backbone model is not implemented so far.".format(name)
         )
 
-    if channels==1 :
+    if channels == 1:
         channels321(backbone)
 
     return backbone, feature_names, backbone_output
@@ -136,10 +144,9 @@ class UpsampleBlock(nn.Module):
         return x
 
 
-
 class Unet(nn.Module):
 
-    """ U-Net (https://arxiv.org/pdf/1505.04597.pdf) implementation with pre-trained torchvision backbones."""
+    """U-Net (https://arxiv.org/pdf/1505.04597.pdf) implementation with pre-trained torchvision backbones."""
 
     def __init__(
         self,
@@ -153,13 +160,12 @@ class Unet(nn.Module):
         decoder_use_batchnorm=True,
     ):
         super(Unet, self).__init__()
-        self.channels=channels
-
+        self.channels = channels
 
         self.backbone_name = backbone_name
 
         self.backbone, self.shortcut_features, self.bb_out_name = get_backbone(
-            backbone_name, pretrained=pretrained,channels=channels
+            backbone_name, pretrained=pretrained, channels=channels
         )
 
         shortcut_chs, bb_out_chs = self.infer_skip_channels()
@@ -197,19 +203,19 @@ class Unet(nn.Module):
             self.freeze_encoder()
 
         self.replaced_conv1 = (
-            False
-        )  # for accommodating  inputs with different number of channels later
+            False  # for accommodating  inputs with different number of channels later
+        )
 
     def freeze_encoder(self):
 
-        """ Freezing encoder parameters, the newly initialized decoder parameters are remaining trainable. """
+        """Freezing encoder parameters, the newly initialized decoder parameters are remaining trainable."""
 
         for param in self.backbone.parameters():
             param.requires_grad = False
 
     def forward(self, *input):
 
-        """ Forward propagation in U-Net. """
+        """Forward propagation in U-Net."""
 
         x, features = self.forward_backbone(*input)
 
@@ -224,7 +230,7 @@ class Unet(nn.Module):
 
     def forward_backbone(self, x):
 
-        """ Forward propagation in backbone encoder network.  """
+        """Forward propagation in backbone encoder network."""
 
         features = {None: None} if None in self.shortcut_features else dict()
         for name, child in self.backbone.named_children():
@@ -238,7 +244,7 @@ class Unet(nn.Module):
 
     def infer_skip_channels(self):
 
-        """ Getting the number of channels at skip connections and at the output of the encoder. """
+        """Getting the number of channels at skip connections and at the output of the encoder."""
 
         x = torch.zeros(2, self.channels, 224, 224).float()
         has_fullres_features = (

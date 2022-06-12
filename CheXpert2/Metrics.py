@@ -1,10 +1,11 @@
 import numpy as np
 from sklearn import metrics
-from sklearn.metrics._ranking import roc_auc_score
+from sklearn.metrics import roc_curve, auc
 import warnings
 import yaml
 import sys
-with open("data/data.yaml", "r") as stream: #TODO : remove hardcode
+
+with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
     names = yaml.safe_load(stream)["names"]
 
 names += ["No Finding"]
@@ -21,27 +22,33 @@ class Metrics:
 
     def f1(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.f1_score(true, pred, average="macro",zero_division=0)  # weighted??
+        return metrics.f1_score(
+            true, pred, average="macro", zero_division=0
+        )  # weighted??
 
     def precision(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.precision_score(true, pred, average="macro",zero_division=0)
+        return metrics.precision_score(true, pred, average="macro", zero_division=0)
 
     def recall(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.recall_score(true, pred, average="macro",zero_division=0)
+        return metrics.recall_score(true, pred, average="macro", zero_division=0)
 
     def computeAUROC(self, true, pred):
         try:
-            outAUROC = {}
+
+            fpr = dict()
+            tpr = dict()
+            outAUROC = dict()
             classCount = pred.shape[1]
             for i in range(classCount):
-                outAUROC[names[i]] = roc_auc_score(true[:, i], pred[:, i])
+                fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
+                outAUROC[names[i]] = auc(fpr[i], tpr[i])
             outAUROC["mean"] = np.mean(list(outAUROC.values()))
         except ValueError as e:
             print(e, file=sys.stderr)
             for i in names + ["mean"]:
-                outAUROC[i] = 0 #TODO : set to something more meaningfull? aka -1?
+                outAUROC[i] = 0  # TODO : set to something more meaningfull? aka -1?
         return outAUROC
 
     def metrics(self):
