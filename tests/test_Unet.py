@@ -26,13 +26,35 @@ opener = urllib.request.build_opener(proxy)
 urllib.request.install_opener(opener)
 
 
-def test_sampler():
-    from CheXpert2.Sampler import Sampler
 
-    sampler = Sampler("data")
-    samples = sampler.sampler()  # probably gonna break?
+def test_unet_RGB():
+    from CheXpert2.models.Unet import Unet
+
+    x = torch.zeros((2, 3, 320, 320))
+    for name in [
+        "resnet18",
+        "densenet121",
+    ]:  # ,"inception_v3"]: #inception outputs differs
+        print(name)
+        unet = Unet(name, 14, channels=3)
+        y = unet(x)  # test forward loop
+
+
+def test_unet_grayscale():  # still in developpment
+    from CheXpert2.models.Unet import Unet
+
+    x = torch.zeros((2, 1, 320, 320))
+    for name in [
+        "resnet18",
+        "densenet121",
+    ]:  # ,"inception_v3"]: #inception outputs differs
+        print(name)
+        unet = Unet(name, 14, channels=1)
+        y = unet(x)  # test forward loop
 
 
 if __name__ == "__main__":
 
-    test_sampler()
+
+    test_unet_grayscale()
+    test_unet_RGB()

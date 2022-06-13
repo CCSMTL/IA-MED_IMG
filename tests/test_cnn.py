@@ -25,6 +25,30 @@ opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
 
+def test_cnn_grayscale():
+
+    x = torch.randn((2, 1, 320, 320))
+    for name in [
+        "resnet18",
+        "densenet121",
+    ]:  # , "inception_v3"]: #inception outputs differs
+        print(name)
+        cnn = CNN(name, 14, channels=1)
+        y = cnn(x)  # test forward loop
+
+
+def test_cnn_RGB():
+
+    x = torch.randn((2, 3, 320, 320))
+    for name in [
+        "resnet18",
+        "densenet121",
+    ]:  # , "inception_v3"]: #inception outputs differs
+        print(name)
+        cnn = CNN(name, 14, channels=3)
+        y = cnn(x)  # test forward loop
+
+
 
 def test_sampler():
     from CheXpert2.Sampler import Sampler
@@ -34,5 +58,12 @@ def test_sampler():
 
 
 if __name__ == "__main__":
-
+    test_dataloader_init()
+    test_dataloader_retrieve_categories()
+    test_dataloader_RGB()
+    test_dataloader_grayscale()
     test_sampler()
+    test_unet_grayscale()
+    test_unet_RGB()
+    test_cnn_grayscale()
+    test_cnn_RGB()
