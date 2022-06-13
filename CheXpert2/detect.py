@@ -5,11 +5,11 @@ import warnings
 import numpy as np
 import torch
 import tqdm
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import multilabel_confusion_matrix
+import yaml
 
-from CheXpert2.custom_utils import Experiment, preprocessing
 from CheXpert2.training.training import validation_loop
-from CheXpert2.dataloaders.CxrayDataloader import CustomImageDataset
+from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
 
 
 def init_argparse():
@@ -20,9 +20,9 @@ def init_argparse():
         "--testset",
         default="unseen",
         type=str,
-        choices=["seen", "unseen"],
+        choices=["training", "validation"],
         required=True,
-        help="Choice of the test set 1-seen locations 2-unseen locations",
+        help="Choice of the test set",
     )
 
     parser.add_argument(
@@ -30,19 +30,9 @@ def init_argparse():
         "--model",
         default="alexnet",
         type=str,
-        choices=["alexnet", "resnext50_32x4d", "vgg19"],
+        choices=["alexnet", "resnext50_32x4d", "vgg19","densenet201"],
         required=True,
         help="Choice of the model",
-    )
-
-    parser.add_argument(
-        "-d",
-        "--dataset",
-        default=2,
-        type=int,
-        choices=[1, 2, 3, 4],
-        required=True,
-        help="Version of the training dataset used",
     )
 
     return parser
@@ -52,7 +42,7 @@ def main():
 
     criterion = torch.nn.CrossEntropyLoss()
     if torch.cuda.is_available():
-        device = "cuda"
+        device = "cuda:0"
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
@@ -60,39 +50,29 @@ def main():
     # ----- parsing arguments --------------------------------------
     parser = init_argparse()
     args = parser.parse_args()
-    num_classes = 14
+    num_classes = 15
 
     # ------loading test set --------------------------------------
-    prepro = preprocessing(img_size=320)
-    preprocess = prepro.preprocessing()
-    if args.testset == "seen":
-        test_dataset = CustomImageDataset(
-            f"data/data_split{args.dataset}/test", transform=preprocess
-        )
-    if args.testset == "unseen":
-        test_dataset = CustomImageDataset(f"data/test_set3/test", transform=preprocess)
+    preprocess=CxrayDataloader.get_preprocess(3, 320)
+
+    test_dataset = CxrayDataloader(
+        f"data/{args.dataset}/images", transform=preprocess
+    )
 
     # ----------------loading model -------------------------------
-    model = torch.hub.load("pytorch/vision:v0.10.0", args.model, pretrained=True)
-    if args.model in ["vgg19", "alexnet"]:
-        model.classifier[6] = torch.nn.Linear(
-            model.classifier[6].in_features, num_classes, bias=True
-        )
-    else:  # for resnext
-        model.fc = torch.nn.Linear(2048, num_classes)
-
-    batch_size = 16
+    from CheXpert2.models.CNN import CNN
+    model=CNN(args.model,14)
 
     model.load_state_dict(
         torch.load(
-            f"models/models_weights/{model._get_name()}/v{args.dataset}/{model._get_name()}.pt"
+            f"models/models_weights/{args.model}/{args.model}.pt" #?
         )
     )
     model = model.to(device)
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=batch_size,
+        batch_size=8,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
@@ -103,22 +83,13 @@ def main():
         model=model, loader=tqdm.tqdm(test_loader), criterion=criterion, device=device
     )
     print("time :", (time.time() - a) / len(test_dataset))
-    experiment = Experiment(f"{model._get_name()}/test")
-    from custom_utils import metrics  # had to reimport due to bug
 
-    if experiment:
-        for key in metrics:
-            experiment.log_metric(
-                key, metrics[key](results[1].numpy(), results[0].numpy()), epoch=0
-            )
-            # wandb.log({key: metrics[key](results[1].numpy(), results[0].numpy())})
+    from CheXpert2.Metrics import metrics  # had to reimport due to bug
 
-    def answer(v):
-        v = v.numpy()
-        return np.where(np.max(v, axis=1) > 0.6, np.argmax(v, axis=1), 14)
 
-    y_true, y_pred = answer(results[0]), answer(results[1])
-    print(len(results), y_true.shape, y_pred.shape)
+
+    y_true, y_pred = results[0].numpy().round(0), results[1].numpy().round(0)
+
     # -----------------------------------------------------------------------------------
     metric = metrics(num_classes=14)
     metrics = metric.metrics()
@@ -126,33 +97,20 @@ def main():
     for metric in metrics.keys():
         print(metric + " : ", metrics[metric](y_true, y_pred))
 
-    print("top-1", np.mean(np.where(y_true == y_pred, 1, 0)))
-    m = confusion_matrix(y_true, y_pred, normalize="pred").round(2)
+    with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+        names = yaml.safe_load(stream)["names"]
+
+    names += ["No Finding"]
+    m = multilabel_confusion_matrix(y_true, y_pred, labels=names).round(2)
     # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
     print("avg class : ", np.mean(np.diag(m)))
-    x = [
-        "bobcat",
-        "opossum",
-        "car",
-        "coyote",
-        "raccoon",
-        "bird",
-        "dog",
-        "cat",
-        "squirrel",
-        "rabbit",
-        "skunk",
-        "fox",
-        "rodent",
-        "deer",
-        "empty",
-    ]
+
     z_text = [[str(y) for y in x] for x in m]
 
     import plotly.figure_factory as ff
 
     fig = ff.create_annotated_heatmap(
-        m, x=x, y=x, annotation_text=z_text, colorscale="Blues"
+        m, x=names, y=names, annotation_text=z_text, colorscale="Blues"
     )
 
     fig.update_layout(
