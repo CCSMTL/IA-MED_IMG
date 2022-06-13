@@ -31,8 +31,8 @@ def test_dataloader_retrieve_categories():
 
     GT = [[14], [14], [14], [14], [13, 5, 7], [14], [5], [5], [5], [13]]
 
-    filename = os.listdir(img_dir + "/images")
-    print(filename)
+    filename = sorted(os.listdir(img_dir + "/images"))
+
     answers=[]
     for file, true in zip(filename, GT):
         label = CxrayDataloader.retrieve_cat(f"{img_dir}/labels/{file[:-4]}.txt")
