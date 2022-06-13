@@ -154,13 +154,9 @@ class CxrayDataloader(Dataset):
                         category_ids.append(int(line[0]))
 
                 else:
-                    warnings.warn("Empty file! Assuming category=14!!!")
-                    category_ids.append(
-                        14
-                    )  # if the txt file is missing, we presume empty image
+                    raise Exception("File empty!!")
         else:
-            warnings.warn("The file doesn't exists! Assuming category=14???")
-            category_ids.append(14)  # the image is empty
+            raise Exception("File not found!")
 
         return category_ids
 

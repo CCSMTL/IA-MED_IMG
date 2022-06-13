@@ -12,7 +12,7 @@ names += ["No Finding"]
 
 
 class Metrics:
-    def __init__(self, num_classes, threshold):
+    def __init__(self, num_classes, threshold=0.5):
         self.num_classes = num_classes
         self.threshold = threshold
 

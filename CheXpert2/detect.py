@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 import torch
 import tqdm
-from sklearn.metrics import multilabel_confusion_matrix
+from sklearn.metrics import confusion_matrix
 import yaml
 
 from CheXpert2.training.training import validation_loop
@@ -17,7 +17,7 @@ def init_argparse():
 
     parser.add_argument(
         "-t",
-        "--testset",
+        "--dataset",
         default="unseen",
         type=str,
         choices=["training", "validation"],
@@ -53,19 +53,19 @@ def main():
     num_classes = 15
 
     # ------loading test set --------------------------------------
-    preprocess=CxrayDataloader.get_preprocess(3, 320)
+
 
     test_dataset = CxrayDataloader(
-        f"data/{args.dataset}/images", transform=preprocess
+        f"data/{args.dataset}",num_classes=14
     )
 
     # ----------------loading model -------------------------------
     from CheXpert2.models.CNN import CNN
     model=CNN(args.model,14)
-
+    model=torch.nn.DataParallel(model)
     model.load_state_dict(
         torch.load(
-            f"models/models_weights/{args.model}/{args.model}.pt" #?
+            f"models/models_weights/{args.model}/DataParallel.pt" #?
         )
     )
     model = model.to(device)
@@ -84,24 +84,33 @@ def main():
     )
     print("time :", (time.time() - a) / len(test_dataset))
 
-    from CheXpert2.Metrics import metrics  # had to reimport due to bug
 
+    def convert(array) :
+        answers=[]
+        for item in array :
+            item=item.numpy().round(0)
+            if np.max(item)==0 :
+                answers.append(14)
+            else :
+                answers.append(np.argmax(item))
+        return answers
 
+    from CheXpert2.Metrics import Metrics  # had to reimport due to bug
+    metrics = Metrics(14)
+    metrics = metrics.metrics()
+    for metric in metrics.keys():
+        print(metric + " : ", metrics[metric](results[0].numpy(), results[1].numpy()))
 
-    y_true, y_pred = results[0].numpy().round(0), results[1].numpy().round(0)
+    y_true, y_pred = convert(results[0]), convert(results[1])
 
     # -----------------------------------------------------------------------------------
-    metric = metrics(num_classes=14)
-    metrics = metric.metrics()
 
-    for metric in metrics.keys():
-        print(metric + " : ", metrics[metric](y_true, y_pred))
 
     with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
         names = yaml.safe_load(stream)["names"]
 
-    names += ["No Finding"]
-    m = multilabel_confusion_matrix(y_true, y_pred, labels=names).round(2)
+
+    m =confusion_matrix(np.int32(y_true), np.int32(y_pred),normalize="pred")
     # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
     print("avg class : ", np.mean(np.diag(m)))
 
