@@ -12,7 +12,13 @@ parser.add_argument(
     "-s","--size",
     default=None,
     required=False,
-    help="To reduce the ize of the dataset enter : reduce"
+    help="To reduce the size of the dataset enter : reduce"
+    )
+parser.add_argument(
+    "-p","--proxy",
+    default=None,
+    required=False,
+    help="Enter the proxy"
     )
 args = parser.parse_args()
 if args.size == "reduce":
@@ -40,7 +46,7 @@ else:
 if not os.path.exists("data") :
     os.mkdir("data")
 #create the object, assign it to a variable
-proxy = {'https': 'http://ccsmtl.proxy.mtl.rtss.qc.ca:8080'}
+proxy = None#{'https': 'http://ccsmtl.proxy.mtl.rtss.qc.ca:8080'}
 def download_file(url,local_filename):
 
     with requests.get(url, stream=True,proxies=proxy) as r:

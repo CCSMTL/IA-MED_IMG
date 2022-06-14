@@ -5,7 +5,10 @@ from pathlib import Path
 import numpy as np
 data_folder="data/images"
 final_folder="data/"
-n_images=30805+1
+n_images=1335+1 #hard codded
+#maybe use this https://stackoverflow.com/questions/2632205/how-to-count-the-number-of-files-in-a-directory-using-python
+# onlyfiles = next(os.walk(dir))[2] #dir is your directory path as string
+# print len(onlyfiles)
 
 
 #training 70 , val 20, test 10 %
@@ -47,18 +50,8 @@ def reformat_labels(labels) :
     return class_id
 
 if not os.path.exists("data/Data_Entry_2017_v2020.csv"):
-    #hard coded
-    
-    # importing the "tarfile" module https://www.geeksforgeeks.org/how-to-uncompress-a-tar-gz-file-using-python/
-    import tarfile
-    
-    # open file
-    file = tarfile.open('data/images_01.tar.gz')
-    
-    # extracting file
-    file.extractall('data')
-    
-    file.close()
+    print("Copier le fichier Data_Entry_2017_v2020 depuis : https://nihcc.app.box.com/v/ChestXray-NIHCC/file/219760887468")
+    exit()
     
 labels=pd.read_csv("data/Data_Entry_2017_v2020.csv")
 labels.set_index("Image Index",drop=True,inplace=True)
@@ -72,9 +65,25 @@ for dataset in ["training/","validation/","test/"] :
             path.mkdir(parents=True)
 
 root="data/images"
+if not Path(root).exists():
+    print("Creating the data/images directory")
+    Path(root).mkdir()
+    #hard coded
+    
+    #importing the "tarfile" module https://www.geeksforgeeks.org/how-to-uncompress-a-tar-gz-file-using-python/
+    import tarfile
+    
+    #open file
+    file = tarfile.open('data/images_01.tar.gz')
+    
+    #extracting file
+    file.extractall('data')
+    
+    file.close()
+    exit()
 for i in range(0,n_images) :
     j=0
-    file = f"{i:08}_000.png"
+    file = f"{i:08}_000.png"                      # why only 0
     while os.path.exists(f"{root}/{file}") :
 
         label=labels.loc[file].values
