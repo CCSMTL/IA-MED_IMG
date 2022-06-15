@@ -4,8 +4,8 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 
-data_folder = "../data/images"
-final_folder = "../data/"
+data_folder = "data/images"
+final_folder = "data/"
 n_images = 30805 + 1
 
 
@@ -47,8 +47,11 @@ def reformat_labels(labels):
 
     return class_id
 
+if not os.path.exists("data/Data_Entry_2017_v2020.csv"):
+    print("Copier le fichier Data_Entry_2017_v2020 depuis : https://nihcc.app.box.com/v/ChestXray-NIHCC/file/219760887468")
+    exit()
 
-labels = pd.read_csv("../data/Data_Entry_2017_v2020.csv")
+labels = pd.read_csv("data/Data_Entry_2017_v2020.csv")
 labels.set_index("Image Index", drop=True, inplace=True)
 
 count = 0
@@ -59,7 +62,24 @@ for dataset in ["training/", "validation/", "test/"]:
         if not path.exists():
             path.mkdir(parents=True)
 
-root = "../data/images"
+root = "data/images"
+
+if not Path(root).exists():
+    print("Creating the data/images directory")
+    Path(root).mkdir()
+    #hard coded
+    
+    #importing the "tarfile" module https://www.geeksforgeeks.org/how-to-uncompress-a-tar-gz-file-using-python/
+    import tarfile
+    
+    #open file
+    file = tarfile.open('data/images_01.tar.gz')
+    
+    #extracting file
+    file.extractall('data')
+    
+    file.close()
+
 for i in range(0, n_images):
     j = 0
     file = f"{i:08}_000.png"

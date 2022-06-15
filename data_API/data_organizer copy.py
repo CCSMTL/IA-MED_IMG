@@ -100,7 +100,6 @@ for i in range(0,n_images) :
             shutil.copy(f"{root}/{file}", f"{final_folder}/test/images/{file}")
             f = open(f"{final_folder}test/labels/{file[:-3]}txt","w")
 
-
         for k in label_ids :
             string=f"{k}  "
             for l in label[1::] :
