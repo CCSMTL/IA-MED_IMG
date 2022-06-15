@@ -54,6 +54,8 @@ def main():
         #   "beta2"
         "optimizer": torch.optim.AdamW,
         "criterion": torch.nn.BCEWithLogitsLoss(),
+        "RandAugment_N": 2,
+        "RandAugment_M": 11,
     }
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
@@ -97,6 +99,8 @@ def main():
         img_size=args.img_size,
         prob=args.augment_prob,
         intensity=args.augment_intensity,
+        N=config["RandAugment_N"],
+        M=config["RandAugment_M"],
         label_smoothing=args.label_smoothing,
         cache=args.cache,
         num_worker=args.num_worker,

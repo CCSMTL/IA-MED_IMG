@@ -3,7 +3,7 @@ import torch
 from torchvision import transforms
 
 
-class Mixing(object):
+class Mixing:
     """
     Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
     """
@@ -28,23 +28,26 @@ class Mixing(object):
         return samples
 
 
-class CutMix(object):
+class CutMix:
     """
     Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
     """
 
-    def __init__(self, prob):
+    def __init__(self, prob, intensity):
         """
 
         :param prob: either a float or array of appropriate size
         """
         self.prob = prob
+        self.intensity = intensity
 
     def __call__(self, samples):
         image1, landmarks1 = samples["image"], samples["landmarks"]
         image2, landmarks2 = samples["image2"], samples["landmarks2"]
         n = image1.shape[1]
-        bbox = torch.cat((torch.rand(2) * n, torch.abs(torch.randn(2) * n / 5))).int()
+        bbox = torch.cat(
+            (torch.rand(2) * n, torch.abs(torch.randn(2) * self.intensity * n))
+        ).int()
         x, y, w, h = bbox
         if torch.rand(1) < self.prob:
             x2 = min(x + w, n) if w > 0 else max(x + w, 0)
@@ -63,7 +66,7 @@ class CutMix(object):
         return samples
 
 
-class RandomErasing(object):
+class RandomErasing:
     """
     Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
     """
@@ -101,12 +104,10 @@ class RandomErasing(object):
 
 
 class RandAugment:
-    def __init__(self, prob, intensity):
+    def __init__(self, prob, N, M):
         self.p = prob
-
-        self.augment = transforms.RandAugment(
-            num_ops=2, magnitude=int(10 * intensity)
-        )  # TODO : ADD N,M as hyperparameters
+        self.M = M
+        self.augment = transforms.RandAugment(num_ops=N, magnitude=M)
 
     def __call__(self, x):
 
