@@ -65,14 +65,14 @@ def main():
     model=torch.nn.DataParallel(model)
     model.load_state_dict(
         torch.load(
-            f"models/models_weights/{args.model}/DataParallel.pt" #?
+            f"models/models_weights/{args.model}/DataParallel.pt" #TODO : load .pt and check name for if dataparallel
         )
     )
     model = model.to(device)
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=8,
+        batch_size=80,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
@@ -110,7 +110,7 @@ def main():
         names = yaml.safe_load(stream)["names"]
 
 
-    m =confusion_matrix(np.int32(y_true), np.int32(y_pred),normalize="pred")
+    m = (confusion_matrix(np.int32(y_true), np.int32(y_pred),normalize="pred")*100).round(0)
     # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
     print("avg class : ", np.mean(np.diag(m)))
 
