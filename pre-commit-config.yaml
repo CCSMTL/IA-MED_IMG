@@ -19,6 +19,7 @@ repos:
         name: pylint
         entry: bash tests/run_pylint.sh
         language: system
+        verbose : True
 
       - id: tests
         name: run tests
@@ -26,8 +27,11 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+        verbose : True
+
       - id: run_black
         name: run_black
+        verbose : True
         entry: bash tests/run_black.sh
         language: system
         always_run: true
