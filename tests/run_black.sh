@@ -3,7 +3,7 @@ branch_name="(unnamed branch)"     # detached HEAD
 
 branch_name=${branch_name##refs/heads/}
 if (branch_name="main") || (branch_name="master") then
-   python -m black -q ./CheXpert2
+   python -m black -v ./CheXpert2
    status=$?
   if (status=1) then
     echo "black exited with code 1 ; as always?"
