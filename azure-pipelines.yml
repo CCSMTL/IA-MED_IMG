@@ -6,27 +6,35 @@
 trigger:
 - main
 
-pool:
-  name: default
-strategy:
-  matrix:
+jobs:
+- job: Build
 
-    Python39:
-      python.version: '3.9'
+  pool:
+    name: SCSPool
+    strategy:
+      matrix:
+        Python39:
+          python.version: '3.7.3'
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+  steps:
 
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies'
+#- task: UsePythonVersion@0
+#  inputs:
+#    versionSpec: '$(python.version)'
+  #  displayName: 'Use Python $(python.version)'
+  - task: UsePythonVersion@0
+    displayName: 'Use Python 3.9'
+    inputs:
+      architecture: x64
+      versionSpec: 3.x
+      
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: 'Install dependencies'
 
-- script: |
-    pip install pytest pytest-azurepipelines
-    pytest
-  displayName: 'pytest'
+  - script: |
+      pip install pytest pytest-azurepipelines
+      pytest
+    displayName: 'pytest'
 
