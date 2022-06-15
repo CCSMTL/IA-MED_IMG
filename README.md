@@ -62,8 +62,8 @@ export HTTPS_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 unset HTTP_PROXY
 unset HTTPS_PROXY
 
-git config --global http.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca
-git config --global https.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca
+git config --global http.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080
+git config --global https.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080
 git config --add remote.origin.proxy ""
 git config --global --unset http.proxy
 git config --global --unset https.proxy
