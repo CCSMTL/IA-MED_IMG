@@ -6,7 +6,7 @@ from CheXpert2.Sampler import Sampler
 def test_sampler():
 
 
-    sampler = Sampler("data_test")
+    sampler = Sampler("tests/data_test")
     samples = sampler.sampler()  # probably gonna break?
 
 
