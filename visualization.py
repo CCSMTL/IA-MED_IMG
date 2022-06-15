@@ -54,10 +54,10 @@ ax.set_ylabel('Actual Disease Category ');
 ## Ticket labels - List must be in alphabetical order
 ax.xaxis.set_ticklabels(['Atelectasis', 'Cardiomegaly','Effusion','Infiltration','Mass'
                             ,'Nodule','Pneumonia','Pneumothorax','Consolidation','Edema','Emphysema'
-                            ,'Fibrosis','Pleural_Thickening','Hernia'])
+                            ,'Fibrosis','Pleural_Thickening','Hernia'],rotation = 30)
 ax.yaxis.set_ticklabels(['Atelectasis', 'Cardiomegaly','Effusion','Infiltration','Mass'
                             ,'Nodule','Pneumonia','Pneumothorax','Consolidation','Edema','Emphysema'
-                            ,'Fibrosis','Pleural_Thickening','Hernia'])
+                            ,'Fibrosis','Pleural_Thickening','Hernia'],rotation = 30)
 
 ## Display the visualization of the Confusion Matrix.
 plt.savefig('Confusion Matrix.png')
