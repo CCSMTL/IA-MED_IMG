@@ -30,7 +30,7 @@ def init_argparse():
         "--model",
         default="alexnet",
         type=str,
-        choices=["alexnet", "resnext50_32x4d", "vgg19","densenet201"],
+        choices=["alexnet", "resnext50_32x4d", "vgg19", "densenet201"],
         required=True,
         help="Choice of the model",
     )
@@ -50,23 +50,17 @@ def main():
     # ----- parsing arguments --------------------------------------
     parser = init_argparse()
     args = parser.parse_args()
-    num_classes = 15
-
     # ------loading test set --------------------------------------
 
-
-    test_dataset = CxrayDataloader(
-        f"data/{args.dataset}",num_classes=14
-    )
+    test_dataset = CxrayDataloader(f"data/{args.dataset}", num_classes=14)
 
     # ----------------loading model -------------------------------
     from CheXpert2.models.CNN import CNN
-    model=CNN(args.model,14)
-    model=torch.nn.DataParallel(model)
+
+    model = CNN(args.model, 14)
+    model = torch.nn.DataParallel(model)
     model.load_state_dict(
-        torch.load(
-            f"models/models_weights/{args.model}/DataParallel.pt" #?
-        )
+        torch.load(f"models/models_weights/{args.model}/DataParallel.pt")  # ?
     )
     model = model.to(device)
 
@@ -84,18 +78,18 @@ def main():
     )
     print("time :", (time.time() - a) / len(test_dataset))
 
-
-    def convert(array) :
-        answers=[]
-        for item in array :
-            item=item.numpy().round(0)
-            if np.max(item)==0 :
+    def convert(array):
+        answers = []
+        for item in array:
+            item = item.numpy().round(0)
+            if np.max(item) == 0:
                 answers.append(14)
-            else :
+            else:
                 answers.append(np.argmax(item))
         return answers
 
     from CheXpert2.Metrics import Metrics  # had to reimport due to bug
+
     metrics = Metrics(14)
     metrics = metrics.metrics()
     for metric in metrics.keys():
@@ -105,12 +99,10 @@ def main():
 
     # -----------------------------------------------------------------------------------
 
-
     with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
         names = yaml.safe_load(stream)["names"]
 
-
-    m =confusion_matrix(np.int32(y_true), np.int32(y_pred),normalize="pred")
+    m = confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred")
     # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
     print("avg class : ", np.mean(np.diag(m)))
 

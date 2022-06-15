@@ -27,7 +27,7 @@ urllib.request.install_opener(opener)
 
 
 def test_dataloader_retrieve_categories():
-    img_dir = os.path.join(os.getcwd(),"tests/data_test")
+    img_dir = os.path.join(os.getcwd(),"data_test")
 
     GT = [[14], [14], [14], [14], [13, 5, 7], [14], [5], [5], [5], [13]]
 
@@ -40,9 +40,8 @@ def test_dataloader_retrieve_categories():
 
     assert GT == answers
 
-
 def test_dataloader_categories_2_vector():
-    img_dir = os.path.join(os.getcwd(),"tests/data_test")
+    img_dir = os.path.join(os.getcwd(),"data_test")
 
     self = dummy_context_mgr()
     self.num_classes = 14
@@ -62,14 +61,14 @@ def test_dataloader_categories_2_vector():
 
 
 def test_dataloader_init():
-    img_dir = os.path.join(os.getcwd(),"tests/data_test")
+    img_dir = os.path.join(os.getcwd(),"data_test")
     cxraydataloader = CxrayDataloader(
         img_dir=img_dir, num_classes=14, channels=3
     )
 
 
 def test_dataloader_grayscale():
-    img_dir = os.path.join(os.getcwd(), "tests/data_test")
+    img_dir = os.path.join(os.getcwd(), "data_test")
     GT = [[14], [14], [14], [14], [13, 5, 7], [14], [5], [5], [5], [13]]
     vectors = []
     for true in GT:
@@ -91,7 +90,7 @@ def test_dataloader_grayscale():
 
 
 def test_dataloader_RGB():
-    img_dir = os.path.join(os.getcwd(), "tests/data_test")
+    img_dir = os.path.join(os.getcwd(), "data_test")
     GT = [[14], [14], [14], [14], [13, 5, 7], [14], [5], [5], [5], [13]]
     vectors = []
     for true in GT:
@@ -149,7 +148,6 @@ def test_dataloader_advanced_transform():
 if __name__ == "__main__":
     test_dataloader_init()
     test_dataloader_retrieve_categories()
-    test_dataloader_init()
     test_dataloader_RGB()
     test_dataloader_grayscale()
     test_dataloader_transform()
