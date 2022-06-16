@@ -182,7 +182,7 @@ class CxrayDataloader(Dataset):
                 "image2": image2,
                 "landmarks2": label2,
             }
-            image, label, image2, label2 = self.advanced_transform(samples).values
+            image, label, image2, label2 = (self.advanced_transform(samples)).values()
 
         image = self.preprocess(image.float())
 
