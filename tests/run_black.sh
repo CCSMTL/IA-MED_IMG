@@ -1,13 +1,21 @@
+#!/bin/bash
+
 branch_name="$(git symbolic-ref HEAD 2>/dev/null)"
-if ( branch_name="main" ) || ( branch_name="master" ) then
-   python -m black  ./CheXpert2
+branch_name=${branch_name##refs/heads/}
+echo "$branch_name"
+main="main"
+master="master"
+if [ "$branch_name"="$main" ] || [ "$branch_name"="$master" ]; then
+   python -m black ./CheXpert2
    status=$?
+  if [ $status -eq 1 ]; then
+    exit 1
+   fi
+   if [ $status -eq 0 ]; then
+    exit 0
+   fi
+  echo $status
+  exit 2
 fi
-#if (status=1) then
-#  exit 1
-#fi
-#if (status=0) then
-#  exit 0
-#fi
-#exit 2
+echo "Not on main ; black wont run"
 exit 0
