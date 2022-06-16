@@ -7,12 +7,9 @@ import torch
 import tqdm
 from sklearn.metrics import confusion_matrix
 import yaml
-import plotly.figure_factory as ff
-import plotly.io as pio
 
 from CheXpert2.training.training import validation_loop
 from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.models.CNN import CNN
 
 
 def init_argparse():
@@ -53,32 +50,37 @@ def main():
     # ----- parsing arguments --------------------------------------
     parser = init_argparse()
     args = parser.parse_args()
+    num_classes = 15
+
     # ------loading test set --------------------------------------
 
     test_dataset = CxrayDataloader(f"data/{args.dataset}", num_classes=14)
 
     # ----------------loading model -------------------------------
+    from CheXpert2.models.CNN import CNN
 
     model = CNN(args.model, 14)
     model = torch.nn.DataParallel(model)
     model.load_state_dict(
-        torch.load(f"models/models_weights/{args.model}/DataParallel.pt")  # ?
+        torch.load(
+            f"models/models_weights/{args.model}/DataParallel.pt"  # TODO : load .pt and check name for if dataparallel
+        )
     )
     model = model.to(device)
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=8,
+        batch_size=80,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
     )  # keep
 
-    start_time = time.time()
-    _, results = validation_loop(
+    a = time.time()
+    running_loss, results = validation_loop(
         model=model, loader=tqdm.tqdm(test_loader), criterion=criterion, device=device
     )
-    print("time :", (time.time() - start_time) / len(test_dataset))
+    print("time :", (time.time() - a) / len(test_dataset))
 
     def convert(array):
         answers = []
@@ -92,9 +94,10 @@ def main():
 
     from CheXpert2.Metrics import Metrics  # had to reimport due to bug
 
-    metrics = Metrics(14).metrics()
-    for name, metric in metrics.items():
-        print(name + " : ", metric(results[0].numpy(), results[1].numpy()))
+    metrics = Metrics(14)
+    metrics = metrics.metrics()
+    for metric in metrics.keys():
+        print(metric + " : ", metrics[metric](results[0].numpy(), results[1].numpy()))
 
     y_true, y_pred = convert(results[0]), convert(results[1])
 
@@ -103,13 +106,18 @@ def main():
     with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
         names = yaml.safe_load(stream)["names"]
 
-    matrix = confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred")
-    print("avg class : ", np.mean(np.diag(matrix)))
+    m = (
+        confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred") * 100
+    ).round(0)
+    # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
+    print("avg class : ", np.mean(np.diag(m)))
 
-    z_text = [[str(y) for y in x] for x in matrix]
+    z_text = [[str(y) for y in x] for x in m]
+
+    import plotly.figure_factory as ff
 
     fig = ff.create_annotated_heatmap(
-        matrix, x=names, y=names, annotation_text=z_text, colorscale="Blues"
+        m, x=names, y=names, annotation_text=z_text, colorscale="Blues"
     )
 
     fig.update_layout(
@@ -120,8 +128,9 @@ def main():
     )
 
     fig["data"][0]["showscale"] = True
+    import plotly.io as pio
 
-    pio.write_image(fig, f"{args.model}_conf_mat.png", width=1920, height=1080)
+    pio.write_image(fig, f"{model._get_name()}_conf_mat.png", width=1920, height=1080)
     fig.show()
 
 

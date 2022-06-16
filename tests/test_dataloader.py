@@ -40,6 +40,7 @@ def test_dataloader_retrieve_categories():
 
     assert GT == answers
 
+
 def test_dataloader_categories_2_vector():
     img_dir = os.path.join(os.getcwd(),"tests/data_test")
 
@@ -128,7 +129,7 @@ def test_dataloader_advanced_transform():
     # testing outputs
     x = np.uint8(np.random.random((224, 224, 3)) * 255)
     to = transforms.ToTensor()
-    transform = CxrayDataloader.get_advanced_transform(0.2,0.1,2,11)
+    transform = CxrayDataloader.get_advanced_transform(0.2, 0.1)
     for i in range(5):
         img = to(Image.fromarray(x))
 
@@ -148,6 +149,7 @@ def test_dataloader_advanced_transform():
 if __name__ == "__main__":
     test_dataloader_init()
     test_dataloader_retrieve_categories()
+    test_dataloader_init()
     test_dataloader_RGB()
     test_dataloader_grayscale()
     test_dataloader_transform()

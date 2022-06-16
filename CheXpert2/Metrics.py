@@ -1,20 +1,17 @@
-import sys
-import yaml
-
 import numpy as np
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
-
+import warnings
+import yaml
+import sys
 
 with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
     names = yaml.safe_load(stream)["names"]
 
+names += ["No Finding"]
+
 
 class Metrics:
-    """
-    Class to initialize the metrics to evaluate the training/model
-    """
-
     def __init__(self, num_classes, threshold=0.5):
         self.num_classes = num_classes
         self.threshold = threshold
@@ -40,9 +37,9 @@ class Metrics:
     def computeAUROC(self, true, pred):
         try:
 
-            fpr = {}
-            tpr = {}
-            outAUROC = {}
+            fpr = dict()
+            tpr = dict()
+            outAUROC = dict()
             classCount = pred.shape[1]
             for i in range(classCount):
                 fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
@@ -51,7 +48,7 @@ class Metrics:
         except ValueError as e:
             print(e, file=sys.stderr)
             for i in names + ["mean"]:
-                outAUROC[i] = -1
+                outAUROC[i] = 0  # TODO : set to something more meaningfull? aka -1?
         return outAUROC
 
     def metrics(self):

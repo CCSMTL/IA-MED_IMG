@@ -50,7 +50,20 @@ def test_cnn_RGB():
 
 
 
+def test_sampler():
+    from CheXpert2.Sampler import Sampler
+
+    sampler = Sampler("data")
+    samples = sampler.sampler()  # probably gonna break?
+
 
 if __name__ == "__main__":
+    test_dataloader_init()
+    test_dataloader_retrieve_categories()
+    test_dataloader_RGB()
+    test_dataloader_grayscale()
+    test_sampler()
+    test_unet_grayscale()
+    test_unet_RGB()
     test_cnn_grayscale()
     test_cnn_RGB()

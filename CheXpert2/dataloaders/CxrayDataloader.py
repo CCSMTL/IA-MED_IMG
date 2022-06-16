@@ -26,8 +26,6 @@ class CxrayDataloader(Dataset):
         img_size=240,
         prob=0,
         intensity=0,
-        N=2,
-        M=11,
         label_smoothing=0,
         cache=False,
         num_worker=0,
@@ -55,7 +53,7 @@ class CxrayDataloader(Dataset):
         self.preprocess = self.get_preprocess(channels, img_size)
 
         self.transform = self.get_transform(prob)
-        self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
+        self.advanced_transform = self.get_advanced_transform(prob, intensity)
 
         # ------- Caching & Reading -----------------------------------------------------------
 
@@ -79,16 +77,22 @@ class CxrayDataloader(Dataset):
 
     @staticmethod
     def get_transform(prob):
-        return transforms.Compose([])
+        return transforms.Compose(
+            [
+                transforms.RandomErasing(p=prob),  # TODO intensity to add
+            ]
+        )
 
     @staticmethod
-    def get_advanced_transform(prob, intensity, N, M):
+    def get_advanced_transform(prob, intensity):
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob, N, M),  # p=0.5 by default
+                Transforms.RandAugment(
+                    prob=prob, intensity=intensity
+                ),  # p=0.5 by default
                 Transforms.Mixing(prob, intensity),
-                Transforms.CutMix(prob, intensity),
-                #    Transforms.RandomErasing(prob), #not sure erasing is appropriate here
+                Transforms.CutMix(prob),
+                Transforms.RandomErasing(prob),
             ]
         )
 
@@ -195,7 +199,7 @@ if __name__ == "__main__":
 
     cxraydataloader = CxrayDataloader(
         img_dir="../data/test", num_classes=14, channels=3
-    )
+    )  # TODO : build test repertory with 1 or 2 test image/labels
 
     # testing
     x = np.uint8(np.random.random((224, 224, 3)) * 255)

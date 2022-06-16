@@ -62,9 +62,9 @@ def training_loop(
                 scaler.unscale_(optimizer)
 
                 # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                # torch.nn.utils.clip_grad_norm_(
-                #     model.parameters(), 5
-                # )  # TODO : add norm c as hyperparameters
+                torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), 5
+                )  # TODO : add norm c as hyperparameters
                 # optimizer.step()
                 scaler.step(optimizer)
                 scaler.update()

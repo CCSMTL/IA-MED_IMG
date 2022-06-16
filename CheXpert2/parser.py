@@ -42,8 +42,7 @@ def init_parser():
         "--wandb",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="do you wish (and did you setup) wandb? You will need to add the project \
-             name in the initialization of wandb in train.py",
+        help="do you wish (and did you setup) wandb? You will need to add the project name in the initialization of wandb in train.py",
     )
 
     parser.add_argument(
