@@ -1,9 +1,23 @@
 import os
 
+import numpy as np
 import torch
 import tqdm
-import numpy as np
+import wandb
+import yaml
+
 from CheXpert2.custom_utils import dummy_context_mgr
+
+
+def convert(array):
+    answers = []
+    array = array.numpy().round(0)
+    for item in array:
+        if np.max(item) == 0:
+            answers.append(14)
+        else:
+            answers.append(np.argmax(item))
+    return answers
 
 
 def training_loop(
@@ -187,3 +201,16 @@ def training(
         epoch += 1
         pbar.update(1)
     print("Finished Training")
+
+    if wandb.run is not None:
+        with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+            names = yaml.safe_load(stream)["names"]
+        experiment.log_metric(
+            "conf_mat",
+            wandb.plot.confusion_matrix(
+                probs=None,
+                y_true=convert(results[1]),
+                preds=convert(results[0]),
+                class_names=names,
+            ),
+        )

@@ -2,14 +2,15 @@
 import argparse
 import time
 import warnings
+
 import numpy as np
 import torch
 import tqdm
-from sklearn.metrics import confusion_matrix
 import yaml
+from sklearn.metrics import confusion_matrix
 
-from CheXpert2.training.training import validation_loop
 from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
+from CheXpert2.training.training import validation_loop
 
 
 def init_argparse():
@@ -38,8 +39,34 @@ def init_argparse():
     return parser
 
 
-def main():
+def convert(array):
+    answers = []
+    for item in array:
+        item = item.numpy().round(0)
+        if np.max(item) == 0:
+            answers.append(14)
+        else:
+            answers.append(np.argmax(item))
+    return answers
 
+
+def create_confusion_matrix(results):
+    from CheXpert2.Metrics import Metrics  # had to reimport due to bug
+
+    metrics = Metrics(14)
+    metrics = metrics.metrics()
+    for metric in metrics.keys():
+        print(metric + " : ", metrics[metric](results[0].numpy(), results[1].numpy()))
+
+    y_true, y_pred = convert(results[0]), convert(results[1])
+    m = (
+        confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred") * 100
+    ).round(0)
+
+    return m
+
+
+def main():
     criterion = torch.nn.CrossEntropyLoss()
     if torch.cuda.is_available():
         device = "cuda:0"
@@ -82,33 +109,12 @@ def main():
     )
     print("time :", (time.time() - a) / len(test_dataset))
 
-    def convert(array):
-        answers = []
-        for item in array:
-            item = item.numpy().round(0)
-            if np.max(item) == 0:
-                answers.append(14)
-            else:
-                answers.append(np.argmax(item))
-        return answers
-
-    from CheXpert2.Metrics import Metrics  # had to reimport due to bug
-
-    metrics = Metrics(14)
-    metrics = metrics.metrics()
-    for metric in metrics.keys():
-        print(metric + " : ", metrics[metric](results[0].numpy(), results[1].numpy()))
-
-    y_true, y_pred = convert(results[0]), convert(results[1])
-
+    m = create_confusion_matrix(results)
     # -----------------------------------------------------------------------------------
 
     with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
         names = yaml.safe_load(stream)["names"]
 
-    m = (
-        confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred") * 100
-    ).round(0)
     # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
     print("avg class : ", np.mean(np.diag(m)))
 

@@ -1,18 +1,19 @@
 # ------python import------------------------------------
+import copy
+import os
 import warnings
 
+import numpy as np
 import torch
 import wandb
-import os
-import numpy as np
-import copy
+
+from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
+from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
 
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
 
 # ----------- parse arguments----------------------------------
 from parser import init_parser
