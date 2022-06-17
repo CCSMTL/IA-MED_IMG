@@ -110,6 +110,8 @@ def main():
         num_worker=args.num_worker,
         unet=args.unet,
         channels=3,
+        N=config["N"],
+        M=config["M"],
     )
     val_dataset = CxrayDataloader(
         f"data/validation",
@@ -130,8 +132,6 @@ def main():
         num_workers=args.num_worker,
         pin_memory=True,
         sampler=Sampler.sampler(),
-        N=config["N"],
-        M=config["M"],
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
