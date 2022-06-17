@@ -191,3 +191,4 @@ def training(
         epoch += 1
         pbar.update(1)
     print("Finished Training")
+    visualization(results)
