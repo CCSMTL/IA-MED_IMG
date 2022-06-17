@@ -101,12 +101,10 @@ class RandomErasing(object):
 
 
 class RandAugment:
-    def __init__(self, prob, intensity):
+    def __init__(self, prob, N, M):
         self.p = prob
 
-        self.augment = transforms.RandAugment(
-            num_ops=2, magnitude=int(10 * intensity)
-        )  # TODO : ADD N,M as hyperparameters
+        self.augment = transforms.RandAugment(num_ops=N, magnitude=M)
 
     def __call__(self, x):
 

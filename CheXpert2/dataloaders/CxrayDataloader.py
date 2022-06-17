@@ -31,6 +31,8 @@ class CxrayDataloader(Dataset):
         num_worker=0,
         channels=3,
         unet=False,
+        N=2,
+        M=9,
     ):
         # ----- Variable definition ------------------------------------------------------
         self.img_dir = img_dir
@@ -53,7 +55,7 @@ class CxrayDataloader(Dataset):
         self.preprocess = self.get_preprocess(channels, img_size)
 
         self.transform = self.get_transform(prob)
-        self.advanced_transform = self.get_advanced_transform(prob, intensity)
+        self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
 
@@ -84,12 +86,10 @@ class CxrayDataloader(Dataset):
         )
 
     @staticmethod
-    def get_advanced_transform(prob, intensity):
+    def get_advanced_transform(prob, intensity, N, M):
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(
-                    prob=prob, intensity=intensity
-                ),  # p=0.5 by default
+                Transforms.RandAugment(prob=prob, N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob, intensity),
                 Transforms.CutMix(prob),
                 Transforms.RandomErasing(prob),

@@ -49,12 +49,19 @@ def main():
     args = parser.parse_args()
 
     # ----------- hyperparameters-------------------------------------
-    # TODO : move config to json or to parsing
+
     config = {
-        #   "beta1"
-        #   "beta2"
+        # AdamW
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "lr": 0.001,
+        "weight_decay": 0.01,
+        # loss and optimizer
         "optimizer": torch.optim.AdamW,
         "criterion": torch.nn.BCEWithLogitsLoss(),
+        # RandAugment
+        "N": 2,
+        "M": 9,
     }
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
@@ -123,6 +130,8 @@ def main():
         num_workers=args.num_worker,
         pin_memory=True,
         sampler=Sampler.sampler(),
+        N=config["N"],
+        M=config["M"],
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,

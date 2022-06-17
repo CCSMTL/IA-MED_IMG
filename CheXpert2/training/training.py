@@ -161,7 +161,7 @@ def training(
 
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
-
+    n, m = len(training_loader.dataset), len(validation_loader.dataset)
     while patience > 0 and epoch < epoch_max:  # loop over the dataset multiple times
 
         train_loss = training_loop(
@@ -178,8 +178,8 @@ def training(
         )
 
         # LOGGING DATA
-        train_loss_list.append(train_loss / len(training_loader.dataset))
-        val_loss_list.append(val_loss / len(validation_loader.dataset))
+        train_loss_list.append(train_loss / n)
+        val_loss_list.append(val_loss / m)
         if experiment:
             experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
             experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
@@ -207,8 +207,7 @@ def training(
             names = yaml.safe_load(stream)["names"]
         experiment.log_metric(
             "conf_mat",
-            wandb.plot.confusion_matrix(
-                probs=None,
+            wandb.sklearn.plot.confusion_matrix(
                 y_true=convert(results[1]),
                 preds=convert(results[0]),
                 class_names=names,

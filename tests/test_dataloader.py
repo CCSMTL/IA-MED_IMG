@@ -129,7 +129,7 @@ def test_dataloader_advanced_transform():
     # testing outputs
     x = np.uint8(np.random.random((224, 224, 3)) * 255)
     to = transforms.ToTensor()
-    transform = CxrayDataloader.get_advanced_transform(0.2, 0.1)
+    transform = CxrayDataloader.get_advanced_transform(0.2, 0.1,2,9)
     for i in range(5):
         img = to(Image.fromarray(x))
 
