@@ -113,9 +113,12 @@ class CxrayDataloader(Dataset):
         )
 
     def read_img(self, file):
-
+        image = cv.resize(
+            cv.imread(f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE),
+            (self.img_size, self.img_size),
+        )
         image = torch.tensor(
-            cv.imread(f"{self.img_dir}/images/{file}", cv.IMREAD_GRAYSCALE) * 255,
+            image * 255,
             dtype=torch.uint8,
         )[None, :, :]
 
@@ -187,7 +190,7 @@ class CxrayDataloader(Dataset):
                 "landmarks2": label2,
             }
             image, label, image2, label2 = (self.advanced_transform(samples)).values()
-
+            del samples, image2, label2
         image = self.preprocess(image.float())
 
         if self.unet:
