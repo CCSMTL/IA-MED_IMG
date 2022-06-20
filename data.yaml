@@ -1,5 +1,0 @@
-
-
-nc : 14
-
-names : ['Cardiomegaly', 'Emphysema', 'Effusion', 'Consolidation', 'Hernia', 'Infiltration', 'Mass', 'Nodule', 'Atelectasis', 'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema', 'No Finding']
