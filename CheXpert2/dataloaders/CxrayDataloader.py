@@ -81,7 +81,8 @@ class CxrayDataloader(Dataset):
     def get_transform(prob):
         return transforms.Compose(
             [
-                transforms.RandomErasing(p=prob),  # TODO intensity to add
+                transforms.RandomHorizontalFlip(p=prob)
+                #            transforms.RandomErasing(p=prob),  # TODO intensity to add
             ]
         )
 
@@ -92,7 +93,7 @@ class CxrayDataloader(Dataset):
                 Transforms.RandAugment(prob=prob, N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob, intensity),
                 Transforms.CutMix(prob),
-                Transforms.RandomErasing(prob),
+                #            Transforms.RandomErasing(prob),
             ]
         )
 
