@@ -85,6 +85,8 @@ def training_loop(
                 optimizer.zero_grad(set_to_none=True)
             # ending loop
             del (
+                outputs,
+                labels,
                 inputs,
                 loss,
             )  # garbage management sometimes fails with cuda
@@ -119,7 +121,7 @@ def validation_loop(model, loader, criterion, device):
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            running_loss += loss.detach()
+            running_loss += torch.mean(loss.detach().cpu())
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
             results[1] = torch.cat(
