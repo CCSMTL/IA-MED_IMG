@@ -10,7 +10,7 @@ jobs:
 - job: Build
 
   pool:
-    name: MVSLocalPool
+    name: SCSPool
     strategy:
       matrix:
         Python39:
