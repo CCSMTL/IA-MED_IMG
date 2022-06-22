@@ -203,9 +203,9 @@ def main():
             names = yaml.safe_load(stream)["names"]
         experiment.log_metric(
             "conf_mat",
-            wandb.sklearn.plot.confusion_matrix(
-                y_true=convert(results[0]),
-                preds=convert(results[1]),
+            wandb.sklearn.plot_confusion_matrix(
+                y_true=results[0].numpy(),
+                y_probas=results[1].numpy(),
                 class_names=names,
             ),
         )
