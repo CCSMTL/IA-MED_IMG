@@ -4,37 +4,45 @@ import pandas as pd
 import numpy as np
 import torch
 import yaml
-
+import tqdm
 
 class Sampler:
     def __init__(self, datafolder):
 
-        with open(f"{datafolder}/data.yaml", "r") as stream:
-            names = yaml.safe_load(stream)["names"]
-        names += ["No Finding"]
-        data = pd.read_csv(f"{datafolder}/data_table.csv")
-        data = data[data["assignation"] == "training"]
-        if os.environ["DEBUG"]=="True":
-            data = data.iloc[0:100]
+        if os.path.exists(f"{datafolder}/sampler_weights.txt") :
+            weights=np.loadtxt(f"{datafolder}/sampler_weights.txt")
+        else :
+            category_ids = []
+            print("Counting files for weights calculations")
+            for file in tqdm.tqdm(os.listdir(f"{datafolder}/labels")) :
+                with open(f"{datafolder}/labels/{file}") as f :
+                    lines = f.readlines()
+                    for line in lines:
+                        line = line.split(" ")
+                        category_ids.append(int(line[0]))
+                        break
 
-        self.count = []
+            count={}
+            items=np.unique(category_ids)
+            for item in items :
+                count[item]=np.sum(np.where(category_ids==item,1,0))
+            weights=np.zeros_like(category_ids)
+            for item in items :
+                weights[np.where(category_ids==item)]=count[item]
 
-        for name in names:
-            self.count.append(np.sum(data[name]))
-        self.count = 1 / np.array(self.count)
-        self.count[np.isinf(self.count)] = 0
+            np.savetxt(f"{datafolder}/sampler_weights.txt",weights)
 
-        m = data[names].values.T
-        m = np.vstack([m, np.ones_like(m[0])])
-        classes = np.argmax(m, axis=0)
-
-        for i in range(0, 15):
-            classes = np.where(classes == i, self.count[i], classes)
-
-        self.samples_weight = torch.tensor(classes)
+        if os.environ["DEBUG"] == "True":
+            weights = weights[0:100]
+        self.weights=weights
 
     def sampler(self):
 
         return torch.utils.data.sampler.WeightedRandomSampler(
-            self.samples_weight, len(self.samples_weight)
+            self.weights, len(self.weights)
         )
+
+
+if __name__=="__main__" :
+
+    sampler=Sampler(f"{os.environ['img_dir']}/training").sampler()

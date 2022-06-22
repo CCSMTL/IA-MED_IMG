@@ -66,7 +66,7 @@ def main():
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
-    Sampler = Sampler(img_dir)
+    Sampler = Sampler(f"{img_dir}/training")
     if not args.sampler:
         Sampler.samples_weight = torch.ones_like(
             Sampler.samples_weight
@@ -213,8 +213,8 @@ def main():
         experiment.log_metric(
             "roc_curves",
             wandb.plot.roc_curve(
-                results[0].numpy(),
-                results[1].numpy(),
+                convert(results[0]),
+                convert(results[1]),
                 labels=names,
 
             ),
