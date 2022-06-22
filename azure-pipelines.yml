@@ -33,7 +33,7 @@ jobs:
   - script: |
       pip install pytest pytest-azurepipelines
       pytest ./tests
-      python -m black ./CheXpert2
-      python -m pylint ./CheXpert2
+      python -m black $(Build.Repository.LocalPath)/CheXpert2
+      python -m pylint $(Build.Repository.LocalPath)/CheXpert2
     displayName: 'pytest'
 
