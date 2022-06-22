@@ -73,7 +73,7 @@ def init_parser():
         help="The intensity of the data augmentation.Between 0 and 1",
     )
     parser.add_argument(
-        "--label-smoothing",
+        "--label_smoothing",
         default=0,
         const="all",
         type=float,
