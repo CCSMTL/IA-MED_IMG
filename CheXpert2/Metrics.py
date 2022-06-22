@@ -48,7 +48,7 @@ class Metrics:
         except ValueError as e:
             print(e, file=sys.stderr)
             for i in names + ["mean"]:
-                outAUROC[i] = 0  # TODO : set to something more meaningfull? aka -1?
+                outAUROC[i] = -1
         return outAUROC
 
     def metrics(self):

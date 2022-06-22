@@ -33,8 +33,6 @@ opener = urllib.request.build_opener(proxy)
 urllib.request.install_opener(opener)
 
 
-
-
 def init_argparse():
     parser = argparse.ArgumentParser(description="Launch testing for a specific model")
 
@@ -61,25 +59,26 @@ def init_argparse():
     return parser
 
 
-def find_thresholds(true,pred) :
+def find_thresholds(true, pred):
 
-    true,pred = true.numpy() , pred.numpy()
+    true, pred = true.numpy(), pred.numpy()
 
-    def f1(thresholds,true,pred) :
-        for ex,item in enumerate(pred) :
-            item=np.where(item>thresholds,1,0)
-            pred[ex]=item
+    def f1(thresholds, true, pred):
+        for ex, item in enumerate(pred):
+            item = np.where(item > thresholds, 1, 0)
+            pred[ex] = item
 
-        return - metrics.f1_score(
-            true, pred, average="macro", zero_division=0
-        )
-    thresholds=scipy.optimize.minimize(f1,args=(true,pred))
+        return -metrics.f1_score(true, pred, average="macro", zero_division=0)
+
+    thresholds = scipy.optimize.minimize(f1, args=(true, pred))
     return thresholds
-def convert(array,thresholds):
-    array=array.numpy()
+
+
+def convert(array, thresholds):
+    array = array.numpy()
     answers = []
     for item in array:
-        item = np.where(item>thresholds,1,0)
+        item = np.where(item > thresholds, 1, 0)
         if np.max(item) == 0:
             answers.append(14)
         else:
@@ -94,9 +93,9 @@ def create_confusion_matrix(results):
     metrics = metrics.metrics()
     for metric in metrics.keys():
         print(metric + " : ", metrics[metric](results[0].numpy(), results[1].numpy()))
-    thresholds = find_thresholds(results[0],results[1])
+    thresholds = find_thresholds(results[0], results[1])
 
-    y_true, y_pred = convert(results[0]), convert(results[1],thresholds)
+    y_true, y_pred = convert(results[0]), convert(results[1], thresholds)
     m = (
         confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred") * 100
     ).round(0)
@@ -126,12 +125,15 @@ def main():
 
     model = CNN(args.model, 14)
     model = torch.nn.DataParallel(model)
-    if not os.path.exists(f"models/models_weights/{args.model}/DataParallel.pt") :
-        wandb.restore(f"models/models_weights/{args.model}/DataParallel.pt",run_path="ai-chexnet/test-project/1oc66oio")
+    if not os.path.exists(f"models/models_weights/{args.model}/DataParallel.pt"):
+        wandb.restore(
+            f"models/models_weights/{args.model}/DataParallel.pt",
+            run_path="ai-chexnet/test-project/1oc66oio",
+        )
     model.load_state_dict(
         torch.load(
-            f"models/models_weights/{args.model}/DataParallel.pt"  # TODO : load .pt and check name for if dataparallel
-        ,map_location=torch.device('cpu')
+            f"models/models_weights/{args.model}/DataParallel.pt",  # TODO : load .pt and check name for if dataparallel
+            map_location=torch.device("cpu"),
         )
     )
     model = model.to(device)

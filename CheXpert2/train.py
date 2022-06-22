@@ -165,7 +165,7 @@ def main():
     # initialize metrics loggers
     optimizer = config["optimizer"](model.parameters())
     print(model._get_name())
-    training(
+    results = training(
         model,
         optimizer,
         config["criterion"],
@@ -178,6 +178,47 @@ def main():
         experiment=experiment,
         metrics=metrics,
     )
+
+    # -------Final Visualization-------------------------------
+    # TODO : create Visualization of the best model and upload those to wandb
+
+    def convert(array1):
+        array = copy.copy(array1)
+        answers = []
+        array = array.numpy().round(0)
+        for item in array:
+            if np.max(item) == 0:
+                answers.append(14)
+            else:
+                answers.append(np.argmax(item))
+        return answers
+
+    # from CheXpert2.visualization import
+
+    # 1) confusion matrix
+    import yaml
+
+    if wandb.run is not None:
+        with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+            names = yaml.safe_load(stream)["names"]
+        experiment.log_metric(
+            "conf_mat",
+            wandb.sklearn.plot.confusion_matrix(
+                y_true=convert(results[0]),
+                preds=convert(results[1]),
+                class_names=names,
+            ),
+        )
+        experiment.log_metric(
+            "roc_curves",
+            wandb.plot.roc_curve(
+                results[0].numpy(),
+                results[1].numpy(),
+                labels=names,
+            ),
+        )
+
+    # 2) roc curves
 
 
 if __name__ == "__main__":
