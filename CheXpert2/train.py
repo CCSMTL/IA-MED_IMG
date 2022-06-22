@@ -204,9 +204,9 @@ def main():
         experiment.log_metric(
             "conf_mat",
             wandb.sklearn.plot_confusion_matrix(
-                y_true=results[0].numpy(),
-                y_probas=results[1].numpy(),
-                class_names=names,
+                convert(results[0]),
+                convert(results[1]),
+                names,
             ),
         )
         experiment.log_metric(

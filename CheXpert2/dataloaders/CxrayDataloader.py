@@ -59,16 +59,19 @@ class CxrayDataloader(Dataset):
 
         # ------- Caching & Reading -----------------------------------------------------------
 
-        a = 100 if __debug__ else len(os.listdir(img_dir + "/images"))
-        num_worker = max(num_worker, 1)
+        self.filename = os.listdir(img_dir + "/images")
+        if __debug__ :
+            self.filename=self.filename[0:100]
 
-        self.filename = sorted(os.listdir(img_dir + "/images")[0:a])
+
+
+
 
         if self.cache:
             self.files, self.labels = map(
                 list,
                 zip(
-                    *Parallel(n_jobs=num_worker)(
+                    *Parallel(n_jobs=max(num_worker, 1))(
                         delayed(self.read_img)(i) for i in tqdm(self.filename)
                     )
                 ),
