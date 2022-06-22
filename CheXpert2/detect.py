@@ -73,6 +73,18 @@ def find_thresholds(true, pred):
     thresholds = scipy.optimize.minimize(f1, args=(true, pred))
     return thresholds
 
+def find_thresholds_1(tpr, fpr):
+    gmeans= []
+    thresholds= []
+    # calculate the g-mean for each threshold
+    gmeans = sqrt(tpr * (1 - fpr))
+
+    ...
+    # locate the index of the largest g-mean
+    thresholds = argmax(gmeans)
+    print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+    return thresholds
+
 
 def convert(array, thresholds):
     array = array.numpy()
