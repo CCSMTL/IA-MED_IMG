@@ -98,8 +98,8 @@ sudo nano /etc/apt/apt.conf.d/proxy.conf
 and add to the file :
 
 ```
-Acquire::http::Proxy "http://user:password@proxy.server:port/";
-Acquire::https::Proxy "http://user:password@proxy.server:port/";
+Acquire::http::Proxy "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080";
+Acquire::https::Proxy "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080";
 ```
 #### for pip
 pip install takes the flag --proxy

@@ -27,7 +27,7 @@ torch.backends.cudnn.benchmark = True
 
 
 def main():
-
+    img_dir=os.environ["img_dir"]
     # -------- proxy config ---------------------------
     from six.moves import urllib
 
@@ -66,7 +66,7 @@ def main():
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
-    Sampler = Sampler("data")
+    Sampler = Sampler(img_dir)
     if not args.sampler:
         Sampler.samples_weight = torch.ones_like(
             Sampler.samples_weight
@@ -100,7 +100,7 @@ def main():
     # -------data initialisation-------------------------------
 
     train_dataset = CxrayDataloader(
-        f"data/training",
+        f"{img_dir}/training",
         num_classes=14,
         img_size=args.img_size,
         prob=args.augment_prob,
@@ -114,7 +114,7 @@ def main():
         M=config["M"],
     )
     val_dataset = CxrayDataloader(
-        f"data/validation",
+        f"{img_dir}/validation",
         num_classes=14,
         img_size=args.img_size,
         cache=args.cache,

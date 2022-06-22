@@ -33,6 +33,8 @@ opener = urllib.request.build_opener(proxy)
 urllib.request.install_opener(opener)
 
 
+
+
 def init_argparse():
     parser = argparse.ArgumentParser(description="Launch testing for a specific model")
 
@@ -71,6 +73,18 @@ def find_thresholds(true, pred):
         return -metrics.f1_score(true, pred, average="macro", zero_division=0)
 
     thresholds = scipy.optimize.minimize(f1, args=(true, pred))
+    return thresholds
+
+def find_thresholds_1(tpr, fpr):
+    gmeans= []
+    thresholds= []
+    # calculate the g-mean for each threshold
+    gmeans = sqrt(tpr * (1 - fpr))
+
+    ...
+    # locate the index of the largest g-mean
+    thresholds = argmax(gmeans)
+    print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
     return thresholds
 
 

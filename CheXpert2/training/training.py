@@ -9,6 +9,7 @@ import yaml
 from CheXpert2.custom_utils import dummy_context_mgr
 
 
+
 def training_loop(
     model, loader, optimizer, criterion, device, minibatch_accumulate, scaler
 ):
