@@ -47,7 +47,7 @@ class Experiment:
             print({metric_name: value})
 
     def save_weights(self, model):
-        if not __debug__:
+        if not os.environ["DEBUG"]=="True":
             torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
 
             if self.is_wandb:

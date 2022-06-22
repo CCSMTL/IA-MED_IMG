@@ -47,7 +47,7 @@ def main():
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
-
+    os.environ["DEBUG"]=str(args.debug)
     # ----------- hyperparameters-------------------------------------
 
     config = {
@@ -208,6 +208,7 @@ def main():
                 convert(results[1]),
                 names,
             ),
+            epoch=None
         )
         experiment.log_metric(
             "roc_curves",
@@ -215,7 +216,9 @@ def main():
                 results[0].numpy(),
                 results[1].numpy(),
                 labels=names,
+
             ),
+            epoch=None
         )
 
     # 2) roc curves

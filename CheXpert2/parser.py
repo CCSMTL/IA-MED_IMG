@@ -143,4 +143,11 @@ def init_parser():
         help="do you wish to run with a sampler (1/n)",
     )
 
+    parser.add_argument(
+        "--debug",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="do you wish to run in debug mode ? Only 100 images will be loaded",
+    )
+
     return parser

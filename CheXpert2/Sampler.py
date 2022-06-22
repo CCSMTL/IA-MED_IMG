@@ -1,3 +1,4 @@
+import os
 
 import pandas as pd
 import numpy as np
@@ -13,7 +14,7 @@ class Sampler:
         names += ["No Finding"]
         data = pd.read_csv(f"{datafolder}/data_table.csv")
         data = data[data["assignation"] == "training"]
-        if __debug__:
+        if os.environ["DEBUG"]=="True":
             data = data.iloc[0:100]
 
         self.count = []

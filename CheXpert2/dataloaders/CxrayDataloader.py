@@ -60,7 +60,7 @@ class CxrayDataloader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
 
         self.filename = os.listdir(img_dir + "/images")
-        if __debug__ :
+        if os.environ["DEBUG"]=="True" :
             self.filename=self.filename[0:100]
 
 
