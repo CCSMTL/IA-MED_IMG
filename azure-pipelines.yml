@@ -26,12 +26,12 @@ jobs:
       
   - script: |
       py -m ensurepip --upgrade
-      py pip install -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
-      py pip install -r $(Build.Repository.LocalPath)/requirements_dev.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+      py -m pip install -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+      py -m pip install -r $(Build.Repository.LocalPath)/requirements_dev.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
     displayName: 'Install dependencies'
 
   - script: |
-      py pip install pytest pytest-azurepipelines
+      py -m pip install pytest pytest-azurepipelines
       pytest ./tests
       python -m black $(Build.Repository.LocalPath)/CheXpert2 --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
       python -m pylint $(Build.Repository.LocalPath)/CheXpert2 --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
