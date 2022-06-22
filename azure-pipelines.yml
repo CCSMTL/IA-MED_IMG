@@ -10,7 +10,7 @@ jobs:
 - job: Build
 
   pool:
-    name: SCSPool
+    name: IAMedImgPool
     strategy:
       matrix:
         Python39:
