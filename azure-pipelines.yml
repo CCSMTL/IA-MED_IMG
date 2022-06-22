@@ -27,8 +27,8 @@ jobs:
   - script: |
       py -m ensurepip --upgrade
       py -m pip config set global.trusted-host "pypi.org files.pythonhosted.org pypi.python.org" --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org
-      py -m pip install -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
-      py -m pip install -r $(Build.Repository.LocalPath)/requirements_dev.txt --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+      py -m pip install -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt --global http.sslVerify false
+      py -m pip install -r $(Build.Repository.LocalPath)/requirements_dev.txt --global http.sslVerify false
     displayName: 'Install dependencies'
 
   - script: |
