@@ -154,7 +154,7 @@ def training(
     scaler = torch.cuda.amp.GradScaler()
     n, m = len(training_loader.dataset), len(validation_loader.dataset)
     while patience > 0 and epoch < epoch_max:  # loop over the dataset multiple times
-
+        metrics_results={}
         train_loss = training_loop(
             model,
             tqdm.tqdm(training_loader, leave=False),
@@ -178,13 +178,16 @@ def training(
             for key in metrics:
                 pred = results[1].numpy()
                 true = results[0].numpy()
-                experiment.log_metric(key, metrics[key](true, pred), epoch=epoch)
+                metric_result=metrics[key](true, pred)
+                experiment.log_metric(key, metric_result, epoch=epoch)
+                metrics_results[key]=metric_result
 
         if val_loss < best_loss:
             best_loss = val_loss
 
             experiment.save_weights(model)
             patience = patience_init
+            summary=metrics_results
         else:
             patience -= 1
             print("patience has been reduced by 1")
@@ -193,4 +196,4 @@ def training(
         pbar.update(1)
     print("Finished Training")
 
-    return results
+    return results,summary

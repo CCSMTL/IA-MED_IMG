@@ -32,6 +32,7 @@ class Sampler:
 
             np.savetxt(f"{datafolder}/sampler_weights.txt",weights)
 
+
         if os.environ["DEBUG"] == "True":
             weights = weights[0:100]
         self.weights=weights

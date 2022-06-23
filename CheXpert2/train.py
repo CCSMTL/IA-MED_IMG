@@ -165,7 +165,7 @@ def main():
     # initialize metrics loggers
     optimizer = config["optimizer"](model.parameters())
     print(model._get_name())
-    results = training(
+    results,summary = training(
         model,
         optimizer,
         config["criterion"],
@@ -220,6 +220,9 @@ def main():
             ),
             epoch=None
         )
+
+
+        wandb.run.summary=wandb.run.summary|summary
 
     # 2) roc curves
 
