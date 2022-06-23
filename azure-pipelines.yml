@@ -34,11 +34,11 @@ jobs:
 
   - script: |
     
-      py -m pytest ./$(Build.Repository.LocalPath)/tests
+      py -m pytest ./tests
     displayName: 'pytest'
   
   - script: |
-      py -m black $(Build.Repository.LocalPath)/CheXpert2 
-      py -m pylint $(Build.Repository.LocalPath)/CheXpert2 
+      py -m black ./CheXpert2 
+      py -m pylint ./CheXpert2 
     displayName: 'pytest'
 
