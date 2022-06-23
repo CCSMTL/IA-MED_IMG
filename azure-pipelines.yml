@@ -33,7 +33,7 @@ jobs:
 
   - script: |
       py -m pip install pytest pytest-azurepipelines
-      pytest ./tests
+      py -m pytest ./tests
       py -m black $(Build.Repository.LocalPath)/CheXpert2 config set http.sslVerify false --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
       py -m pylint $(Build.Repository.LocalPath)/CheXpert2 config set http.sslVerify false --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
     displayName: 'pytest'
