@@ -214,7 +214,7 @@ def main():
             "roc_curves",
             wandb.plot.roc_curve(
                 convert(results[0]),
-                convert(results[1]),
+                results[1],
                 labels=names,
 
             ),
