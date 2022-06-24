@@ -30,7 +30,7 @@ jobs:
       py -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt 
       py -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/requirements_dev.txt
       conda uninstall Pillow
-      py -m pip install Pillow
+      py -m pip install Pillow==8.2.0
     displayName: 'Install dependencies'
 
   - script: |
