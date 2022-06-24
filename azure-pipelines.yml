@@ -18,28 +18,25 @@ jobs:
 
   steps:
 
-#- task: UsePythonVersion@0
-#  inputs:
-#    versionSpec: '$(python.version)'
-  #  displayName: 'Use Python $(python.version)'
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.9.13'
+    addToPath: true
+    architecture: 'x64'
 
-      
-  - script: |
-      python -m pip install pillow
-      python -m ensurepip --upgrade
-      python -m pip config set global.trusted-host "pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org" 
-      python -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt 
-      python -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/requirements_dev.txt
-      
-    displayName: 'Install dependencies'
-
-  - script: |
-    
-      python -m pytest ./tests
-    displayName: 'pytest'
-  
-  - script: |
-      python -m black ./CheXpert2 
-      python -m pylint ./CheXpert2 
-    displayName: 'pytest'
+- task: Python Unit Test@0
+  inputs:
+    pythonroot: '/tests'
+    reqfile: 'requirements_dev.txt Chexpert2/requirements.txt'
+    coveragedir: 'coverage'
+    testfilepattern: 'test_*.py'
+  #- script: |
+  #  
+  #    python -m pytest ./tests
+  #  displayName: 'pytest'
+  #
+  #- script: |
+  #    python -m black ./CheXpert2 
+  #    python -m pylint ./CheXpert2 
+  #  displayName: 'pytest'
 
