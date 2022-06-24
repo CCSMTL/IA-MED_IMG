@@ -35,11 +35,11 @@ jobs:
 
   - script: |
     
-      py -m pytest ./tests
+      python -m pytest ./tests
     displayName: 'pytest'
   
   - script: |
-      py -m black ./CheXpert2 
-      py -m pylint ./CheXpert2 
+      python -m black ./CheXpert2 
+      python -m pylint ./CheXpert2 
     displayName: 'pytest'
 
