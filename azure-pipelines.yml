@@ -30,13 +30,5 @@ jobs:
     reqfile: 'requirements_dev.txt Chexpert2/requirements.txt'
     coveragedir: 'coverage'
     testfilepattern: 'test_*.py'
-  #- script: |
-  #  
-  #    python -m pytest ./tests
-  #  displayName: 'pytest'
-  #
-  #- script: |
-  #    python -m black ./CheXpert2 
-  #    python -m pylint ./CheXpert2 
-  #  displayName: 'pytest'
+
 
