@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         Python39:
-          python.version: '3.9.0'
+          python.version: '3.9.13'
 
   steps:
 
@@ -29,8 +29,6 @@ jobs:
       py -m pip config set global.trusted-host "pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org" 
       py -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt 
       py -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/requirements_dev.txt
-      conda uninstall Pillow
-      py -m pip install Pillow==8.2
     displayName: 'Install dependencies'
 
   - script: |
