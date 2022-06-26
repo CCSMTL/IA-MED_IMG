@@ -29,7 +29,7 @@ urllib.request.install_opener(opener)
 def test_sampler():
     from CheXpert2.Sampler import Sampler
 
-    sampler = Sampler("data_test")
+    sampler = Sampler("tests/data_test")
     samples = sampler.sampler()  # probably gonna break?
 
 
