@@ -188,9 +188,9 @@ def main():
         array = array.numpy().round(0)
         for item in array:
             if np.max(item) == 0:
-                answers.append([14])
+                answers.append(14)
             else:
-                answers.append(np.where(item==1).tolist())
+                answers.append(np.argmax(item))
         return answers
 
     # from CheXpert2.visualization import

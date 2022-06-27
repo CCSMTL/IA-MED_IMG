@@ -22,7 +22,10 @@ class Sampler:
                         category_ids.append(int(line[0]))
                         break
 
-
+            count={}
+            items=np.unique(category_ids)
+            for item in items :
+                count[item]=np.sum(np.where(category_ids==item,1,0))
             weights=np.zeros_like(category_ids)
             for item in items :
                 weights[np.where(category_ids==item)]=count[item]
