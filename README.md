@@ -154,7 +154,7 @@ git checkout -b new_branch
 2) commit some changes
 git commit ... -m "commit message"
 3) push those to the origin
-git push -U origin
+git push -u origin
 4) Create pull request
 In azure Devops, go to the repos and select pull request. Your changes should be available there
 in order to finalize the pull request. Please take notes that all the tests run by pytest need to work before 
