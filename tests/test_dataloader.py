@@ -1,16 +1,14 @@
 import os
-import torch
+
 import numpy as np
-from torchvision import transforms
+import torch
 from PIL import Image
-
-
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.custom_utils import dummy_context_mgr
-
-
 # -------- proxy config ---------------------------
 from six.moves import urllib
+from torchvision import transforms
+
+from CheXpert2.custom_utils import dummy_context_mgr
+from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
 
 proxy = urllib.request.ProxyHandler(
     {
@@ -25,7 +23,7 @@ opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
 
-
+os.environ["DEBUG"] = "False"
 def test_dataloader_retrieve_categories():
     img_dir = os.path.join(os.getcwd(),"tests/data_test")
 
@@ -145,11 +143,30 @@ def test_dataloader_advanced_transform():
         assert len(img2["landmarks"]) == 14
 
 
+def test_dataloader_advanced_transform_multiple_prob():
+    # testing outputs
+    x = np.uint8(np.random.random((224, 224, 3)) * 255)
+    to = transforms.ToTensor()
+    transform = CxrayDataloader.get_advanced_transform([0.2, ] * 4, 0.1, 2, 9)
+    for i in range(5):
+        img = to(Image.fromarray(x))
+
+        samples = {
+            "image": img,
+            "landmarks": torch.zeros((14,)),
+            "image2": img,
+            "landmarks2": torch.zeros((14,)),
+        }
+
+        img2 = transform(samples)
+        assert img2["image"].shape == img.shape, "images are not the same shape!"
+        assert len(img2["landmarks"]) == 14
+
 
 if __name__ == "__main__":
     test_dataloader_init()
     test_dataloader_retrieve_categories()
-    test_dataloader_init()
+
     test_dataloader_RGB()
     test_dataloader_grayscale()
     test_dataloader_transform()
