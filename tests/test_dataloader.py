@@ -149,7 +149,6 @@ def test_dataloader_advanced_transform():
 if __name__ == "__main__":
     test_dataloader_init()
     test_dataloader_retrieve_categories()
-    test_dataloader_init()
     test_dataloader_RGB()
     test_dataloader_grayscale()
     test_dataloader_transform()
