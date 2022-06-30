@@ -1,41 +1,46 @@
 import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
-import yaml
 import tqdm
+import yaml
+
 
 class Sampler:
     def __init__(self, datafolder):
+        no_cat = 0
+        if os.path.exists(f"data/sampler_weights.txt"):
+            weights = np.loadtxt(f"data/sampler_weights.txt")
+        else:
+            data = pd.read_csv(datafolder)
+            data = data.replace(-1, 0.5).fillna(0)
+            count = data.iloc[:, 5:19].sum().to_numpy()
+            count = 1 / (count / count.sum())
 
-        if os.path.exists(f"{datafolder}/sampler_weights.txt") :
-            weights=np.loadtxt(f"{datafolder}/sampler_weights.txt")
-        else :
-            category_ids = []
-            print("Counting files for weights calculations")
-            for file in tqdm.tqdm(os.listdir(f"{datafolder}/labels")) :
-                with open(f"{datafolder}/labels/{file}") as f :
-                    lines = f.readlines()
-                    for line in lines:
-                        line = line.split(" ")
-                        category_ids.append(int(line[0]))
-                        break
+            weights = np.zeros((len(data)))
+            for i, line in data.iterrows():
 
-            count={}
-            items=np.unique(category_ids)
-            for item in items :
-                count[item]=np.sum(np.where(category_ids==item,1,0))
-            weights=np.zeros_like(category_ids)
-            for item in items :
-                weights[np.where(category_ids==item)]=count[item]
+                vector = line.to_numpy()[5:19]
 
-            np.savetxt(f"{datafolder}/sampler_weights.txt",weights)
+                weight = count[np.where(np.array(vector) == 1)]
+                n = len(weight)
+                if n > 1:
+                    weight = weight[np.random.randint(0, n)]
 
+                elif n == 0:
+                    weight = count[np.random.randint(0,
+                                                     14)]  # assigns random weight to each sample that does not have defined category
+                    # print("No category had been identified!")
+                    no_cat += 1
 
+                weights[i] = weight
+            np.savetxt(f"data/sampler_weights.txt", weights)
+
+        print(f"A total of {no_cat} samples had no category defined!")
         if os.environ["DEBUG"] == "True":
             weights = weights[0:100]
-        self.weights=weights
+        self.weights = weights
 
     def sampler(self):
 
