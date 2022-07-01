@@ -1,25 +1,28 @@
 import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import torch
-import yaml
 import tqdm
+import yaml
+
 
 class Sampler:
     def __init__(self, datafolder):
 
-        if os.path.exists(f"{datafolder}/sampler_weights.txt") :
-            weights=np.loadtxt(f"{datafolder}/sampler_weights.txt")
-        else :
+        if os.path.exists(f"{datafolder}/sampler_weights.txt"):
+            weights = np.loadtxt(f"{datafolder}/sampler_weights.txt")
+        else:
             category_ids = []
             print("Counting files for weights calculations")
             for file in tqdm.tqdm(os.listdir(f"{datafolder}/labels")) :
                 with open(f"{datafolder}/labels/{file}") as f :
                     lines = f.readlines()
+                    ll = len(lines)
+                    ll = np.random.randint(0, ll)
                     for line in lines:
                         line = line.split(" ")
-                        category_ids.append(int(line[0]))
+                        category_ids.append(int(line[ll]))
                         break
 
             count={}

@@ -171,3 +171,4 @@ if __name__ == "__main__":
     test_dataloader_grayscale()
     test_dataloader_transform()
     test_dataloader_advanced_transform()
+    test_dataloader_advanced_transform_multiple_prob()
