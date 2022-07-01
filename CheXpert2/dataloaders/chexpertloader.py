@@ -81,18 +81,20 @@ class chexpertloader(Dataset):
     def get_transform(prob):
         return transforms.Compose(
             [
-                transforms.RandomErasing(p=prob),  # TODO intensity to add
+    #            transforms.RandomErasing(p=prob),  # TODO intensity to add
             ]
         )
 
     @staticmethod
     def get_advanced_transform(prob, intensity, N, M):
+        if type(prob) != list:
+            prob = [prob, ] * 4
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob=prob, N=N, M=M),  # p=0.5 by default
-                Transforms.Mixing(prob, intensity),
-                Transforms.CutMix(prob),
-                Transforms.RandomErasing(prob),
+                Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
+                Transforms.Mixing(prob[1], intensity),
+                Transforms.CutMix(prob[2]),
+                Transforms.RandomErasing(prob[3]),
             ]
         )
 
