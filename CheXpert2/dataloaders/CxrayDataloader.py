@@ -1,14 +1,16 @@
-import torch
-from torch.utils.data import Dataset
 import os
-from torchvision import transforms
-import numpy as np
-import cv2 as cv
-from PIL import Image
-from CheXpert2 import Transforms
-from tqdm.auto import tqdm
-from joblib import Parallel, delayed
 import warnings
+
+import cv2 as cv
+import numpy as np
+import torch
+from PIL import Image
+from joblib import Parallel, delayed
+from torch.utils.data import Dataset
+from torchvision import transforms
+from tqdm.auto import tqdm
+
+from CheXpert2 import Transforms
 
 
 # TODO : ADD PROBABILITY PER AUGMENT CATEGORY
@@ -82,21 +84,27 @@ class CxrayDataloader(Dataset):
 
     @staticmethod
     def get_transform(prob):
+
         return transforms.Compose(
             [
-                transforms.RandomErasing(p=prob),  # TODO intensity to add
+                #    transforms.RandomErasing(p=prob),  # TODO intensity to add
             ]
         )
 
     @staticmethod
     def get_advanced_transform(prob, intensity, N, M):
+
+        if type(prob) != list:
+            prob = [prob, ] * 4  # dont forget to change this if adding transforms!
+
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob=prob, N=N, M=M),  # p=0.5 by default
-                Transforms.Mixing(prob, intensity),
-                Transforms.CutMix(prob),
-                Transforms.RandomErasing(prob),
+                Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
+                Transforms.Mixing(prob[1], intensity),
+                Transforms.CutMix(prob[2]),  # TODO intensity to add
+                Transforms.RandomErasing(prob[3]),
             ]
+
         )
 
     @staticmethod
