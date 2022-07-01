@@ -2,19 +2,19 @@
 import copy
 import os
 import warnings
-# ----------- parse arguments----------------------------------
-from parser import init_parser
 
 import numpy as np
 import torch
 import wandb
 
 from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
+from CheXpert2.dataloaders.chexpertloader import chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
+# ----------- parse arguments----------------------------------
+from parser import init_parser
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -25,7 +25,7 @@ torch.backends.cudnn.benchmark = True
 
 
 def main():
-    img_dir=os.environ["img_dir"]
+
     # -------- proxy config ---------------------------
     from six.moves import urllib
 
@@ -60,12 +60,11 @@ def main():
         # RandAugment
         "N": 2,
         "M": 9,
-        "channels": 3,
     }
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
-    Sampler = Sampler(f"{img_dir}/training")
+    Sampler = Sampler("data/CheXpert-v1.0-small/train.csv")
     if not args.sampler:
         Sampler.samples_weight = torch.ones_like(
             Sampler.samples_weight
@@ -98,9 +97,8 @@ def main():
 
     # -------data initialisation-------------------------------
 
-    train_dataset = CxrayDataloader(
-        f"{img_dir}/training",
-        num_classes=14,
+    train_dataset = chexpertloader(
+        "data/CheXpert-v1.0-small/train.csv",
         img_size=args.img_size,
         prob=args.augment_prob,
         intensity=args.augment_intensity,
@@ -108,18 +106,17 @@ def main():
         cache=args.cache,
         num_worker=args.num_worker,
         unet=args.unet,
-        channels=config["channels"],
+        channels=3,
         N=config["N"],
         M=config["M"],
     )
-    val_dataset = CxrayDataloader(
-        f"{img_dir}/validation",
-        num_classes=14,
+    val_dataset = chexpertloader(
+        "data/CheXpert-v1.0-small/valid.csv",
         img_size=args.img_size,
         cache=args.cache,
         num_worker=args.num_worker,
         unet=args.unet,
-        channels=config["channels"],
+        channels=3,
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
@@ -209,6 +206,7 @@ def main():
             ),
             epoch=None
         )
+        # 2) roc curves
         experiment.log_metric(
             "roc_curves",
             wandb.plot.roc_curve(
@@ -222,8 +220,6 @@ def main():
 
 
         wandb.run.summary=wandb.run.summary|summary
-
-    # 2) roc curves
 
 
 if __name__ == "__main__":
