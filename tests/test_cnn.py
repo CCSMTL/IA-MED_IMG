@@ -1,16 +1,10 @@
 import os
+
 import torch
-import numpy as np
-from torchvision import transforms
-from PIL import Image
-
-
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.custom_utils import dummy_context_mgr
-from CheXpert2.models.CNN import CNN
-
 # -------- proxy config ---------------------------
 from six.moves import urllib
+
+from CheXpert2.models.CNN import CNN
 
 proxy = urllib.request.ProxyHandler(
     {
@@ -24,7 +18,7 @@ os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
-
+os.environ["DEBUG"] = "False"
 def test_cnn_grayscale():
 
     x = torch.randn((2, 1, 320, 320))

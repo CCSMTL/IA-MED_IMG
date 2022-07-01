@@ -1,16 +1,14 @@
 import os
-import torch
+
 import numpy as np
-from torchvision import transforms
+import torch
 from PIL import Image
-
-
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.custom_utils import dummy_context_mgr
-
-
 # -------- proxy config ---------------------------
 from six.moves import urllib
+from torchvision import transforms
+
+from CheXpert2.custom_utils import dummy_context_mgr
+from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
 
 proxy = urllib.request.ProxyHandler(
     {
@@ -24,7 +22,7 @@ os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
-
+os.environ["DEBUG"] = "False"
 
 def test_dataloader_retrieve_categories():
     img_dir = os.path.join(os.getcwd(),"tests/data_test")
