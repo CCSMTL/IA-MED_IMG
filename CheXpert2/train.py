@@ -2,8 +2,6 @@
 import copy
 import os
 import warnings
-# ----------- parse arguments----------------------------------
-from Parser import init_parser
 
 import numpy as np
 import torch
@@ -15,6 +13,8 @@ from CheXpert2.dataloaders.chexpertloader import chexpertloader
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
+# ----------- parse arguments----------------------------------
+from Parser import init_parser
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -147,7 +147,7 @@ def main():
 
     if args.wandb:
         wandb.init(
-            project="test-project", entity="ai-chexnet", config=copy.copy(config)
+            project="Chestxray", entity="ccsmtl2", config=copy.copy(config)
         )
 
         wandb.watch(model)
