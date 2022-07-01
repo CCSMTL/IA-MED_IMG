@@ -57,6 +57,7 @@ def chord():
     conn = conn / np.sum(conn)
     fig, axes = plot_connectivity_circle(conn, list(mapping.keys()))
     fig.savefig("chords")
+    fig.title("Correlation map between diseases in chexnet")
     fig.show()
 
 
@@ -76,13 +77,66 @@ def histogram():
     plt.xlabel("Classes")  # , fontsize = 60)
     plt.ylabel("Count")  # , fontsize = 60)
     plt.legend()  # prop={'size':45})
-
+    plt.title("Count of each class")
     ax.barh(names, count, align="center")
 
     fig.savefig("histogram")
     fig.show()
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+def chord_chexpert():
+    data = pd.read_csv("../data/CheXpert-v1.0-small/train.csv").fillna(0)
+
+    data = data.iloc[:, 5:19]
+
+    conn = np.zeros((14, 14))
+    for ex, line in data.iterrows():
+        line = line.to_numpy()
+        diseases = np.where(line == 1)[0].tolist()
+        while diseases:
+            disease = diseases.pop()
+            for next_disease in diseases:
+                conn[disease][next_disease] += 1
+
+    conn = conn / np.sum(conn)
+    fig, axes = plot_connectivity_circle(conn, data.columns)
+    fig.savefig("chords_chexpert")
+    plt.title("Correlation map between diseases in chexnet")
+    fig.show()
+
+
+def histogram_chexpert():
+    data = pd.read_csv("../data/CheXpert-v1.0-small/train.csv").fillna(0)
+    names = data.iloc[:, 5:19].columns
+    diseases = data.iloc[:, 5:19].to_numpy()
+    counts = np.zeros((3, 14))
+    counts[0, :] = np.sum(np.where(diseases == -1, 1, 0), axis=0)
+    counts[1, :] = np.sum(np.where(diseases == 0, 1, 0), axis=0)
+    counts[2, :] = np.sum(np.where(diseases == 1, 1, 0), axis=0)
+
+    fig, ax = plt.subplots()
+    # plt.xticks(rotation=45, fontsize=6)
+
+    labels = ["-1", "0", "1"]
+    data = {"-1": counts[0, :], "0": counts[1, :], "1": counts[2, :]}
+    df = pd.DataFrame(data, columns=labels, index=names)
+    df.plot.barh()
+    plt.xlabel("Classes")  # , fontsize = 60)
+    plt.ylabel("Count")  # , fontsize = 60)
+    plt.legend()  # prop={'size':45})
+    plt.title("Count of each class")
+    fig.savefig("histogram_chexpert")
+    fig.show()
+
+
 if __name__ == "__main__":
-    histogram()
-    chord()
+    # chexnet visualization
+    # histogram()
+    # chord()
+
+    # chexpert visualization
+    histogram_chexpert()
+    chord_chexpert()
