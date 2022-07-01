@@ -2,6 +2,8 @@
 import copy
 import os
 import warnings
+# ----------- parse arguments----------------------------------
+from parser import init_parser
 
 import numpy as np
 import torch
@@ -9,14 +11,10 @@ import wandb
 
 from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
 from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
-
-# ----------- parse arguments----------------------------------
-from parser import init_parser
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -62,6 +60,7 @@ def main():
         # RandAugment
         "N": 2,
         "M": 9,
+        "channels": 3,
     }
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
@@ -109,7 +108,7 @@ def main():
         cache=args.cache,
         num_worker=args.num_worker,
         unet=args.unet,
-        channels=3,
+        channels=config["channels"],
         N=config["N"],
         M=config["M"],
     )
@@ -120,7 +119,7 @@ def main():
         cache=args.cache,
         num_worker=args.num_worker,
         unet=args.unet,
-        channels=3,
+        channels=config["channels"],
     )
 
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
