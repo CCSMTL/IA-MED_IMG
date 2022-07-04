@@ -98,7 +98,7 @@ def main():
         set_parameter_requires_grad(model.backbone)
 
     # send model to gpu
-    model = model.to(device)
+    model = model.to(device, memory_format=torch.channels_last)
 
     # -------data initialisation-------------------------------
 
