@@ -7,14 +7,14 @@ import numpy as np
 import torch
 import wandb
 
+# ----------- parse arguments----------------------------------
+from CheXpert2.Parser import init_parser
 from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
 from CheXpert2.dataloaders.chexpertloader import chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
-# ----------- parse arguments----------------------------------
-from Parser import init_parser
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -86,9 +86,9 @@ def main():
 
     # -----------model initialisation------------------------------
     if args.unet:
-        model = Unet(args.model, 14)
+        model = Unet(args.model, 13)
     else:
-        model = CNN(args.model, 14, freeze_backbone=False)
+        model = CNN(args.model, 13, freeze_backbone=False)
 
     if args.device == "parallel":
         model = torch.nn.DataParallel(model)
@@ -157,7 +157,7 @@ def main():
     )
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
-    metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
+    metric = Metrics(num_classes=13, threshold=np.zeros((13)) + 0.5)
     metrics = metric.metrics()
 
     # ------------training--------------------------------------------
@@ -189,7 +189,7 @@ def main():
         array = array.numpy().round(0)
         for item in array:
             if np.max(item) == 0:
-                answers.append(14)
+                answers.append(13)
             else:
                 answers.append(np.argmax(item))
         return answers
@@ -200,7 +200,7 @@ def main():
     import yaml
 
     if wandb.run is not None:
-        with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+        with open("data/data.yaml", "r") as stream:
             names = yaml.safe_load(stream)["names"]
         experiment.log_metric(
             "conf_mat",

@@ -99,17 +99,18 @@ class chexpertloader(Dataset):
         )
 
     @staticmethod
-    def get_label(vector):
+    def get_label(vector, label_smoothing):
         """
         This function returns the labels as a vector of probabilities. The input vectors are taken as is from
         the chexpert dataset, with 0,1,-1 corresponding to negative, positive, and uncertain, respectively.
         """
 
-        vector = vector.to_numpy()
+        vector = vector
         # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
         # source : https://arxiv.org/pdf/1911.06475.pdf
         labels = np.zeros((len(vector),))
-        labels[vector == 1] = 1
+        labels[vector == 1] = 1 - label_smoothing
+        labels[vector == 0] = label_smoothing
         labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
 
         return labels
@@ -149,7 +150,7 @@ class chexpertloader(Dataset):
     def __getitem__(self, idx):
 
         image = self.read_img("data/" + self.files.iloc[idx]["Path"])
-        label = self.get_label(self.files.iloc[idx, 5:19])
+        label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
         image = self.transform(image)
 
         if self.prob > 0:
