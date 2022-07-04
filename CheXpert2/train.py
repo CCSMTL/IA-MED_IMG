@@ -211,7 +211,7 @@ def main():
             ),
             epoch=None
         )
-        # 2) roc curves
+    # 2) roc curves
         experiment.log_metric(
             "roc_curves",
             wandb.plot.roc_curve(
