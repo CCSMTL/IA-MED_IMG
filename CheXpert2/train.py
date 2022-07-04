@@ -104,6 +104,7 @@ def main():
 
     train_dataset = chexpertloader(
         f"{img_dir}/train.csv",
+        img_dir=img_dir,
         img_size=args.img_size,
         prob=args.augment_prob,
         intensity=args.augment_intensity,
@@ -117,6 +118,7 @@ def main():
     )
     val_dataset = chexpertloader(
         f"{img_dir}/valid.csv",
+        img_dir=img_dir,
         img_size=args.img_size,
         cache=args.cache,
         num_worker=args.num_worker,

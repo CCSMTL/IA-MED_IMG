@@ -35,13 +35,13 @@ def test_dataloader_get_label():
 
 
 def test_dataloader_get_item():
-    img_dir = os.path.join(os.getcwd(), "tests/data_test/valid.csv")
+    img_file = os.path.join(os.getcwd(), "tests/data_test/valid.csv")
     cxraydataloader = chexpertloader(
-        img_file=img_dir, channels=3, img_size=224
+        img_file=img_file, channels=3, img_size=224,img_dir="tests/data_test",
     )
     image, label = cxraydataloader[4]
     assert image.shape == (3, 224, 224)
-    assert label.shape == (14,)
+    assert label.shape == (13,)
 
 
 def test_dataloader_transform():
