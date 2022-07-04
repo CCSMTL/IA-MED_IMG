@@ -1,4 +1,5 @@
 import argparse
+
 import torch
 
 
@@ -56,21 +57,21 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=0,
+        default=[0],
         const="all",
-        type=float,
-        nargs="?",
+        type=list,
+        nargs="+",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
     parser.add_argument(
         "--augment_intensity",
-        default=0,
+        default=0.1,
         const="all",
         type=float,
         nargs="?",
         required=False,
-        help="The intensity of the data augmentation.Between 0 and 1",
+        help="The intensity of the data augmentation.Between 0 and 1. Default is 10%",
     )
     parser.add_argument(
         "--label_smoothing",

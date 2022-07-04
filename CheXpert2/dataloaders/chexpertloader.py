@@ -6,17 +6,13 @@ Created on 2022-06-30$
 @author: Jonathan Beaulieu-Emond
 """
 import os
-import warnings
 
 import cv2 as cv
 import numpy as np
 import pandas as pd
 import torch
-from PIL import Image
-from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from torchvision import transforms
-from tqdm.auto import tqdm
 
 from CheXpert2 import Transforms
 
@@ -52,6 +48,9 @@ class chexpertloader(Dataset):
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
+        if len(prob) == 1:
+            prob = prob * 5
+        assert len(prob) == 5
         self.prob = prob
         self.intensity = intensity
         self.img_size = img_size
@@ -81,20 +80,20 @@ class chexpertloader(Dataset):
     def get_transform(prob):
         return transforms.Compose(
             [
-    #            transforms.RandomErasing(p=prob),  # TODO intensity to add
+                #            transforms.RandomErasing(p=prob),  # TODO intensity to add
+                transforms.RandomHorizontalFlip(prob=prob[4]),
             ]
         )
 
     @staticmethod
     def get_advanced_transform(prob, intensity, N, M):
-        if type(prob) != list:
-            prob = [prob, ] * 4
         return transforms.Compose(
             [  # advanced/custom
                 Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob[1], intensity),
                 Transforms.CutMix(prob[2]),
                 Transforms.RandomErasing(prob[3]),
+
             ]
         )
 
