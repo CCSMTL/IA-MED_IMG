@@ -30,7 +30,7 @@ class chexpertloader(Dataset):
             img_file,
             img_dir="",
             img_size=240,
-            prob=0,
+            prob=[0],
             intensity=0,
             label_smoothing=0,
             cache=False,
@@ -81,7 +81,7 @@ class chexpertloader(Dataset):
         return transforms.Compose(
             [
                 #            transforms.RandomErasing(p=prob),  # TODO intensity to add
-                transforms.RandomHorizontalFlip(prob=prob[4]),
+                transforms.RandomHorizontalFlip(p=prob[4]),
             ]
         )
 
@@ -159,7 +159,7 @@ class chexpertloader(Dataset):
         label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
         image = self.transform(image)
 
-        if self.prob > 0:
+        if sum(self.prob) > 0:
             idx = torch.randint(0, len(self), (1,))
             image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
             label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)

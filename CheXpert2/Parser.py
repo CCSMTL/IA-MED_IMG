@@ -57,10 +57,8 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0],
-        const="all",
-        type=list,
-        nargs="+",
+        default=0,
+        type=lambda s: [float(item) for item in s.split(',')],
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )

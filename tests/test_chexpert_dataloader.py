@@ -7,7 +7,6 @@ from PIL import Image
 from six.moves import urllib
 from torchvision import transforms
 
-from CheXpert2.custom_utils import dummy_context_mgr
 from CheXpert2.dataloaders.chexpertloader import chexpertloader
 
 proxy = urllib.request.ProxyHandler(
@@ -45,7 +44,7 @@ def test_dataloader_get_item():
 
 
 def test_dataloader_transform():
-    transform = chexpertloader.get_transform(0.2)
+    transform = chexpertloader.get_transform([0.2, ] * 5)
     # testing outputs
     x = torch.randint(0, 255, (224, 224, 3), dtype=torch.uint8)
     to = transforms.ToTensor()
@@ -59,7 +58,7 @@ def test_dataloader_advanced_transform():
     # testing outputs
     x = np.uint8(np.random.random((224, 224, 3)) * 255)
     to = transforms.ToTensor()
-    transform = chexpertloader.get_advanced_transform(0.2, 0.1, 2, 9)
+    transform = chexpertloader.get_advanced_transform([0.2, ] * 5, 0.1, 2, 9)
     for i in range(5):
         img = to(Image.fromarray(x))
 
