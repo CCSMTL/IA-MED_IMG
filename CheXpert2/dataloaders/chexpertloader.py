@@ -112,7 +112,7 @@ class chexpertloader(Dataset):
         labels[vector == 0] = label_smoothing
         labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
 
-        return labels
+        return torch.from_numpy(labels)
 
     @staticmethod
     def get_preprocess(channels, img_size):
@@ -152,6 +152,8 @@ class chexpertloader(Dataset):
             image = image.repeat((3, 1, 1))
 
         return image
+
+
 
     def __getitem__(self, idx):
 
