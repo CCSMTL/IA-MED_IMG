@@ -116,14 +116,15 @@ def histogram_chexpert():
     counts[0, :] = np.sum(np.where(diseases == -1, 1, 0), axis=0)
     counts[1, :] = np.sum(np.where(diseases == 0, 1, 0), axis=0)
     counts[2, :] = np.sum(np.where(diseases == 1, 1, 0), axis=0)
+    print(counts)
 
-    fig, ax = plt.subplots()
     # plt.xticks(rotation=45, fontsize=6)
 
     labels = ["-1", "0", "1"]
     data = {"-1": counts[0, :], "0": counts[1, :], "1": counts[2, :]}
     df = pd.DataFrame(data, columns=labels, index=names)
-    df.plot.barh()
+    fig,ax=plt.subplots()
+    df.plot.barh(ax=ax)
     plt.xlabel("Classes")  # , fontsize = 60)
     plt.ylabel("Count")  # , fontsize = 60)
     plt.legend()  # prop={'size':45})

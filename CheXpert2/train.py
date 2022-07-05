@@ -18,9 +18,9 @@ from CheXpert2.training.training import training
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-# torch.autograd.set_detect_anomaly(False)
-# torch.autograd.profiler.profile(False)
-# torch.autograd.profiler.emit_nvtx(False)
+torch.autograd.set_detect_anomaly(False)
+torch.autograd.profiler.profile(False)
+torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
 
 
@@ -46,13 +46,12 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
 
-    os.environ["DEBUG"] = str(args.debug)
+    os.environ["DEBUG"] = "False"
     try:
         img_dir = os.environ["img_dir"]
     except:
         img_dir = "data/CheXpert-v1.0-small"
-    # ----------- hyperparameters-------------------------------------
-
+    # ----------- hyperparameters-------------------------------------<
     config = {
         # AdamW
         "beta1": 0.9,
@@ -65,19 +64,25 @@ def main():
         # RandAugment
         "N": 2,
         "M": 9,
-        "clip_norm" : 5
+        "clip_norm": 5
     }
+    config = config | vars(args)
+    wandb.init(
+        project="Chestxray", entity="ccsmtl2", config=copy.copy(config)
+    )
+    
+    config = wandb.config
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
     Sampler = Sampler(f"{img_dir}/train.csv")
-    if not args.sampler:
+    if not config["sampler"]:
         Sampler.samples_weight = torch.ones_like(
             Sampler.samples_weight
         )  # set all weights equal
     # ------- device selection ----------------------------
     if torch.cuda.is_available():
-        device = f"cuda:{args.device}" if args.device != "parallel" else "cuda:0"
+        device = f"cuda:{config['device']}" if config['device'] != "parallel" else "cuda:0"
 
     else:
         device = "cpu"
@@ -86,18 +91,9 @@ def main():
     print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
-    if args.unet:
-        model = Unet(args.model, 13)
-    else:
-        model = CNN(args.model, 13, freeze_backbone=False)
-
-    if args.device == "parallel":
-        model = torch.nn.DataParallel(model)
-
-    # remove the gradient for the backbone
-    if args.frozen:
-        set_parameter_requires_grad(model.backbone)
-
+    
+    model = CNN(config["model"], 13, freeze_backbone=False)
+    model = torch.nn.DataParallel(model)
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
 
@@ -106,13 +102,13 @@ def main():
     train_dataset = chexpertloader(
         f"{img_dir}/train.csv",
         img_dir=img_dir,
-        img_size=args.img_size,
-        prob=args.augment_prob,
-        intensity=args.augment_intensity,
-        label_smoothing=args.label_smoothing,
-        cache=args.cache,
-        num_worker=args.num_worker,
-        unet=args.unet,
+        img_size=config["img_size"],
+        prob=config["augment_prob"],
+        intensity=config["augment_intensity"],
+        label_smoothing=config["label_smoothing"],
+        cache=False,
+        num_worker=os.cpu_count(),
+        unet=False,
         channels=3,
         N=config["N"],
         M=config["M"],
@@ -120,10 +116,10 @@ def main():
     val_dataset = chexpertloader(
         f"{img_dir}/valid.csv",
         img_dir=img_dir,
-        img_size=args.img_size,
-        cache=args.cache,
-        num_worker=args.num_worker,
-        unet=args.unet,
+        img_size=config["img_size"],
+        cache=False,
+        num_worker=os.cpu_count(),
+        unet=False,
         channels=3,
     )
 
@@ -132,32 +128,27 @@ def main():
 
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=args.batch_size,
-        num_workers=args.num_worker,
+        batch_size=config["batch_size"],
+        num_workers=os.cpu_count(),
         pin_memory=True,
         sampler=Sampler.sampler(),
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=args.batch_size,
-        num_workers=args.num_worker,
+        batch_size=config["batch_size"],
+        num_workers=os.cpu_count(),
         pin_memory=True,
     )
     print("The data has now been loaded successfully into memory")
 
     # ------------- Metrics & Trackers -----------------------------------------------------------
-    config = config | vars(args)
-
-    if args.wandb:
-        wandb.init(
-            project="Chestxray", entity="ccsmtl2", config=copy.copy(config)
-        )
-
-        wandb.watch(model)
-
+   
+    wandb.watch(model)
+    
     experiment = Experiment(
-        f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
+        f"{config['model']}", is_wandb=True, tags=None, config=copy.copy(config)
     )
+
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
     import yaml
     with open("data/data.yaml", "r") as stream:
@@ -178,8 +169,8 @@ def main():
         training_loader,
         validation_loader,
         device,
-        minibatch_accumulate=args.accumulate,
-        epoch_max=args.epoch,
+        minibatch_accumulate=1,
+        epoch_max=50,
         patience=10,
         experiment=experiment,
         metrics=metrics,
