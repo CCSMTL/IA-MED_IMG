@@ -1,6 +1,8 @@
 #data folder is too big
 data/*
 test/*
+log/*
+venv*
 
 CheXpert2/log/*
 CheXpert2/data/*

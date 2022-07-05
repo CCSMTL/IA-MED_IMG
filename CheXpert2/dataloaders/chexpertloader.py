@@ -6,17 +6,13 @@ Created on 2022-06-30$
 @author: Jonathan Beaulieu-Emond
 """
 import os
-import warnings
 
 import cv2 as cv
 import numpy as np
 import pandas as pd
 import torch
-from PIL import Image
-from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from torchvision import transforms
-from tqdm.auto import tqdm
 
 from CheXpert2 import Transforms
 
@@ -32,9 +28,9 @@ class chexpertloader(Dataset):
     def __init__(
             self,
             img_file,
-
+            img_dir="",
             img_size=240,
-            prob=0,
+            prob=[0],
             intensity=0,
             label_smoothing=0,
             cache=False,
@@ -46,12 +42,15 @@ class chexpertloader(Dataset):
     ):
         # ----- Variable definition ------------------------------------------------------
         self.img_file = img_file
-
+        self.img_dir = img_dir
         self.length = 0
         self.files = []
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
+        if len(prob) == 1:
+            prob = prob * 5
+        assert len(prob) == 5
         self.prob = prob
         self.intensity = intensity
         self.img_size = img_size
@@ -81,7 +80,8 @@ class chexpertloader(Dataset):
     def get_transform(prob):
         return transforms.Compose(
             [
-                transforms.RandomErasing(p=prob),  # TODO intensity to add
+                #            transforms.RandomErasing(p=prob),  # TODO intensity to add
+                transforms.RandomHorizontalFlip(p=prob[4]),
             ]
         )
 
@@ -89,25 +89,27 @@ class chexpertloader(Dataset):
     def get_advanced_transform(prob, intensity, N, M):
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob=prob, N=N, M=M),  # p=0.5 by default
-                Transforms.Mixing(prob, intensity),
-                Transforms.CutMix(prob),
-                Transforms.RandomErasing(prob),
+                Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
+                Transforms.Mixing(prob[1], intensity),
+                Transforms.CutMix(prob[2]),
+                Transforms.RandomErasing(prob[3]),
+
             ]
         )
 
     @staticmethod
-    def get_label(vector):
+    def get_label(vector, label_smoothing):
         """
         This function returns the labels as a vector of probabilities. The input vectors are taken as is from
         the chexpert dataset, with 0,1,-1 corresponding to negative, positive, and uncertain, respectively.
         """
 
-        vector = vector.to_numpy()
+        vector = vector
         # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
         # source : https://arxiv.org/pdf/1911.06475.pdf
         labels = np.zeros((len(vector),))
-        labels[vector == 1] = 1
+        labels[vector == 1] = 1 - label_smoothing
+        labels[vector == 0] = label_smoothing
         labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
 
         return labels
@@ -122,7 +124,7 @@ class chexpertloader(Dataset):
             )
         return transforms.Compose(
             [
-                transforms.Resize(int(img_size * 1.14)),  # 256/224 ratio
+
                 transforms.CenterCrop(img_size),
                 normalize,
             ]
@@ -130,10 +132,17 @@ class chexpertloader(Dataset):
 
     def read_img(self, file):
 
+        image = cv.imread(file, cv.IMREAD_GRAYSCALE)
+        if image is None:
+            raise Exception("Image not found by cv.imread: " + file)
+
+
+
         image = cv.resize(
-            cv.imread(file, cv.IMREAD_GRAYSCALE),
-            (self.img_size, self.img_size),
+            image,
+            (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_AREA ,  # 256/224 ratio
         )
+
         image = torch.tensor(
             image * 255,
             dtype=torch.uint8,
@@ -146,13 +155,14 @@ class chexpertloader(Dataset):
 
     def __getitem__(self, idx):
 
-        image = self.read_img("data/" + self.files.iloc[idx]["Path"])
-        label = self.get_label(self.files.iloc[idx, 5:19])
+        image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+        label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
         image = self.transform(image)
 
-        if self.prob > 0:
+        if sum(self.prob) > 0:
             idx = torch.randint(0, len(self), (1,))
-            image2, label2 = self.read_img("data/" + self.files.iloc[idx]["Path"])
+            image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+            label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
             image2 = self.transform(image2)
 
             samples = {
@@ -169,26 +179,3 @@ class chexpertloader(Dataset):
             return image, image
         return image, label
 
-
-if __name__ == "__main__":
-
-    cxraydataloader = CxrayDataloader(
-        img_dir="../data/test", num_classes=14, channels=3
-    )  # TODO : build test repertory with 1 or 2 test image/labels
-
-    # testing
-    x = np.uint8(np.random.random((224, 224, 3)) * 255)
-    to = transforms.ToTensor()
-    for i in range(5):
-        img = Image.fromarray(x)
-        cxraydataloader.transform(img)
-        samples = {
-            "image": to(img),
-            "landmarks": torch.zeros((14,)),
-            "image2": to(img),
-            "landmarks2": torch.zeros((14,)),
-        }
-
-        cxraydataloader.advanced_transform(samples)
-        out = cxraydataloader[0]
-        stop = 1

@@ -3,6 +3,8 @@ import os
 # -------- proxy config ---------------------------
 from six.moves import urllib
 
+from CheXpert2.train import main
+
 proxy = urllib.request.ProxyHandler(
     {
         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",

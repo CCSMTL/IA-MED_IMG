@@ -1,13 +1,8 @@
-import os
-
 import numpy as np
 import torch
 import tqdm
-import wandb
-import yaml
 
 from CheXpert2.custom_utils import dummy_context_mgr
-
 
 
 def training_loop(
@@ -45,7 +40,7 @@ def training_loop(
             # loss = training_core(model, inputs, scaler, criterion,device)
 
             inputs, labels = (
-                inputs.to(device, non_blocking=True),
+                inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
                 labels.to(device, non_blocking=True),
             )
             with torch.cuda.amp.autocast():
@@ -103,7 +98,7 @@ def validation_loop(model, loader, criterion, device):
         # get the inputs; data is a list of [inputs, labels]
 
         inputs, labels = (
-            inputs.to(device, non_blocking=True),
+            inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
             labels.to(device, non_blocking=True),
         )
 

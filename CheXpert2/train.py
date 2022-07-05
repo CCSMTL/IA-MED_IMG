@@ -7,14 +7,14 @@ import numpy as np
 import torch
 import wandb
 
+# ----------- parse arguments----------------------------------
+from CheXpert2.Parser import init_parser
 from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
 from CheXpert2.dataloaders.chexpertloader import chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
-# ----------- parse arguments----------------------------------
-from parser import init_parser
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -45,7 +45,12 @@ def main():
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
-    os.environ["DEBUG"]=str(args.debug)
+
+    os.environ["DEBUG"] = str(args.debug)
+    try:
+        img_dir = os.environ["img_dir"]
+    except:
+        img_dir = "data/CheXpert-v1.0-small"
     # ----------- hyperparameters-------------------------------------
 
     config = {
@@ -64,7 +69,7 @@ def main():
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
-    Sampler = Sampler("data/CheXpert-v1.0-small/train.csv")
+    Sampler = Sampler(f"{img_dir}/train.csv")
     if not args.sampler:
         Sampler.samples_weight = torch.ones_like(
             Sampler.samples_weight
@@ -81,9 +86,9 @@ def main():
 
     # -----------model initialisation------------------------------
     if args.unet:
-        model = Unet(args.model, 14)
+        model = Unet(args.model, 13)
     else:
-        model = CNN(args.model, 14, freeze_backbone=False)
+        model = CNN(args.model, 13, freeze_backbone=False)
 
     if args.device == "parallel":
         model = torch.nn.DataParallel(model)
@@ -93,12 +98,13 @@ def main():
         set_parameter_requires_grad(model.backbone)
 
     # send model to gpu
-    model = model.to(device)
+    model = model.to(device, memory_format=torch.channels_last)
 
     # -------data initialisation-------------------------------
 
     train_dataset = chexpertloader(
-        "data/CheXpert-v1.0-small/train.csv",
+        f"{img_dir}/train.csv",
+        img_dir=img_dir,
         img_size=args.img_size,
         prob=args.augment_prob,
         intensity=args.augment_intensity,
@@ -111,7 +117,8 @@ def main():
         M=config["M"],
     )
     val_dataset = chexpertloader(
-        "data/CheXpert-v1.0-small/valid.csv",
+        f"{img_dir}/valid.csv",
+        img_dir=img_dir,
         img_size=args.img_size,
         cache=args.cache,
         num_worker=args.num_worker,
@@ -142,7 +149,7 @@ def main():
 
     if args.wandb:
         wandb.init(
-            project="test-project", entity="ai-chexnet", config=copy.copy(config)
+            project="Chestxray", entity="ccsmtl2", config=copy.copy(config)
         )
 
         wandb.watch(model)
@@ -152,7 +159,7 @@ def main():
     )
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
-    metric = Metrics(num_classes=14, threshold=np.zeros((14)) + 0.5)
+    metric = Metrics(num_classes=13, threshold=np.zeros((13)) + 0.5)
     metrics = metric.metrics()
 
     # ------------training--------------------------------------------
@@ -184,7 +191,7 @@ def main():
         array = array.numpy().round(0)
         for item in array:
             if np.max(item) == 0:
-                answers.append(14)
+                answers.append(13)
             else:
                 answers.append(np.argmax(item))
         return answers
@@ -195,7 +202,7 @@ def main():
     import yaml
 
     if wandb.run is not None:
-        with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+        with open("data/data.yaml", "r") as stream:
             names = yaml.safe_load(stream)["names"]
         experiment.log_metric(
             "conf_mat",
@@ -206,7 +213,7 @@ def main():
             ),
             epoch=None
         )
-        # 2) roc curves
+    # 2) roc curves
         experiment.log_metric(
             "roc_curves",
             wandb.plot.roc_curve(
