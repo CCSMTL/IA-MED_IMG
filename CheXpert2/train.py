@@ -216,17 +216,17 @@ def main():
             epoch=None
         )
     # 2) roc curves
-        experiment.log_metric(
-            "roc_curves",
-            wandb.plot.roc_curve(
-                convert(results[0]),
-                convert(results[1]),
-                labels=names[:-1],
-
-            ),
-            epoch=None
-        )
-
+    #     experiment.log_metric(
+    #         "roc_curves",
+    #         wandb.plot.roc_curve(
+    #             convert(results[0]),
+    #             convert(results[1]),
+    #             labels=names[:-1],
+    #
+    #         ),
+    #         epoch=None
+    #     )
+    #TODO : define our own roc curves to plot on wandb
         for key,value in summary.items() :
             wandb.run.summary[key] = value
 
