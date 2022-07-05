@@ -38,7 +38,7 @@ mapping = {
 
 
 def chord():
-    data = pd.read_csv("../data/data_table.csv")
+    data = pd.read_csv("data/data_table.csv")
 
     diseases = data["Finding Labels"].values
 
@@ -62,7 +62,7 @@ def chord():
 
 
 def histogram():
-    data = pd.read_csv("../data/data_table.csv")
+    data = pd.read_csv("data/data_table.csv")
 
     diseases = data["Finding Labels"].values
 
@@ -88,7 +88,7 @@ def histogram():
 
 
 def chord_chexpert():
-    data = pd.read_csv("../data/CheXpert-v1.0-small/train.csv").fillna(0)
+    data = pd.read_csv("data/CheXpert-v1.0-small/train.csv").fillna(0)
 
     data = data.iloc[:, 5:19]
 
@@ -109,7 +109,7 @@ def chord_chexpert():
 
 
 def histogram_chexpert():
-    data = pd.read_csv("../data/CheXpert-v1.0-small/train.csv").fillna(0)
+    data = pd.read_csv("data/CheXpert-v1.0-small/train.csv").fillna(0)
     names = data.iloc[:, 5:19].columns
     diseases = data.iloc[:, 5:19].to_numpy()
     counts = np.zeros((3, 14))

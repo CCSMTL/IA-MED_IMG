@@ -13,7 +13,7 @@ from tqdm.auto import tqdm
 from CheXpert2 import Transforms
 
 
-# TODO : ADD PROBABILITY PER AUGMENT CATEGORY
+
 
 
 class CxrayDataloader(Dataset):
@@ -87,7 +87,7 @@ class CxrayDataloader(Dataset):
 
         return transforms.Compose(
             [
-                #    transforms.RandomErasing(p=prob),  # TODO intensity to add
+                #    transforms.RandomErasing(p=prob),
             ]
         )
 
@@ -101,7 +101,7 @@ class CxrayDataloader(Dataset):
             [  # advanced/custom
                 Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob[1], intensity),
-                Transforms.CutMix(prob[2]),  # TODO intensity to add
+                Transforms.CutMix(prob[2]),
                 Transforms.RandomErasing(prob[3]),
             ]
 
@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     cxraydataloader = CxrayDataloader(
         img_dir="../data/test", num_classes=14, channels=3
-    )  # TODO : build test repertory with 1 or 2 test image/labels
+    )
 
     # testing
     x = np.uint8(np.random.random((224, 224, 3)) * 255)

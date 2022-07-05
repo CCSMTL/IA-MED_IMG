@@ -6,7 +6,7 @@ from CheXpert2.custom_utils import dummy_context_mgr
 
 
 def training_loop(
-    model, loader, optimizer, criterion, device, minibatch_accumulate, scaler
+    model, loader, optimizer, criterion, device, minibatch_accumulate, scaler,clip_norm
 ):
     """
 
@@ -62,8 +62,8 @@ def training_loop(
 
                 # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
                 torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), 5
-                )  # TODO : add norm c as hyperparameters
+                    model.parameters(), clip_norm
+                )
                 # optimizer.step()
                 scaler.step(optimizer)
                 scaler.update()
@@ -136,6 +136,7 @@ def training(
     experiment=None,
     patience=5,
     epoch_max=50,
+    clip_norm = 100
 ):
     epoch = 0
     train_loss_list = []
@@ -158,6 +159,7 @@ def training(
             device,
             minibatch_accumulate,
             scaler,
+            clip_norm
         )
         val_loss, results = validation_loop(
             model, tqdm.tqdm(validation_loader, leave=False), criterion, device

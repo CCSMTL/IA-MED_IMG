@@ -65,6 +65,7 @@ def main():
         # RandAugment
         "N": 2,
         "M": 9,
+        "clip_norm" : 5
     }
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
@@ -158,8 +159,10 @@ def main():
         f"{args.model}", is_wandb=args.wandb, tags=args.tags, config=copy.copy(config)
     )
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-
-    metric = Metrics(num_classes=13, threshold=np.zeros((13)) + 0.5)
+    import yaml
+    with open("data/data.yaml", "r") as stream:
+        names = yaml.safe_load(stream)["names"]
+    metric = Metrics(num_classes=13,names=names, threshold=np.zeros((13)) + 0.5)
     metrics = metric.metrics()
 
     # ------------training--------------------------------------------
@@ -180,6 +183,7 @@ def main():
         patience=10,
         experiment=experiment,
         metrics=metrics,
+        clip_norm= config["clip_norm"]
     )
 
     # -------Final Visualization-------------------------------
@@ -199,11 +203,9 @@ def main():
     # from CheXpert2.visualization import
 
     # 1) confusion matrix
-    import yaml
-
     if wandb.run is not None:
-        with open("data/data.yaml", "r") as stream:
-            names = yaml.safe_load(stream)["names"]
+
+
         experiment.log_metric(
             "conf_mat",
             wandb.sklearn.plot_confusion_matrix(
@@ -225,8 +227,8 @@ def main():
             epoch=None
         )
 
-
-        wandb.run.summary=wandb.run.summary|summary
+        for key,value in summary.items() :
+            wandb.run.summary[key] = value
 
 
 if __name__ == "__main__":

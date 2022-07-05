@@ -146,7 +146,7 @@ def main():
         )
     model.load_state_dict(
         torch.load(
-            f"models/models_weights/{args.model}/DataParallel.pt",  # TODO : load .pt and check name for if dataparallel
+            f"models/models_weights/{args.model}/DataParallel.pt",  # TODO : load .pt and check name for if dataparallel ?
             map_location=torch.device("cpu"),
         )
     )
@@ -169,7 +169,7 @@ def main():
     m = create_confusion_matrix(results)
     # -----------------------------------------------------------------------------------
 
-    with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+    with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
 
     # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)

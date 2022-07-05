@@ -201,7 +201,7 @@ def main():
     import yaml
 
     if wandb.run is not None:
-        with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
+        with open("data/data.yaml", "r") as stream:
             names = yaml.safe_load(stream)["names"]
         experiment.log_metric(
             "conf_mat",

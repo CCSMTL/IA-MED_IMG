@@ -17,7 +17,6 @@ from torchvision import transforms
 from CheXpert2 import Transforms
 
 
-# TODO : ADD PROBABILITY PER AUGMENT CATEGORY
 
 
 class chexpertloader(Dataset):
@@ -80,7 +79,7 @@ class chexpertloader(Dataset):
     def get_transform(prob):
         return transforms.Compose(
             [
-                #            transforms.RandomErasing(p=prob),  # TODO intensity to add
+
                 transforms.RandomHorizontalFlip(p=prob[4]),
             ]
         )
@@ -91,8 +90,8 @@ class chexpertloader(Dataset):
             [  # advanced/custom
                 Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob[1], intensity),
-                Transforms.CutMix(prob[2]),
-                Transforms.RandomErasing(prob[3]),
+                Transforms.CutMix(prob[2] , intensity),
+                Transforms.RandomErasing(prob[3],intensity),
 
             ]
         )
