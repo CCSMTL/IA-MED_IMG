@@ -17,7 +17,6 @@ from torchvision import transforms
 from CheXpert2 import Transforms
 
 
-# TODO : ADD PROBABILITY PER AUGMENT CATEGORY
 
 
 class chexpertloader(Dataset):
@@ -80,7 +79,7 @@ class chexpertloader(Dataset):
     def get_transform(prob):
         return transforms.Compose(
             [
-                #            transforms.RandomErasing(p=prob),  # TODO intensity to add
+
                 transforms.RandomHorizontalFlip(p=prob[4]),
             ]
         )
@@ -91,8 +90,8 @@ class chexpertloader(Dataset):
             [  # advanced/custom
                 Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob[1], intensity),
-                Transforms.CutMix(prob[2]),
-                Transforms.RandomErasing(prob[3]),
+                Transforms.CutMix(prob[2] , intensity),
+                Transforms.RandomErasing(prob[3],intensity),
 
             ]
         )
@@ -112,7 +111,7 @@ class chexpertloader(Dataset):
         labels[vector == 0] = label_smoothing
         labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
 
-        return labels
+        return torch.from_numpy(labels)
 
     @staticmethod
     def get_preprocess(channels, img_size):
@@ -153,6 +152,8 @@ class chexpertloader(Dataset):
 
         return image
 
+
+
     def __getitem__(self, idx):
 
         image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
@@ -160,7 +161,7 @@ class chexpertloader(Dataset):
         image = self.transform(image)
 
         if sum(self.prob) > 0:
-            idx = torch.randint(0, len(self), (1,))
+            idx = torch.randint(0, len(self), (1,)).item()
             image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
             label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
             image2 = self.transform(image2)

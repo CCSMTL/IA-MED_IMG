@@ -5,17 +5,13 @@ import warnings
 import yaml
 import sys
 
-with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
-    names = yaml.safe_load(stream)["names"]
-
-names += ["No Finding"]
 
 
 class Metrics:
-    def __init__(self, num_classes, threshold=0.5):
+    def __init__(self, num_classes,names, threshold=0.5):
         self.num_classes = num_classes
         self.threshold = threshold
-
+        self.names=names
     def accuracy(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
         return np.mean(np.where(pred == true, 1, 0))
@@ -43,11 +39,11 @@ class Metrics:
             classCount = pred.shape[1]
             for i in range(classCount):
                 fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
-                outAUROC[names[i]] = auc(fpr[i], tpr[i])
+                outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
             outAUROC["mean"] = np.mean(list(outAUROC.values()))
         except ValueError as e:
             print(e, file=sys.stderr)
-            for i in names + ["mean"]:
+            for i in self.names + ["mean"]:
                 outAUROC[i] = -1
         return outAUROC
 

@@ -2,6 +2,7 @@ import torch
 
 from torchvision import transforms
 
+#TODO : TESTS THESE VISUALLY
 
 class Mixing(object):
     """
@@ -33,12 +34,13 @@ class CutMix(object):
     Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
     """
 
-    def __init__(self, prob):
+    def __init__(self, prob , intensity):
         """
 
         :param prob: either a float or array of appropriate size
         """
         self.prob = prob
+        self.intensity = intensity
 
     def __call__(self, samples):
         image1, landmarks1 = samples["image"], samples["landmarks"]
@@ -54,7 +56,7 @@ class CutMix(object):
             if y2 < y:
                 y, y2 = y2, y
             ratio = (x2 - x) * (y2 - y) / n**2
-            # TODO : make sure bbox!=0
+
             if torch.rand(1) < self.prob:
                 image1[:, x:x2, y:y2] = image2[:, x:x2, y:y2]
                 landmarks1 = (1 - ratio) * landmarks1 + ratio * landmarks2
@@ -71,19 +73,21 @@ class RandomErasing(object):
     def __init__(
         self,
         prob,
+        intensity
     ):
         """
 
         :param prob: either a float or array of appropriate size
         """
         self.prob = prob
+        self.intensity = intensity
 
     def __call__(self, samples):
         image1, landmarks1 = samples["image"], samples["landmarks"]
 
         m, n, _ = image1.shape
 
-        bbox = torch.cat((torch.rand(2) * n, torch.abs(torch.randn(2) * n / 5))).int()
+        bbox = torch.cat((torch.rand(2) * n, torch.abs(torch.randn(2) * n * self.intensity))).int()
         x, y, w, h = bbox
 
         if torch.rand(1) < self.prob:
