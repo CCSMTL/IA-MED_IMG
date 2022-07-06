@@ -2,6 +2,7 @@
 import copy
 import os
 import warnings
+from functools import reduce
 
 import numpy as np
 import torch
@@ -9,11 +10,10 @@ import wandb
 
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
-from CheXpert2.custom_utils import Experiment, set_parameter_requires_grad
+from CheXpert2.custom_utils import Experiment
 from CheXpert2.dataloaders.chexpertloader import chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
-from CheXpert2.models.Unet import Unet
 from CheXpert2.training.training import training
 
 # -----------cuda optimization tricks-------------------------
@@ -24,8 +24,7 @@ torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
 
 
-def main():
-
+def initialize_config():
     # -------- proxy config ---------------------------
     from six.moves import urllib
 
@@ -59,19 +58,28 @@ def main():
         "lr": 0.001,
         "weight_decay": 0.01,
         # loss and optimizer
-        "optimizer": torch.optim.AdamW,
-        "criterion": torch.nn.BCEWithLogitsLoss(),
+        "optimizer": "AdamW",
+        "criterion": "BCEWithLogitsLoss",
         # RandAugment
         "N": 2,
         "M": 9,
         "clip_norm": 5
     }
+
     config = config | vars(args)
-    wandb.init(
-        project="Chestxray", entity="ccsmtl2", config=copy.copy(config)
-    )
-    
+    wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
+
     config = wandb.config
+    experiment = Experiment(
+        f"{config['model']}", is_wandb=True, tags=None, config=config
+    )
+    optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
+    criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
+
+    return config, img_dir, experiment, optimizer, criterion
+
+def main():
+    config, img_dir, experiment, optimizer, criterion = initialize_config()
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
@@ -91,12 +99,17 @@ def main():
     print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
-    
+
     model = CNN(config["model"], 13, freeze_backbone=False)
     model = torch.nn.DataParallel(model)
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
-
+    optimizer = optimizer(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
     # -------data initialisation-------------------------------
 
     train_dataset = chexpertloader(
@@ -144,10 +157,6 @@ def main():
     # ------------- Metrics & Trackers -----------------------------------------------------------
    
     wandb.watch(model)
-    
-    experiment = Experiment(
-        f"{config['model']}", is_wandb=True, tags=None, config=copy.copy(config)
-    )
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
     import yaml
@@ -160,7 +169,6 @@ def main():
     print("Starting training now")
 
     # initialize metrics loggers
-    optimizer = config["optimizer"](model.parameters())
     print(model._get_name())
     results,summary = training(
         model,

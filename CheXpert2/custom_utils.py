@@ -1,9 +1,10 @@
-import os
-import torch
-import pathlib
-import wandb
-import json
 import contextlib
+import os
+import pathlib
+
+import torch
+import wandb
+
 
 # -----------------------------------------------------------------------------------
 class Experiment:
@@ -27,11 +28,11 @@ class Experiment:
         for f in files:
             os.remove(root + "/" + f)
 
-        if config is not None:
-            for key, value in config.items():
-                config[key] = str(value)
-            with open(f"{self.directory}/config.json", "w") as f:
-                json.dump(config, f)
+        # if config is not None:
+        #     for key, value in config.items():
+        #         config[key] = str(value)
+        #     with open(f"{self.directory}/config.json", "w") as f:
+        #         json.dump(config, f)
 
     def log_metric(self, metric_name, value, epoch):
 

@@ -1,12 +1,16 @@
-import torch
-from CheXpert2.custom_utils import set_parameter_requires_grad
-from torch.autograd import Variable
 from functools import reduce
+
+import torch
+from torch.autograd import Variable
+
+from CheXpert2.custom_utils import set_parameter_requires_grad
 
 
 @torch.no_grad()
 def get_output(model, x):
     y = model(x)
+    if "inception" in model._get_name().lower():
+        y = y.logits
     return y.shape[1]
 
 
@@ -84,7 +88,10 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
+        if "inception" in self.backbone._get_name().lower():
+            x = x.logits
         x = self.classifier(x)
+
         return x
 
 
