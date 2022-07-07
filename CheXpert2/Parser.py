@@ -14,8 +14,8 @@ def init_parser():
         type=str,
         nargs="?",
         choices=torch.hub.list("pytorch/vision:v0.10.0")
-        + torch.hub.list("facebookresearch/deit:main"),
-        required=True,
+                + torch.hub.list("facebookresearch/deit:main"),
+        required=False,
         help="Choice of the model",
     )
 

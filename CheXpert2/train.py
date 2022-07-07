@@ -6,8 +6,8 @@ from functools import reduce
 
 import numpy as np
 import torch
-
 import wandb
+
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
 from CheXpert2.custom_utils import Experiment
@@ -44,10 +44,10 @@ def initialize_config():
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
-
     os.environ["DEBUG"] = str(args.debug)
     if args.debug:
         os.environ["WANDB_MODE"] = "offline"
+
     try:
         img_dir = os.environ["img_dir"]
     except:

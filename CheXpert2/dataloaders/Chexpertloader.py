@@ -17,6 +17,7 @@ from torchvision import transforms
 from CheXpert2 import Transforms
 
 
+
 class Chexpertloader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
@@ -74,12 +75,11 @@ class Chexpertloader(Dataset):
         return len(self.files)
 
     @staticmethod
-    def get_transform(prob, intensity):
+    def get_transform(prob, intensity):  # for transform that would require pil images
         return transforms.Compose(
             [
-
+                transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
-                transforms.RandomErasing(prob[3], (intensity, intensity))
             ]
         )
 
@@ -126,7 +126,6 @@ class Chexpertloader(Dataset):
                 transforms.CenterCrop(img_size),
                 transforms.ConvertImageDtype(torch.float32),
                 normalize,
-
             ]
         )
 
@@ -177,3 +176,4 @@ class Chexpertloader(Dataset):
         if self.unet:
             return image, image
         return image, label
+
