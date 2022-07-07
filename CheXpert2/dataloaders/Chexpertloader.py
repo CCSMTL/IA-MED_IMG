@@ -17,9 +17,7 @@ from torchvision import transforms
 from CheXpert2 import Transforms
 
 
-
-
-class chexpertloader(Dataset):
+class Chexpertloader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
     """
@@ -62,7 +60,7 @@ class chexpertloader(Dataset):
 
         self.preprocess = self.get_preprocess(channels, img_size)
 
-        self.transform = self.get_transform(prob)
+        self.transform = self.get_transform(prob, intensity)
         self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
@@ -76,11 +74,12 @@ class chexpertloader(Dataset):
         return len(self.files)
 
     @staticmethod
-    def get_transform(prob):
+    def get_transform(prob, intensity):
         return transforms.Compose(
             [
 
                 transforms.RandomHorizontalFlip(p=prob[4]),
+                transforms.RandomErasing(prob[3], (intensity, intensity))
             ]
         )
 
@@ -91,7 +90,7 @@ class chexpertloader(Dataset):
                 Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob[1], intensity),
                 Transforms.CutMix(prob[2] , intensity),
-                Transforms.RandomErasing(prob[3],intensity),
+
 
             ]
         )
@@ -125,7 +124,9 @@ class chexpertloader(Dataset):
             [
 
                 transforms.CenterCrop(img_size),
+                transforms.ConvertImageDtype(torch.float32),
                 normalize,
+
             ]
         )
 
@@ -166,17 +167,13 @@ class chexpertloader(Dataset):
             label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
             image2 = self.transform(image2)
 
-            samples = {
-                "image": image,
-                "landmarks": label,
-                "image2": image2,
-                "landmarks2": label2,
-            }
-            image, label, image2, label2 = (self.advanced_transform(samples)).values()
+            samples = (image, image2, label, label2)
+
+            image, image2, label, label2 = self.advanced_transform(samples)
             del samples, image2, label2
-        image = self.preprocess(image.float())
+
+        image = self.preprocess(image)
 
         if self.unet:
             return image, image
         return image, label
-

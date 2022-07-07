@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import torch
 
@@ -101,7 +102,7 @@ def init_parser():
     )
     parser.add_argument(
         "--num_worker",
-        default=8,
+        default=os.cpu_count(),
         const="all",
         type=int,
         nargs="?",

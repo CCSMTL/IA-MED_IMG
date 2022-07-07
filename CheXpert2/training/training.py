@@ -172,12 +172,13 @@ def training(
             experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
             experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
 
+        if metrics:
             for key in metrics:
                 pred = results[1].numpy()
                 true = results[0].numpy()
-                metric_result=metrics[key](true, pred)
+                metric_result = metrics[key](true, pred)
                 experiment.log_metric(key, metric_result, epoch=epoch)
-                metrics_results[key]=metric_result
+                metrics_results[key] = metric_result
 
         if val_loss < best_loss:
             best_loss = val_loss
