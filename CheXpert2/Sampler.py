@@ -1,6 +1,5 @@
-import os
-
 import numpy as np
+import os
 import pandas as pd
 import torch
 import tqdm
@@ -39,7 +38,7 @@ class Sampler:
 
         print(f"A total of {no_cat} samples had no category defined!")
         if os.environ["DEBUG"] == "True":
-            weights = weights[0:100]
+            weights = weights[0:1000]
         self.weights = weights
 
     def sampler(self):
