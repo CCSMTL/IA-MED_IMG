@@ -5,6 +5,8 @@ from torchvision import transforms
 
 # TODO : TESTS THESE VISUALLY
 
+@torch.no_grad()
+@torch.jit.script
 class Mixing(object):
     """
     Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
@@ -31,7 +33,7 @@ class Mixing(object):
 
         return image1, label1.float()
 
-    def __call__(self, samples):
+    def __call__(self, samples: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         if self.prob == 0:
             return samples
         images, labels = samples
@@ -50,6 +52,8 @@ class Mixing(object):
         return (images, labels)
 
 
+@torch.no_grad()
+@torch.jit.script
 class CutMix(object):
     """
     Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
@@ -87,7 +91,7 @@ class CutMix(object):
         label1 = (1 - ratio[:, None]) * label1 + ratio[:, None] * label2
         return image1, label1
 
-    def __call__(self, samples):
+    def __call__(self, samples: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         if self.prob == 0:
             return samples
         images, labels = samples
@@ -103,69 +107,14 @@ class CutMix(object):
         return (images, labels)
 
 
-class RandomErasing(object):
-    """
-    Class that regroups all supplementary transformations not implemented by default in pytorch aka randaugment.
-    """
-
-    def __init__(
-            self,
-            prob,
-            intensity
-    ):
-        """
-
-        :param prob: either a float or array of appropriate size
-        """
-        self.prob = prob
-        self.intensity = intensity
-
-    def randomerasing(self, image1, image2, label1, label2):
-        n, channels, height, width = image1.shape
-
-        bbox = torch.hstack(
-            (torch.rand((n, 2)) * height, torch.abs(torch.randn((n, 2)) * height * self.intensity))).int()
-        x, y, w, h = bbox[:, 0], bbox[:, 1], bbox[:, 2], bbox[:, 3]
-
-        # lets make sure there are no out of bound boxes
-        x2 = x + w
-        x2 = torch.max(x2, torch.zeros_like(x2))
-        x2 = torch.min(x2, torch.ones_like(x2) * height)
-        y2 = y + h
-        y2 = torch.max(y2, torch.zeros_like(x2))
-        y2 = torch.min(x2, torch.ones_like(x2) * height)
-        ratio = torch.abs(x2 - x) * torch.abs(y2 - y) / height ** 2
-        x, x2, y, y2 = x.int(), x2.int(), y.int(), y2.int()
-
-        # todo : fix this mess ....
-        for xx, xx2, yy, yy2 in zip(x, x2, y, y2):
-            image1[:, xx:xx2, yy:yy2] = torch.randn((n, channels, xx2 - xx, yy2 - yy))
-
-        return image1, label1
-
-    def __call__(self, samples):
-        if self.prob == 0:
-            return samples
-        images, labels = samples
-        n = images.shape[0]  # number of samples
-        probs = torch.rand((n,))
-        idxs = torch.randint(0, n, (n,))  # random indexes
-
-        images[probs < self.prob], labels[probs < self.prob] = self.randomerasing(images[probs < self.prob],
-                                                                                  images[idxs[probs < self.prob]],
-                                                                                  labels[probs < self.prob],
-                                                                                  labels[idxs[probs < self.prob]])
-
-        return (images, labels)
-
-
+@torch.no_grad()
 class RandAugment:
     def __init__(self, prob, N, M):
         self.prob = prob
 
         self.augment = transforms.RandAugment(num_ops=N, magnitude=M)
 
-    def __call__(self, samples):
+    def __call__(self, samples: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         if self.prob == 0:
             return samples
         images, labels = samples

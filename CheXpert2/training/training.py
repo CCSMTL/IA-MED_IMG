@@ -43,7 +43,7 @@ def training_loop(
             labels = labels.to(device, non_blocking=True, dtype=torch.float32)
             inputs = loader.iterable.dataset.transform(inputs)
             inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
-            inputs = inputs.to(memory_format=torch.channels_last, dtype=torch.float32)
+            inputs = inputs.to(memory_format=torch.channels_last, dtype=torch.float32, non_blocking=True)
             inputs = loader.iterable.dataset.preprocess(inputs)
 
             with torch.cuda.amp.autocast():
