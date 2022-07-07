@@ -11,7 +11,6 @@ import wandb
 from CheXpert2.Parser import init_parser
 from CheXpert2.custom_utils import Experiment
 from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
-from CheXpert2.dataloaders.MultiEpochDataloader import MultiEpochsDataLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
@@ -141,14 +140,14 @@ def main():
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
     # batch_size : maximum possible without crashing
 
-    training_loader = MultiEpochsDataLoader(
+    training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
         pin_memory=True,
         sampler=Sampler.sampler(),
     )
-    validation_loader = MultiEpochsDataLoader(
+    validation_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
