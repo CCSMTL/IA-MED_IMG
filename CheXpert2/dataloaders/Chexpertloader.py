@@ -14,12 +14,10 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from CheXpert2 import Transforms
+from CheXpert2 import custom_transforms
 
 
-
-
-class chexpertloader(Dataset):
+class Chexpertloader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
     """
@@ -62,7 +60,7 @@ class chexpertloader(Dataset):
 
         self.preprocess = self.get_preprocess(channels, img_size)
 
-        self.transform = self.get_transform(prob)
+        self.transform = self.get_transform(prob, intensity)
         self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
@@ -76,22 +74,23 @@ class chexpertloader(Dataset):
         return len(self.files)
 
     @staticmethod
-    def get_transform(prob):
+    def get_transform(prob, intensity):  # for transform that would require pil images
         return transforms.Compose(
             [
-
+                transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
+
             ]
         )
 
     @staticmethod
-    def get_advanced_transform(prob, intensity, N, M):
+    def get_advanced_transform(prob, intensity, N, M):  # for training ; uses tensors as input
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                Transforms.Mixing(prob[1], intensity),
-                Transforms.CutMix(prob[2] , intensity),
-                Transforms.RandomErasing(prob[3],intensity),
+                custom_transforms.RandAugment(prob[0], N, M),
+                custom_transforms.Mixing(prob[1], intensity),
+                custom_transforms.CutMix(prob[2], intensity),
+                # Transforms.RandomErasing(prob[3],intensity),
 
             ]
         )
@@ -158,25 +157,23 @@ class chexpertloader(Dataset):
 
         image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
         label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-        image = self.transform(image)
 
-        if sum(self.prob) > 0:
-            idx = torch.randint(0, len(self), (1,)).item()
-            image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
-            label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-            image2 = self.transform(image2)
-
-            samples = {
-                "image": image,
-                "landmarks": label,
-                "image2": image2,
-                "landmarks2": label2,
-            }
-            image, label, image2, label2 = (self.advanced_transform(samples)).values()
-            del samples, image2, label2
-        image = self.preprocess(image.float())
+        # if sum(self.prob) > 0:
+        #     idx = torch.randint(0, len(self), (1,)).item()
+        #     image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+        #     label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
+        #     image2 = self.transform(image2)
+        #
+        #     samples = {
+        #         "image": image,
+        #         "landmarks": label,
+        #         "image2": image2,
+        #         "landmarks2": label2,
+        #     }
+        #     image, label, image2, label2 = (self.advanced_transform(samples)).values()
+        #     del samples, image2, label2
+        # image = self.preprocess(image.float())
 
         if self.unet:
             return image, image
         return image, label
-

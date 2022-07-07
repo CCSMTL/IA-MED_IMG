@@ -39,10 +39,13 @@ def training_loop(
             # forward + backward + optimize
             # loss = training_core(model, inputs, scaler, criterion,device)
 
-            inputs, labels = (
-                inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
-                labels.to(device, non_blocking=True),
-            )
+            inputs = inputs.to(device, non_blocking=True)
+            labels = labels.to(device, non_blocking=True, dtype=torch.float32)
+            inputs = loader.iterable.dataset.transform(inputs)
+            inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
+            inputs = inputs.to(memory_format=torch.channels_last, dtype=torch.float32)
+            inputs = loader.iterable.dataset.preprocess(inputs)
+
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
 
@@ -98,10 +101,10 @@ def validation_loop(model, loader, criterion, device):
         # get the inputs; data is a list of [inputs, labels]
 
         inputs, labels = (
-            inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
-            labels.to(device, non_blocking=True),
+            inputs.to(device, non_blocking=True, memory_format=torch.channels_last, dtype=torch.float32),
+            labels.to(device, non_blocking=True, dtype=torch.float32),
         )
-
+        inputs = loader.iterable.dataset.preprocess(inputs)
         # forward + backward + optimize
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
@@ -171,13 +174,13 @@ def training(
         if experiment:
             experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
             experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
-
-            for key in metrics:
-                pred = results[1].numpy()
-                true = results[0].numpy()
-                metric_result=metrics[key](true, pred)
-                experiment.log_metric(key, metric_result, epoch=epoch)
-                metrics_results[key]=metric_result
+            if metrics:
+                for key in metrics:
+                    pred = results[1].numpy()
+                    true = results[0].numpy()
+                    metric_result = metrics[key](true, pred)
+                    experiment.log_metric(key, metric_result, epoch=epoch)
+                    metrics_results[key] = metric_result
 
         if val_loss < best_loss:
             best_loss = val_loss

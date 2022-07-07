@@ -6,12 +6,12 @@ from functools import reduce
 
 import numpy as np
 import torch
-import wandb
 
+import wandb
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
 from CheXpert2.custom_utils import Experiment
-from CheXpert2.dataloaders.chexpertloader import chexpertloader
+from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
@@ -44,8 +44,10 @@ def initialize_config():
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
+    os.environ["DEBUG"] = str(args.debug)
+    if args.debug:
+        os.environ["WANDB_MODE"] = "offline"
 
-    os.environ["DEBUG"] = "False"
     try:
         img_dir = os.environ["img_dir"]
     except:
@@ -112,7 +114,7 @@ def main():
     )
     # -------data initialisation-------------------------------
 
-    train_dataset = chexpertloader(
+    train_dataset = Chexpertloader(
         f"{img_dir}/train.csv",
         img_dir=img_dir,
         img_size=config["img_size"],
@@ -126,7 +128,7 @@ def main():
         N=config["N"],
         M=config["M"],
     )
-    val_dataset = chexpertloader(
+    val_dataset = Chexpertloader(
         f"{img_dir}/valid.csv",
         img_dir=img_dir,
         img_size=config["img_size"],
@@ -155,25 +157,27 @@ def main():
     print("The data has now been loaded successfully into memory")
 
     # ------------- Metrics & Trackers -----------------------------------------------------------
-   
-    wandb.watch(model)
 
-    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+    wandb.watch(model)
     import yaml
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
-    metric = Metrics(num_classes=13,names=names, threshold=np.zeros((13)) + 0.5)
-    metrics = metric.metrics()
+    if os.environ["DEBUG"] == "False":
+        from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
+        metric = Metrics(num_classes=13, names=names, threshold=np.zeros((13)) + 0.5)
+        metrics = metric.metrics()
+    else:
+        metrics = None
     # ------------training--------------------------------------------
     print("Starting training now")
 
     # initialize metrics loggers
     print(model._get_name())
-    results,summary = training(
+    results, summary = training(
         model,
         optimizer,
-        config["criterion"],
+        criterion,
         training_loader,
         validation_loader,
         device,
@@ -182,7 +186,7 @@ def main():
         patience=10,
         experiment=experiment,
         metrics=metrics,
-        clip_norm= config["clip_norm"]
+        clip_norm=config["clip_norm"]
     )
 
     # -------Final Visualization-------------------------------
