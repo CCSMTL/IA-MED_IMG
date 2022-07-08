@@ -5,9 +5,10 @@ Created on 2022-06-30$
 
 @author: Jonathan Beaulieu-Emond
 """
+import os
+
 import cv2 as cv
 import numpy as np
-import os
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
@@ -115,6 +116,7 @@ class Chexpertloader(Dataset):
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.456], std=[0.224])
         else:
+
             normalize = transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             )
