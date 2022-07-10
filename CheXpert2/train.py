@@ -6,8 +6,9 @@ from functools import reduce
 
 import numpy as np
 import torch
-
+import torch.distributed as dist
 import wandb
+
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
 from CheXpert2.custom_utils import Experiment
@@ -24,42 +25,67 @@ torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
 
 
-def init_distributed():
+def cleanup():
+    torch.distributed.destroy_process_group()
+
+
+def init_distributed(rank, world_size):
+    """
+    “node” is a system in your distributed architecture. In lay man’s terms, a single system that has multiple GPUs can be called as a node.
+
+    “global rank” is a unique identification number for each node in our architecture.
+
+    “local rank” is a unique identification number for processes in each node.
+
+    “world” is a union of all of the above which can have multiple nodes where each node spawns multiple processes. (Ideally, one for each GPU)
+
+    “world_size” is equal to number of nodes * number of gpus
+    """
     # Initializes the distributed backend which will take care of synchronizing nodes/GPUs
     dist_url = "env://"  # default
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '5000'
 
     # only works with torch.distributed.launch // torch.run
-    rank = int(os.environ["RANK"])
-    world_size = int(os.environ['WORLD_SIZE'])
-    local_rank = int(os.environ['LOCAL_RANK'])
-    torch.nn.parallel.DistributedDataParallel.init_process_group(
-        backend="nccl",
+    rank = rank  # id per process?
+    world_size = world_size  # number of processes
+    local_rank = 0  # int(os.environ['LOCAL_RANK']) #keep to 1 : gpu per process
+    torch.distributed.init_process_group(
+        backend="gloo",  # nccl , gloo, etc
         init_method=dist_url,
         world_size=world_size,
         rank=rank)
 
     # this will make all .cuda() calls work properly
-    torch.cuda.set_device(local_rank)
-
+    # torch.cuda.set_device(local_rank)
+    # torch.manual_seed(42)
     # synchronizes all the threads to reach this point before moving on
-    torch.nn.parallel.DistributedDataParallel.barrier()
+    # torch.distributed.barrier()
+
+    n = torch.cuda.device_count() // world_size
+    device_ids = list(range(local_rank * n, (local_rank + 1) * n))
+
+    print(
+        f"[{os.getpid()}] rank = {dist.get_rank()}, "
+        + f"world_size = {dist.get_world_size()}, n = {n}, device_ids = {device_ids}"
+    )
+
 
 def initialize_config():
     # -------- proxy config ---------------------------
-    from six.moves import urllib
 
-    proxy = urllib.request.ProxyHandler(
-        {
-            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-        }
-    )
-    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
-    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # proxy = urllib.request.ProxyHandler(
+    #     {
+    #         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+    #         "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+    #     }
+    # )
+    # os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
     # construct a new opener using your proxy settings
-    opener = urllib.request.build_opener(proxy)
+    # opener = urllib.request.build_opener(proxy)
     # install the openen on the module-level
-    urllib.request.install_opener(opener)
+    # urllib.request.install_opener(opener)
 
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
@@ -100,7 +126,8 @@ def initialize_config():
 
     return config, img_dir, experiment, optimizer, criterion
 
-def main():
+
+def main(rank, world_size):
     config, img_dir, experiment, optimizer, criterion = initialize_config()
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
@@ -127,12 +154,7 @@ def main():
     model = model.to(device, memory_format=torch.channels_last)
 
     # ----------- parallelisation -------------------------------------
-    if config["device"] == -1:
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-        local_rank = int(os.environ['LOCAL_RANK'])
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
-        torch.utils.data.distributed.DistributedSampler(sampler=Sampler, num_replicas=1, rank=local_rank, shuffle=True)
     optimizer = optimizer(
         model.parameters(),
         lr=config["lr"],
@@ -165,6 +187,15 @@ def main():
         channels=3,
     )
 
+    if config["device"] == "parallel":
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+        local_rank = int(os.environ['LOCAL_RANK'])
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+
+        sampler = torch.utils.data.distributed.DistributedSampler(dataset=train_dataset, num_replicas=world_size,
+                                                                  rank=rank, shuffle=True)
+    else:
+        sampler = Sampler.sampler()
     # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
     # batch_size : maximum possible without crashing
 
@@ -173,7 +204,7 @@ def main():
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
         pin_memory=True,
-        sampler=Sampler.sampler(),
+        sampler=sampler,
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
@@ -264,4 +295,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    world_size = 1
+    rank = 1
+    init_distributed(rank, world_size)
+    main(rank, world_size)
+    # mp.spawn(main,
+    #          args=(world_size,),
+    #          nprocs=world_size,
+    #          join=True)
+
+    cleanup()
