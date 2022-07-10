@@ -17,9 +17,7 @@ from torchvision import transforms
 from CheXpert2 import Transforms
 
 
-
-
-class chexpertloader(Dataset):
+class Chexpertloader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
     """
@@ -62,7 +60,7 @@ class chexpertloader(Dataset):
 
         self.preprocess = self.get_preprocess(channels, img_size)
 
-        self.transform = self.get_transform(prob)
+        self.transform = self.get_transform(prob, intensity)
         self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
@@ -70,16 +68,16 @@ class chexpertloader(Dataset):
         self.files = pd.read_csv(img_file).fillna(0)
 
         if os.environ["DEBUG"] == "True":
-            self.files = self.files[0:100]
+            self.files = self.files[0:1000]
 
     def __len__(self):
         return len(self.files)
 
     @staticmethod
-    def get_transform(prob):
+    def get_transform(prob, intensity):  # for transform that would require pil images
         return transforms.Compose(
             [
-
+                transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
             ]
         )
@@ -91,7 +89,7 @@ class chexpertloader(Dataset):
                 Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
                 Transforms.Mixing(prob[1], intensity),
                 Transforms.CutMix(prob[2] , intensity),
-                Transforms.RandomErasing(prob[3],intensity),
+
 
             ]
         )
@@ -118,6 +116,7 @@ class chexpertloader(Dataset):
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.456], std=[0.224])
         else:
+
             normalize = transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             )
@@ -125,6 +124,7 @@ class chexpertloader(Dataset):
             [
 
                 transforms.CenterCrop(img_size),
+                transforms.ConvertImageDtype(torch.float32),
                 normalize,
             ]
         )
@@ -166,15 +166,12 @@ class chexpertloader(Dataset):
             label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
             image2 = self.transform(image2)
 
-            samples = {
-                "image": image,
-                "landmarks": label,
-                "image2": image2,
-                "landmarks2": label2,
-            }
-            image, label, image2, label2 = (self.advanced_transform(samples)).values()
+            samples = (image, image2, label, label2)
+
+            image, image2, label, label2 = self.advanced_transform(samples)
             del samples, image2, label2
-        image = self.preprocess(image.float())
+
+        image = self.preprocess(image)
 
         if self.unet:
             return image, image

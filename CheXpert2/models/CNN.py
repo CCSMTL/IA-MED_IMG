@@ -1,12 +1,15 @@
 import torch
-from CheXpert2.custom_utils import set_parameter_requires_grad
-from torch.autograd import Variable
 from functools import reduce
+from torch.autograd import Variable
+
+from CheXpert2.custom_utils import set_parameter_requires_grad
 
 
 @torch.no_grad()
 def get_output(model, x):
     y = model(x)
+    if "inception" in model._get_name().lower():
+        y = y.logits
     return y.shape[1]
 
 
@@ -57,7 +60,7 @@ class CNN(torch.nn.Module):
             pass
 
         backbone = torch.hub.load(repo, backbone_name, pretrained=True)
-        if backbone_name.startswith("inception"):  # rip hardcode forced...
+        if backbone_name.startswith("inception") and self.training:  # rip hardcode forced...
             backbone.transform_input = False
 
         if channels == 1:
@@ -84,7 +87,13 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
+
+        name = self.backbone._get_name().lower()
+
+        if "inception" in name and self.training:
+            x = x.logits
         x = self.classifier(x)
+
         return x
 
 
