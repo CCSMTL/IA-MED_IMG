@@ -34,6 +34,7 @@ def training_loop(
     Profiler = dummy_context_mgr()
     with Profiler as profiler:
         for inputs, labels in loader:
+
             # get the inputs; data is a list of [inputs, labels]
 
             # forward + backward + optimize
@@ -151,6 +152,7 @@ def training(
     n, m = len(training_loader.dataset), len(validation_loader.dataset)
     while patience > 0 and epoch < epoch_max:  # loop over the dataset multiple times
         metrics_results={}
+        training_loader.sampler.set_epoch(epoch)
         train_loss = training_loop(
             model,
             tqdm.tqdm(training_loader, leave=False),

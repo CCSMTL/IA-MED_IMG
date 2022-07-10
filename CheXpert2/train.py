@@ -1,10 +1,11 @@
 # ------python import------------------------------------
 import copy
-import numpy as np
 import os
-import torch
 import warnings
 from functools import reduce
+
+import numpy as np
+import torch
 
 import wandb
 # ----------- parse arguments----------------------------------
@@ -22,6 +23,26 @@ torch.autograd.profiler.profile(False)
 torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
 
+
+def init_distributed():
+    # Initializes the distributed backend which will take care of synchronizing nodes/GPUs
+    dist_url = "env://"  # default
+
+    # only works with torch.distributed.launch // torch.run
+    rank = int(os.environ["RANK"])
+    world_size = int(os.environ['WORLD_SIZE'])
+    local_rank = int(os.environ['LOCAL_RANK'])
+    torch.nn.parallel.DistributedDataParallel.init_process_group(
+        backend="nccl",
+        init_method=dist_url,
+        world_size=world_size,
+        rank=rank)
+
+    # this will make all .cuda() calls work properly
+    torch.cuda.set_device(local_rank)
+
+    # synchronizes all the threads to reach this point before moving on
+    torch.nn.parallel.DistributedDataParallel.barrier()
 
 def initialize_config():
     # -------- proxy config ---------------------------
@@ -91,7 +112,7 @@ def main():
         )  # set all weights equal
     # ------- device selection ----------------------------
     if torch.cuda.is_available():
-        device = f"cuda:{config['device']}" if config['device'] != "parallel" else "cuda:0"
+        device = f"cuda" if config['device'] != "parallel" else "cuda"
 
     else:
         device = "cpu"
@@ -102,9 +123,16 @@ def main():
     # -----------model initialisation------------------------------
 
     model = CNN(config["model"], 13, freeze_backbone=False)
-    model = torch.nn.DataParallel(model)
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
+
+    # ----------- parallelisation -------------------------------------
+    if config["device"] == -1:
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+        local_rank = int(os.environ['LOCAL_RANK'])
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+
+        torch.utils.data.distributed.DistributedSampler(sampler=Sampler, num_replicas=1, rank=local_rank, shuffle=True)
     optimizer = optimizer(
         model.parameters(),
         lr=config["lr"],
@@ -152,6 +180,7 @@ def main():
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
         pin_memory=True,
+        shuffle=False,
     )
     print("The data has now been loaded successfully into memory")
 
@@ -168,6 +197,7 @@ def main():
         metrics = metric.metrics()
     else:
         metrics = None
+
     # ------------training--------------------------------------------
     print("Starting training now")
 
