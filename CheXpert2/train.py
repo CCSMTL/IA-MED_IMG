@@ -130,10 +130,7 @@ def initialize_config():
             rank = dist.get_rank()
             device = rank % torch.cuda.device_count()
         else:
-            device = f"cuda:{config['device'].pop()}"
-
-            for i in config['device']:
-                device = device + "," + str(i)
+            device = f"cuda:{config['device']}"
 
     else:
         device = "cpu"
