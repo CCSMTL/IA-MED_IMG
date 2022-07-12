@@ -126,11 +126,13 @@ def initialize_config():
     optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
     if torch.cuda.is_available():
-        if config["device"] == "parallel":
+        if -1 in config["device"]:
             rank = dist.get_rank()
             device = rank % torch.cuda.device_count()
         else:
-            device = f"cuda:{config['device']}"
+            device = f"cuda:"
+            for i in config['device']:
+                device = device + str(i) + ","
 
     else:
         device = "cpu"

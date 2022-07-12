@@ -31,11 +31,9 @@ def init_parser():
 
     parser.add_argument(
         "--device",
-        default="0",
-        const="all",
-        choices=["parallel", "0", "1"],
-        type=str,
-        nargs="?",
+        default=[0],
+        type=int,
+        nargs="+",
         required=False,
         help="GPU on which to execute your code. Parallel to use all available gpus",
     )
