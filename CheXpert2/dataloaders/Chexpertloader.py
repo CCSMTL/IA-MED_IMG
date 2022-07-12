@@ -70,6 +70,10 @@ class Chexpertloader(Dataset):
         if os.environ["DEBUG"] == "True":
             self.files = self.files[0:1000]
 
+        if self.cache:
+            self.images = [self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                           range(0, len(self.files))]
+
     def __len__(self):
         return len(self.files)
 
@@ -152,11 +156,11 @@ class Chexpertloader(Dataset):
 
         return image
 
-
-
     def __getitem__(self, idx):
-
-        image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+        if self.cache:
+            image = self.images[idx]
+        else:
+            image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
         label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
         image = self.transform(image)
 
