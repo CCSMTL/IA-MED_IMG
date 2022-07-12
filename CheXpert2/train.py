@@ -132,7 +132,7 @@ def initialize_config():
         else:
             device = f"cuda:"
             for i in config['device']:
-                device = device + str(i) + ","
+                device = device + "," + str(i)
 
     else:
         device = "cpu"
