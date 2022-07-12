@@ -136,6 +136,7 @@ def initialize_config():
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
 
+    torch.cuda.device(device)
     return config, img_dir, experiment, optimizer, criterion, device
 
 
