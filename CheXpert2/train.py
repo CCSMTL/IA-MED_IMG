@@ -137,6 +137,7 @@ def initialize_config():
         warnings.warn("No gpu is available for the computation")
 
     torch.cuda.device(device)
+    torch.set_num_threads(config["num_worker"])
     return config, img_dir, experiment, optimizer, criterion, device
 
 
