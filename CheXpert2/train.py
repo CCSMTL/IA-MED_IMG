@@ -92,14 +92,27 @@ def initialize_config():
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
+    # 1) set up debug env variable
     os.environ["DEBUG"] = str(args.debug)
     if args.debug:
         os.environ["WANDB_MODE"] = "offline"
-
+    # 2) load from env.variable the data repository location
     try:
         img_dir = os.environ["img_dir"]
     except:
         img_dir = "data"
+    # 3) Specify cuda device
+    if torch.cuda.is_available():
+        if -1 in args.device:
+            rank = dist.get_rank()
+            device = rank % torch.cuda.device_count()
+        else:
+            device = f"cuda:{args.device}"
+
+    else:
+        device = "cpu"
+        warnings.warn("No gpu is available for the computation")
+
     # ----------- hyperparameters-------------------------------------<
     config = {
         # AdamW
@@ -117,27 +130,17 @@ def initialize_config():
     }
 
     config = config | vars(args)
-    wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
 
-    config = wandb.config
-    experiment = Experiment(
-        f"{config['model']}", is_wandb=True, tags=None, config=config
-    )
     optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
-    if torch.cuda.is_available():
-        if -1 in config["device"]:
-            rank = dist.get_rank()
-            device = rank % torch.cuda.device_count()
-        else:
-            device = f"cuda:{config['device']}"
-
-    else:
-        device = "cpu"
-        warnings.warn("No gpu is available for the computation")
 
     torch.cuda.device(device)
     torch.set_num_threads(config["num_worker"])
+    experiment = Experiment(
+        f"{config['model']}", is_wandb=device == 0, tags=None, config=config
+    )
+    if experiment.is_wandb:
+        config = wandb.config
     return config, img_dir, experiment, optimizer, criterion, device
 
 
@@ -225,8 +228,8 @@ def main():
     print("The data has now been loaded successfully into memory")
 
     # ------------- Metrics & Trackers -----------------------------------------------------------
-
-    wandb.watch(model)
+    if experiment.is_wandb:
+        wandb.watch(model)
 
     import yaml
     with open("data/data.yaml", "r") as stream:

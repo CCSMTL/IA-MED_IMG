@@ -11,6 +11,8 @@ import cv2 as cv
 import numpy as np
 import pandas as pd
 import torch
+import tqdm
+from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -69,6 +71,16 @@ class Chexpertloader(Dataset):
 
         if os.environ["DEBUG"] == "True":
             self.files = self.files[0:1000]
+        if self.cache:
+            self.images = map(
+                list,
+                zip(
+                    *Parallel(n_jobs=num_worker)(
+                        delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                        tqdm(range(0, len(self.files)))
+                    )
+                ),
+            )
 
         if self.cache:
             self.images = [self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in

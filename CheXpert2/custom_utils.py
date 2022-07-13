@@ -3,6 +3,7 @@ import os
 import pathlib
 
 import torch
+
 import wandb
 
 
@@ -33,6 +34,8 @@ class Experiment:
         #         config[key] = str(value)
         #     with open(f"{self.directory}/config.json", "w") as f:
         #         json.dump(config, f)
+        if is_wandb:
+            wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
 
     def log_metric(self, metric_name, value, epoch):
 
