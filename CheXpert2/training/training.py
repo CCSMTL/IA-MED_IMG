@@ -155,7 +155,7 @@ def training(
 
         train_loss = training_loop(
             model,
-            tqdm.tqdm(training_loader, leave=False),
+            tqdm.tqdm(training_loader, leave=False, position=device * 3),
             optimizer,
             criterion,
             device,
@@ -181,13 +181,14 @@ def training(
                 metric_result = metrics[key](true, pred)
                 experiment.log_metric(key, metric_result, epoch=epoch)
                 metrics_results[key] = metric_result
-
+        else:
+            summary = {}
         if val_loss < best_loss:
             best_loss = val_loss
 
             experiment.save_weights(model)
             patience = patience_init
-            summary=metrics_results
+            summary = metrics_results
         else:
             patience -= 1
             print("patience has been reduced by 1")

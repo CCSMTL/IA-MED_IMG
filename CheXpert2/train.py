@@ -141,6 +141,8 @@ def initialize_config():
     )
     if experiment.is_wandb:
         config = wandb.config
+
+    dist.barrier()
     return config, img_dir, experiment, optimizer, criterion, device
 
 
@@ -204,19 +206,15 @@ def main():
         local_rank = int(os.environ['LOCAL_RANK'])
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
-    #     sampler = torch.utils.data.distributed.DistributedSampler(dataset=train_dataset, num_replicas=world_size,
-    #                                                               rank=rank, shuffle=True)
-    # else:
-    sampler = Sampler.sampler()
-    # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
-    # batch_size : maximum possible without crashing
-
+    from torch.utils.data.sampler import SequentialSampler
+    sampler = torch.utils.data.DistributedSampler(SequentialSampler(Sampler.sampler()))
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
         pin_memory=True,
         sampler=sampler,
+
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
@@ -245,7 +243,7 @@ def main():
     print("Starting training now")
 
     # initialize metrics loggers
-    print(model._get_name())
+
     results, summary = training(
         model,
         optimizer,
