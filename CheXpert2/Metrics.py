@@ -1,14 +1,14 @@
+import sys
+import warnings
+
 import numpy as np
+import yaml
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
-import warnings
-import yaml
-import sys
-
 
 
 class Metrics:
-    def __init__(self, num_classes,names, threshold=0.5):
+    def __init__(self, num_classes, names, threshold=0.5):
         self.num_classes = num_classes
         self.threshold = threshold
         self.names=names
@@ -40,11 +40,9 @@ class Metrics:
             for i in range(classCount):
                 fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
                 outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
+                if outAUROC[self.names[i]] == np.nan:
+                    outAUROC[self.names[i]] = 0
             outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        except ValueError as e:
-            print(e, file=sys.stderr)
-            for i in self.names + ["mean"]:
-                outAUROC[i] = -1
         return outAUROC
 
     def metrics(self):

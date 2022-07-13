@@ -7,6 +7,7 @@ from functools import reduce
 import numpy as np
 import torch
 import torch.distributed as dist
+import yaml
 
 import wandb
 # ----------- parse arguments----------------------------------
@@ -25,53 +26,7 @@ torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
 
 
-def cleanup():
-    torch.distributed.destroy_process_group()
 
-
-#
-# def init_distributed(rank, world_size):
-#     """
-#     “node” is a system in your distributed architecture. In lay man’s terms, a single system that has multiple GPUs can be called as a node.
-#
-#     “global rank” is a unique identification number for each node in our architecture.
-#
-#     “local rank” is a unique identification number for processes in each node.
-#
-#     “world” is a union of all of the above which can have multiple nodes where each node spawns multiple processes. (Ideally, one for each GPU)
-#
-#     “world_size” is equal to number of nodes * number of gpus
-#     """
-#     # Initializes the distributed backend which will take care of synchronizing nodes/GPUs
-#     dist_url = "env://"  # default
-#     os.environ['MASTER_ADDR'] = 'localhost'
-#     os.environ['MASTER_PORT'] = '5000'
-#
-#     # only works with torch.distributed.launch // torch.run
-#     rank = rank  # id per process?
-#     world_size = world_size  # number of processes
-#     local_rank = 0  # int(os.environ['LOCAL_RANK']) #keep to 1 : gpu per process
-#
-#     # this will make all .cuda() calls work properly
-#     torch.cuda.set_device(local_rank)
-#     torch.manual_seed(42)
-#
-#
-#
-#     torch.distributed.init_process_group(
-#             backend="gloo",  # nccl , gloo, etc
-#             init_method=dist_url,
-#             world_size=world_size,
-#             rank=rank)
-#      # synchronizes all the threads to reach this point before moving on
-#     n = torch.cuda.device_count() // world_size
-#     device_ids = list(range(local_rank * n, (local_rank + 1) * n))
-#
-#     print(
-#         f"[{os.getpid()}] rank = {dist.get_rank()}, "
-#         + f"world_size = {dist.get_world_size()}, n = {n}, device_ids = {device_ids}"
-#     )
-#     torch.distributed.barrier()
 
 def initialize_config():
     # -------- proxy config ---------------------------
@@ -103,11 +58,11 @@ def initialize_config():
         img_dir = "data"
     # 3) Specify cuda device
     if torch.cuda.is_available():
-        if -1 in args.device:
+        if -1 == args.device:
             rank = dist.get_rank()
             device = rank % torch.cuda.device_count()
         else:
-            device = f"cuda:{args.device}"
+            device = args.device
 
     else:
         device = "cpu"
@@ -229,7 +184,6 @@ def main():
     if experiment.is_wandb:
         wandb.watch(model)
 
-    import yaml
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
     if os.environ["DEBUG"] == "False":
@@ -288,24 +242,12 @@ def main():
             ),
             epoch=None
         )
-    # 2) roc curves
-    #     experiment.log_metric(
-    #         "roc_curves",
-    #         wandb.plot.roc_curve(
-    #             convert(results[0]),
-    #             convert(results[1]),
-    #             labels=names[:-1],
-    #
-    #         ),
-    #         epoch=None
-    #     )
-    #TODO : define our own roc curves to plot on wandb
+
+        #TODO : define our own roc curves to plot on wandb
         for key,value in summary.items() :
             wandb.run.summary[key] = value
 
 
 if __name__ == "__main__":
-    dist.init_process_group("nccl")
     main()
 
-    cleanup()

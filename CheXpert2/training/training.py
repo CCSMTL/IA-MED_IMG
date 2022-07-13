@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.distributed as dist
 import tqdm
 
 
@@ -157,7 +158,13 @@ def training(
         val_loss, results = validation_loop(
             model, tqdm.tqdm(validation_loader, leave=False), criterion, device
         )
-
+        if dist.is_initialized():
+            if dist.get_rank() == 0:
+                tensor_list = [torch.zeros(1, dtype=torch.float32) for _ in range(torch.cuda.device_count())]
+                dist.all_gather(tensor_list, val_loss)
+                val_loss = torch.mean(tensor_list)
+                dist.all_gather(tensor_list, train_loss)
+                train_loss = torch.mean(tensor_list)
         # LOGGING DATA
         train_loss_list.append(train_loss / n)
         val_loss_list.append(val_loss / m)
@@ -170,6 +177,12 @@ def training(
                 pred = results[1].numpy()
                 true = results[0].numpy()
                 metric_result = metrics[key](true, pred)
+                if dist.is_initialized():
+                    if dist.get_rank() == 0:
+                        tensor_list = [torch.zeros(1, dtype=torch.float32) for _ in range(torch.cuda.device_count())]
+                        dist.all_gather(tensor_list, metric_result)
+                        metric_result = torch.mean(tensor_list).numpy()
+
                 experiment.log_metric(key, metric_result, epoch=epoch)
                 metrics_results[key] = metric_result
         else:

@@ -82,9 +82,6 @@ class Chexpertloader(Dataset):
                 ),
             )
 
-        if self.cache:
-            self.images = [self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
-                           range(0, len(self.files))]
 
     def __len__(self):
         return len(self.files)
