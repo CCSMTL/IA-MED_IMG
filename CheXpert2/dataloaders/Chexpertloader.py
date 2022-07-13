@@ -173,7 +173,7 @@ class Chexpertloader(Dataset):
         else:
             image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
         label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-        image = self.transform(image)
+        # image = self.transform(image)
 
         # if sum(self.prob) > 0:
         #     idx = torch.randint(0, len(self), (1,)).item()

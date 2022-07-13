@@ -2,8 +2,6 @@ import numpy as np
 import torch
 import tqdm
 
-from CheXpert2.custom_utils import dummy_context_mgr
-
 
 def training_loop(
     model, loader, optimizer, criterion, device, minibatch_accumulate, scaler,clip_norm
@@ -22,64 +20,54 @@ def training_loop(
 
     model.train()
     i = 1
-    # Profiler =  torch.profiler.profile(
-    #         # schedule=torch.profiler.schedule(
-    #         #     wait=2,
-    #         #     warmup=2,
-    #         #     active=6,
-    #         #     repeat=1),
-    #         on_trace_ready=torch.profiler.tensorboard_trace_handler("log"),
-    #         with_stack=True
-    # )
-    Profiler = dummy_context_mgr()
-    with Profiler as profiler:
-        for inputs, labels in loader:
 
-            # get the inputs; data is a list of [inputs, labels]
+    for inputs, labels in loader:
 
-            # forward + backward + optimize
-            # loss = training_core(model, inputs, scaler, criterion,device)
+        # get the inputs; data is a list of [inputs, labels]
 
-            inputs, labels = (
-                inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
-                labels.to(device, non_blocking=True),
+        # forward + backward + optimize
+        # loss = training_core(model, inputs, scaler, criterion,device)
+
+        inputs, labels = (
+            inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
+            labels.to(device, non_blocking=True),
+        )
+        inputs = loader.iterable.dataset.transform(inputs)
+        inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
+        inputs = loader.iterable.dataset.preprocess(inputs)
+        with torch.cuda.amp.autocast():
+            outputs = model(inputs)
+
+            # assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
+
+            loss = criterion(outputs, labels)
+
+            scaler.scale(loss).backward()
+        running_loss += loss.detach()
+
+        # gradient accumulation
+        if i % minibatch_accumulate == 0:
+            i = 1
+
+            # Unscales the gradients of optimizer's assigned params in-place
+            scaler.unscale_(optimizer)
+
+            # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), clip_norm
             )
-
-            inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
-            inputs = loader.iterable.dataset.preprocess(inputs)
-            with torch.cuda.amp.autocast():
-                outputs = model(inputs)
-
-                # assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
-
-                loss = criterion(outputs, labels)
-
-                scaler.scale(loss).backward()
-            running_loss += loss.detach()
-
-            # gradient accumulation
-            if i % minibatch_accumulate == 0:
-                i = 1
-
-                # Unscales the gradients of optimizer's assigned params in-place
-                scaler.unscale_(optimizer)
-
-                # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                torch.nn.utils.clip_grad_norm_(
-                    model.parameters(), clip_norm
-                )
-                # optimizer.step()
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad(set_to_none=True)
-            # ending loop
-            del (
-                outputs,
-                labels,
-                inputs,
-                loss,
-            )  # garbage management sometimes fails with cuda
-            i += 1
+            # optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad(set_to_none=True)
+        # ending loop
+        del (
+            outputs,
+            labels,
+            inputs,
+            loss,
+        )  # garbage management sometimes fails with cuda
+        i += 1
     return running_loss
 
 
