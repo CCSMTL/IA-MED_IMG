@@ -1,8 +1,4 @@
-import sys
-import warnings
-
 import numpy as np
-import yaml
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 
@@ -31,18 +27,17 @@ class Metrics:
         return metrics.recall_score(true, pred, average="macro", zero_division=0)
 
     def computeAUROC(self, true, pred):
-        try:
 
-            fpr = dict()
-            tpr = dict()
-            outAUROC = dict()
-            classCount = pred.shape[1]
-            for i in range(classCount):
-                fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
-                outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
-                if outAUROC[self.names[i]] == np.nan:
-                    outAUROC[self.names[i]] = 0
-            outAUROC["mean"] = np.mean(list(outAUROC.values()))
+        fpr = dict()
+        tpr = dict()
+        outAUROC = dict()
+        classCount = pred.shape[1]
+        for i in range(classCount):
+            fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
+            outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
+            if outAUROC[self.names[i]] == np.nan:
+                outAUROC[self.names[i]] = 0
+        outAUROC["mean"] = np.mean(list(outAUROC.values()))
         return outAUROC
 
     def metrics(self):
