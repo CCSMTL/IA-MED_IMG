@@ -145,14 +145,14 @@ def training(
     best_loss = np.inf
 
     patience_init = patience
-    pbar = tqdm.tqdm(total=epoch_max)
+    pbar = tqdm.tqdm(total=epoch_max, position=device * 2)
 
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
     n, m = len(training_loader.dataset), len(validation_loader.dataset)
     while patience > 0 and epoch < epoch_max:  # loop over the dataset multiple times
         metrics_results={}
-
+        training_loader.sampler.set_epoch(epoch)
         train_loss = training_loop(
             model,
             tqdm.tqdm(training_loader, leave=False, position=device * 3),
