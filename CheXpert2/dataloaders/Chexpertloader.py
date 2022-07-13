@@ -75,7 +75,7 @@ class Chexpertloader(Dataset):
             self.images = map(
                 list,
                 zip(
-                    *Parallel(n_jobs=num_worker)(
+                    *Parallel(n_jobs=num_worker * 2)(
                         delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                         tqdm(range(0, len(self.files)))
                     )

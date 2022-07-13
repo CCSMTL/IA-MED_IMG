@@ -184,7 +184,7 @@ def main():
         prob=config["augment_prob"],
         intensity=config["augment_intensity"],
         label_smoothing=config["label_smoothing"],
-        cache=False,
+        cache=config["cache"],
         num_worker=config["num_worker"],
         unet=False,
         channels=3,
