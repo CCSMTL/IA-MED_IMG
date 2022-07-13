@@ -28,10 +28,10 @@ class Mixing(object):
         :return: mixed image and labels
         """
 
-        image1 = torch.tensor((1 - self.intensity) * image1 + self.intensity * image2, dtype=torch.uint8)
+        image1 = ((1 - self.intensity) * image1 + self.intensity * image2).byte()
         label1 = (1 - self.intensity) * label1 + self.intensity * label2
 
-        return image1, label1.float()
+        return image1, label1
 
     def __call__(self, samples: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         if self.prob == 0:
@@ -120,7 +120,7 @@ class RandAugment:
         images, labels = samples
         n = images.shape[0]  # number of samples
         probs = torch.rand((n))
-
-        images[probs < self.prob] = self.augment(images[probs < self.prob])
+        if sum(probs < self.prob).item() > 0:
+            images[probs < self.prob, :, :, :] = self.augment(images[probs < self.prob, :, :, :])
 
         return (images, labels)

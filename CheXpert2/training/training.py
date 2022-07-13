@@ -44,6 +44,9 @@ def training_loop(
                 inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
                 labels.to(device, non_blocking=True),
             )
+
+            inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
+            inputs = loader.iterable.dataset.preprocess(inputs)
             with torch.cuda.amp.autocast():
                 outputs = model(inputs)
 
@@ -102,7 +105,7 @@ def validation_loop(model, loader, criterion, device):
             inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
             labels.to(device, non_blocking=True),
         )
-
+        inputs = loader.iterable.dataset.preprocess(inputs)
         # forward + backward + optimize
         with torch.cuda.amp.autocast():
             outputs = model(inputs)

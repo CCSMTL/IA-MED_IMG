@@ -16,7 +16,7 @@ from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from CheXpert2 import Transforms
+from CheXpert2 import custom_Transforms
 
 
 class Chexpertloader(Dataset):
@@ -102,10 +102,9 @@ class Chexpertloader(Dataset):
     def get_advanced_transform(prob, intensity, N, M):
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                Transforms.Mixing(prob[1], intensity),
-                Transforms.CutMix(prob[2] , intensity),
-
+                custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
+                custom_Transforms.Mixing(prob[1], intensity),
+                custom_Transforms.CutMix(prob[2], intensity),
 
             ]
         )
@@ -176,20 +175,19 @@ class Chexpertloader(Dataset):
         label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
         image = self.transform(image)
 
-        if sum(self.prob) > 0:
-            idx = torch.randint(0, len(self), (1,)).item()
-            image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
-            label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-            image2 = self.transform(image2)
+        # if sum(self.prob) > 0:
+        #     idx = torch.randint(0, len(self), (1,)).item()
+        #     image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+        #     label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
+        #     image2 = self.transform(image2)
+        #
+        #     samples = (image, image2, label, label2)
+        #
+        #     image, image2, label, label2 = self.advanced_transform(samples)
+        #     del samples, image2, label2
 
-            samples = (image, image2, label, label2)
-
-            image, image2, label, label2 = self.advanced_transform(samples)
-            del samples, image2, label2
-
-        image = self.preprocess(image)
+        # image = self.preprocess(image)
 
         if self.unet:
             return image, image
         return image, label
-
