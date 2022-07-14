@@ -138,7 +138,7 @@ def training(
 
     patience_init = patience
 
-    pbar = tqdm.tqdm(total=epoch_max, position=device * 2)
+    pbar = tqdm.tqdm(total=epoch_max, position=0)
 
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
@@ -149,7 +149,7 @@ def training(
             training_loader.sampler.set_epoch(epoch)
         train_loss = training_loop(
             model,
-            tqdm.tqdm(training_loader, leave=False, position=device * 3),
+            tqdm.tqdm(training_loader, leave=False, position=device + 1),
             optimizer,
             criterion,
             device,
@@ -157,44 +157,48 @@ def training(
             scaler,
             clip_norm
         )
-        if experiment.rank == 0:
-            val_loss, results = validation_loop(
-                model, tqdm.tqdm(validation_loader, leave=False), criterion, device
-            )
-            # LOGGING DATA
-            train_loss_list.append(train_loss.cpu() / n)
-            val_loss_list.append(val_loss.cpu() / m)
-            dist.all_reduce(val_loss)
-            val_loss /= dist.get_world_size()
+
+        val_loss, results = validation_loop(
+            model, tqdm.tqdm(validation_loader, leave=False, position=device + 1), criterion, device
+        )
+        # LOGGING DATA
+        train_loss_list.append(train_loss.cpu() / n)
+        val_loss_list.append(val_loss.cpu() / m)
+        dist.all_reduce(val_loss, async_op=True)
+        val_loss /= dist.get_world_size()
+        if metrics:
+            for key in metrics:
+                pred = results[1].numpy()
+                true = results[0].numpy()
+                metric_result = metrics[key](true, pred)
+                metrics_results[key] = metric_result
+                experiment.log_metric(key, metric_result, epoch=epoch)
+
+        experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
+        experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
+
+        if val_loss < best_loss or epoch == 0:
+
+            best_loss = val_loss
+
+            experiment.save_weights(model)
+            patience = patience_init
             if metrics:
-                for key in metrics:
-                    pred = results[1].numpy()
-                    true = results[0].numpy()
-                    metric_result = metrics[key](true, pred)
-                    metrics_results[key] = metric_result
-                    experiment.log_metric(key, metric_result, epoch=epoch)
+                summary = metrics_results
 
-            experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
-            experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
-
-            if val_loss < best_loss or epoch == 0:
-
-                best_loss = val_loss
-
-                experiment.save_weights(model)
-                patience = patience_init
-                if metrics:
-                    summary = metrics_results
-
-                else:
-                    summary = {}
             else:
-                patience -= 1
-                print("patience has been reduced by 1")
+                summary = {}
+        else:
+            patience -= 1
+            print("patience has been reduced by 1")
         # Finishing the loop
 
         epoch += 1
-        pbar.update(1)
+        if dist.is_initialized():
+            if dist.get_rank() == 0:
+                pbar.update(1)
+        else:
+            pbar.update(1)
     print("Finished Training")
 
     return results,summary
