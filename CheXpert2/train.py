@@ -5,6 +5,7 @@ import warnings
 from functools import reduce
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.distributed as dist
 import yaml
@@ -97,7 +98,8 @@ def initialize_config():
     if experiment.is_wandb:
         config = wandb.config
 
-    dist.barrier()
+    if dist.is_initialized():
+        dist.barrier()
     return config, img_dir, experiment, optimizer, criterion, device
 
 
@@ -161,8 +163,11 @@ def main():
         local_rank = int(os.environ['LOCAL_RANK'])
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
-    from torch.utils.data.sampler import SequentialSampler
-    sampler = torch.utils.data.DistributedSampler(SequentialSampler(Sampler.sampler()))
+    sampler = Sampler.sampler()
+
+    if dist.is_initialized():
+        from torch.utils.data.sampler import SequentialSampler
+        sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
@@ -186,12 +191,10 @@ def main():
 
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
-    if os.environ["DEBUG"] == "False":
-        from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-        metric = Metrics(num_classes=13, names=names, threshold=np.zeros((13)) + 0.5)
-        metrics = metric.metrics()
-    else:
-        metrics = None
+
+    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+    metric = Metrics(num_classes=13, names=names, threshold=np.zeros((13)) + 0.5)
+    metrics = metric.metrics()
 
     # ------------training--------------------------------------------
     print("Starting training now")
@@ -232,7 +235,6 @@ def main():
     # 1) confusion matrix
     if wandb.run is not None:
 
-
         experiment.log_metric(
             "conf_mat",
             wandb.sklearn.plot_confusion_matrix(
@@ -243,8 +245,15 @@ def main():
             epoch=None
         )
 
-        #TODO : define our own roc curves to plot on wandb
-        for key,value in summary.items() :
+        import plotly.express as px
+        df = pd.read_csv("data/chexnet_results.csv")
+        print(summary.keys())
+        df["ours"] = summary["auc"] + [0]
+        fig = px.line_polar(df, r="AUC", theta=np.arange(0, 2 * np.pi, 14), color="AUC", line_close=True,
+                            color_discrete_sequence=px.colors.sequential.Plasma_r,
+                            template="plotly_dark", )
+        wandb.log({"polar_chart": fig})
+        for key, value in summary.items():
             wandb.run.summary[key] = value
 
 

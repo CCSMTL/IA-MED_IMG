@@ -31,7 +31,7 @@ class Metrics:
         fpr = dict()
         tpr = dict()
         outAUROC = dict()
-        classCount = pred.shape[1]
+        classCount = pred.shape[1]  # TODO : add auc no finding
         for i in range(classCount):
             fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
             outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
