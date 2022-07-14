@@ -47,10 +47,11 @@ class Chexpertloader(Dataset):
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
-        if len(prob) == 1:
-            prob = prob * 5
-        assert len(prob) == 5
+
         self.prob = [0] if prob == None else prob
+        if len(self.prob) == 1:
+            self.prob = self.prob * 5
+
         self.intensity = intensity
         self.img_size = img_size
 
