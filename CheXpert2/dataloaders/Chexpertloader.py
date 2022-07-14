@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import torch
 import tqdm
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -48,7 +48,7 @@ class Chexpertloader(Dataset):
 
         self.label_smoothing = label_smoothing
 
-        self.prob = [0] if prob == None else prob
+        self.prob = prob if prob else [0, ] * 5
         if len(self.prob) == 1:
             self.prob = self.prob * 5
 
@@ -64,8 +64,8 @@ class Chexpertloader(Dataset):
 
         self.preprocess = self.get_preprocess(channels, img_size)
 
-        self.transform = self.get_transform(prob, intensity)
-        self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
+        self.transform = self.get_transform(self.prob, intensity)
+        self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
 
@@ -74,16 +74,10 @@ class Chexpertloader(Dataset):
         if os.environ["DEBUG"] == "True":
             self.files = self.files[0:1000]
         if self.cache:
-            self.images = map(
-                list,
-                zip(
-                    *Parallel(n_jobs=num_worker * 2)(
-                        delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
-                        tqdm.tqdm(range(0, len(self.files)))
-                    )
-                ),
-            )
-
+            with parallel_backend('threading', n_jobs=num_worker):
+                self.images = Parallel()(
+                    delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                    tqdm.tqdm(range(0, len(self.files))))
 
     def __len__(self):
         return len(self.files)
