@@ -44,7 +44,7 @@ def training_loop(
             loss = criterion(outputs, labels)
 
             scaler.scale(loss).backward()
-        running_loss += loss.detach()
+        running_loss += torch.mean(loss.detach())
 
         # gradient accumulation
         if i % minibatch_accumulate == 0:
@@ -99,7 +99,7 @@ def validation_loop(model, loader, criterion, device):
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            running_loss += torch.mean(loss.detach().cpu())
+        running_loss += torch.mean(loss.detach())
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
             results[1] = torch.cat(
@@ -162,9 +162,10 @@ def training(
                 model, tqdm.tqdm(validation_loader, leave=False), criterion, device
             )
             # LOGGING DATA
-            train_loss_list.append(train_loss / n)
-            val_loss_list.append(val_loss / m)
-
+            train_loss_list.append(train_loss.cpu() / n)
+            val_loss_list.append(val_loss.cpu() / m)
+            dist.all_reduce(val_loss)
+            val_loss /= dist.get_world_size()
             if metrics:
                 for key in metrics:
                     pred = results[1].numpy()
@@ -191,19 +192,9 @@ def training(
                 patience -= 1
                 print("patience has been reduced by 1")
         # Finishing the loop
-        if dist.is_initialized():
-            if dist.get_rank() == 0:
-                pbar.update(1)
-                for i in range(torch.cuda.device_count() - 1):
-                    dist.isend(torch.tensor([patience]), i + 1)
-            else:
-                patience = torch.tensor([0])
-                dist.irecv(patience, src=0)
-                patience = patience.item()
-        else:
-            pbar.update(1)
-        epoch += 1
 
+        epoch += 1
+        pbar.update(1)
     print("Finished Training")
 
     return results,summary
