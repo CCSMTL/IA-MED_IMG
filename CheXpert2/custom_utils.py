@@ -13,8 +13,12 @@ class Experiment:
         self.is_wandb = is_wandb
         self.directory = "log/" + directory
         self.weight_dir = "models/models_weights/" + directory
-        if tags is not None:
 
+        if torch.distributed.is_initialized():
+            self.rank = torch.distributed.get_rank()
+        else:
+            self.rank = 0
+        if tags is not None:
             self.directory += f"/{tags[0]}"
             self.weight_dir += f"/{tags[0]}"
 
@@ -38,24 +42,26 @@ class Experiment:
             wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
 
     def log_metric(self, metric_name, value, epoch):
+        if self.rank == 0:
 
-        f = open(f"{self.directory}/{metric_name}.txt", "a")
-        if type(value) == list:
-            f.write("\n".join(str(item) for item in value))
-        else:
-            f.write(f"{epoch} , {str(value)}")
-
-        if self.is_wandb:
-            wandb.log({metric_name: value})
-        else:
-            print({metric_name: value})
-
-    def save_weights(self, model):
-        if not os.environ["DEBUG"]=="True":
-            torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
+            f = open(f"{self.directory}/{metric_name}.txt", "a")
+            if type(value) == list:
+                f.write("\n".join(str(item) for item in value))
+            else:
+                f.write(f"{epoch} , {str(value)}")
 
             if self.is_wandb:
-                wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
+                wandb.log({metric_name: value})
+            else:
+                print({metric_name: value})
+
+    def save_weights(self, model):
+        if self.rank == 0:
+            if not os.environ["DEBUG"] == "True":
+                torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
+
+                if self.is_wandb:
+                    wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
 
 
 # -----------------------------------------------------------------------------------

@@ -33,8 +33,11 @@ class Metrics:
         outAUROC = dict()
         classCount = pred.shape[1]  # TODO : add auc no finding
         for i in range(classCount):
-            fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
-            outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
+            try:
+                fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
+                outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
+            except:
+                outAUROC[self.names[i]] = 0
             if outAUROC[self.names[i]] == np.nan:
                 outAUROC[self.names[i]] = 0
         outAUROC["mean"] = np.mean(list(outAUROC.values()))

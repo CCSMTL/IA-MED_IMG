@@ -156,22 +156,13 @@ def training(
             scaler,
             clip_norm
         )
+
         val_loss, results = validation_loop(
             model, tqdm.tqdm(validation_loader, leave=False), criterion, device
         )
-        if dist.is_initialized():
-            if dist.get_rank() == 0:
-                tensor_list = [torch.zeros(1, dtype=torch.float32) for _ in range(torch.cuda.device_count())]
-                dist.all_gather(tensor_list, val_loss)
-                val_loss = torch.mean(tensor_list)
-                dist.all_gather(tensor_list, train_loss)
-                train_loss = torch.mean(tensor_list)
         # LOGGING DATA
         train_loss_list.append(train_loss / n)
         val_loss_list.append(val_loss / m)
-        if experiment:
-            experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
-            experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
 
         if metrics:
             for key in metrics:
@@ -180,20 +171,28 @@ def training(
                 metric_result = metrics[key](true, pred)
                 if dist.is_initialized():
                     if dist.get_rank() == 0:
-                        tensor_list = [torch.zeros(1, dtype=torch.float32) for _ in range(torch.cuda.device_count())]
+                        tensor_list = [torch.zeros(1, dtype=torch.float32) for _ in
+                                       range(torch.cuda.device_count())]
                         dist.all_gather(tensor_list, metric_result)
                         metric_result = torch.mean(tensor_list).numpy()
 
                 experiment.log_metric(key, metric_result, epoch=epoch)
                 metrics_results[key] = metric_result
-        else:
-            summary = {}
-        if val_loss < best_loss:
+
+        experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
+        experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
+
+        if val_loss < best_loss or epoch == 0:
+
             best_loss = val_loss
 
             experiment.save_weights(model)
             patience = patience_init
-            summary = metrics_results
+            if metrics:
+                summary = metrics_results
+
+            else:
+                summary = {}
         else:
             patience -= 1
             print("patience has been reduced by 1")

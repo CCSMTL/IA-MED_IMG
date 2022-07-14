@@ -29,7 +29,7 @@ class Chexpertloader(Dataset):
             img_file,
             img_dir="",
             img_size=240,
-            prob=[0],
+            prob=None,
             intensity=0,
             label_smoothing=0,
             cache=False,
@@ -50,9 +50,10 @@ class Chexpertloader(Dataset):
         if len(prob) == 1:
             prob = prob * 5
         assert len(prob) == 5
-        self.prob = prob
+        self.prob = [0] if prob == None else prob
         self.intensity = intensity
         self.img_size = img_size
+
         self.cache = cache
         self.channels = channels
         self.labels = []

@@ -90,7 +90,7 @@ def initialize_config():
     optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
 
-    torch.cuda.device(device)
+
     torch.set_num_threads(config["num_worker"])
     experiment = Experiment(
         f"{config['model']}", is_wandb=device == 0, tags=None, config=config
@@ -100,6 +100,7 @@ def initialize_config():
 
     if dist.is_initialized():
         dist.barrier()
+        torch.cuda.device(device)
     return config, img_dir, experiment, optimizer, criterion, device
 
 
@@ -246,12 +247,15 @@ def main():
         )
 
         import plotly.express as px
-        df = pd.read_csv("data/chexnet_results.csv")
-        print(summary.keys())
-        df["ours"] = summary["auc"] + [0]
-        fig = px.line_polar(df, r="AUC", theta=np.arange(0, 2 * np.pi, 14), color="AUC", line_close=True,
-                            color_discrete_sequence=px.colors.sequential.Plasma_r,
-                            template="plotly_dark", )
+        df = pd.read_csv("data/chexnet_results.csv", index_col=0)
+        df.columns = ["chexnet", "chexpert"]
+
+        df["ours"] = summary["auc"]
+        for column in ["chexnet", "chexpert", "ours"]:
+            fig = px.line_polar(df, r=column, theta=np.arange(0, 2 * np.pi, 2 * np.pi / 14), color=column,
+                                line_close=True,
+                                color_discrete_sequence=px.colors.sequential.Plasma_r,
+                                template="plotly_dark", )
         wandb.log({"polar_chart": fig})
         for key, value in summary.items():
             wandb.run.summary[key] = value
