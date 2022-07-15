@@ -211,7 +211,7 @@ def main():
         device,
         minibatch_accumulate=1,
         epoch_max=config["epoch"],
-        patience=10,
+        patience=5,
         experiment=experiment,
         metrics=metrics,
         clip_norm=config["clip_norm"]
@@ -251,6 +251,7 @@ def main():
         df.columns = ["chexnet", "chexpert"]
 
         df["ours"] = summary["auc"]
+        df.fillna(0, inplace=True)
         for column in ["chexnet", "chexpert", "ours"]:
             fig = px.line_polar(df, r=column, theta=np.arange(0, 2 * np.pi, 2 * np.pi / 14), color=column,
                                 line_close=True,

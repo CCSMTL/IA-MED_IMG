@@ -52,7 +52,7 @@ def init_parser():
         type=int,
         nargs="?",
         required=False,
-        help="Number of epochs to train ; a patiance of 5 is implemented by default",
+        help="Number of epochs to train ; a patience of 5 is implemented by default",
     )
     parser.add_argument(
         "--augment_prob",
