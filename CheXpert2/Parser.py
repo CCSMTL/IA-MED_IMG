@@ -100,7 +100,7 @@ def init_parser():
     )
     parser.add_argument(
         "--num_worker",
-        default=os.cpu_count() / 4,
+        default=int(os.cpu_count() / 4),
         const="all",
         type=int,
         nargs="?",
