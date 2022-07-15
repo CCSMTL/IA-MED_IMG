@@ -164,7 +164,8 @@ def training(
         # LOGGING DATA
         train_loss_list.append(train_loss.cpu() / n)
         val_loss_list.append(val_loss.cpu() / m)
-        dist.all_reduce(val_loss, async_op=True)
+        if dist.is_initialized():
+            dist.all_reduce(val_loss, async_op=True)
         val_loss /= dist.get_world_size()
         if metrics:
             for key in metrics:
