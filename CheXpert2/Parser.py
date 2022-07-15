@@ -58,7 +58,7 @@ def init_parser():
         "--augment_prob",
         default=[0],
         type=float,
-	nargs="+",
+        nargs="+",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
@@ -82,7 +82,7 @@ def init_parser():
     )
     parser.add_argument(
         "--batch_size",
-        default=50,
+        default=300,
         const="all",
         type=int,
         nargs="?",
@@ -100,7 +100,7 @@ def init_parser():
     )
     parser.add_argument(
         "--num_worker",
-        default=os.cpu_count(),
+        default=os.cpu_count() / 4,
         const="all",
         type=int,
         nargs="?",
