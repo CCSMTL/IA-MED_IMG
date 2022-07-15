@@ -38,7 +38,7 @@ class Metrics:
                 outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
             except:
                 outAUROC[self.names[i]] = 0
-            if outAUROC[self.names[i]] == np.nan:
+            if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
         return outAUROC
