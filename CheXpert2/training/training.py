@@ -166,7 +166,7 @@ def training(
         val_loss_list.append(val_loss.cpu() / m)
         if dist.is_initialized():
             dist.all_reduce(val_loss, async_op=True)
-        val_loss /= dist.get_world_size()
+            val_loss /= dist.get_world_size()
         if metrics:
             for key in metrics:
                 pred = results[1].numpy()
