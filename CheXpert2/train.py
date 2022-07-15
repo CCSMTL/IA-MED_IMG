@@ -125,14 +125,8 @@ def main():
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
 
-    # ----------- parallelisation -------------------------------------
 
-    optimizer = optimizer(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
+
     # -------data initialisation-------------------------------
 
     train_dataset = Chexpertloader(
@@ -159,14 +153,18 @@ def main():
         channels=3,
     )
 
-    if config["device"] == "parallel":
+    sampler = Sampler.sampler()
+
+    optimizer = optimizer(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
+    if dist.is_initialized():
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         local_rank = int(os.environ['LOCAL_RANK'])
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-
-    sampler = Sampler.sampler()
-
-    if dist.is_initialized():
         from torch.utils.data.sampler import SequentialSampler
         sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
     training_loader = torch.utils.data.DataLoader(
@@ -246,17 +244,36 @@ def main():
             epoch=None
         )
 
-        import plotly.express as px
         df = pd.read_csv("data/chexnet_results.csv", index_col=0)
         df.columns = ["chexnet", "chexpert"]
 
         df["ours"] = summary["auc"]
         df.fillna(0, inplace=True)
+
+        import plotly.graph_objects as go
+        fig = go.Figure()
         for column in ["chexnet", "chexpert", "ours"]:
-            fig = px.line_polar(df, r=column, theta=np.arange(0, 2 * np.pi, 2 * np.pi / 14), color=column,
-                                line_close=True,
-                                color_discrete_sequence=px.colors.sequential.Plasma_r,
-                                template="plotly_dark", )
+            # fig.add_line_polar(df,r=column, theta=np.arange(0, 2 * np.pi, 2 * np.pi / 14), color=column,
+            #                     line_close=True,
+            #                     color_discrete_sequence=px.colors.sequential.Plasma_r,
+            #                     template="plotly_dark", )
+
+            fig.add_trace(go.Scatterpolar(
+                r=df[column],
+                theta=np.arange(0, 360, 360 / 14),
+                mode='lines',
+                name=column,
+                #    line_color='peru'
+            ))
+        fig.update_layout(
+            title='Polar chart',
+            showlegend=False,
+            # color_discrete_sequence=px.colors.sequential.Plasma_r,
+            template="plotly_dark",
+
+        )
+        # fig.update_polar(ticktext=names)
+        fig.write_image("polar.png")
         wandb.log({"polar_chart": fig})
         for key, value in summary.items():
             wandb.run.summary[key] = value

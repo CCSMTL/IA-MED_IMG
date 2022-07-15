@@ -44,7 +44,7 @@ def training_loop(
             loss = criterion(outputs, labels)
 
             scaler.scale(loss).backward()
-        running_loss += torch.mean(loss.detach())
+        running_loss += loss.detach()
 
         # gradient accumulation
         if i % minibatch_accumulate == 0:
@@ -96,10 +96,10 @@ def validation_loop(model, loader, criterion, device):
         )
         inputs = loader.iterable.dataset.preprocess(inputs)
         # forward + backward + optimize
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-        running_loss += torch.mean(loss.detach())
+
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        running_loss += loss.detach()
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
             results[1] = torch.cat(
