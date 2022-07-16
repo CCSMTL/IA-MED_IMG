@@ -157,42 +157,39 @@ def training(
             scaler,
             clip_norm
         )
-
-        val_loss, results = validation_loop(
-            model, tqdm.tqdm(validation_loader, leave=False, position=device + 1), criterion, device
-        )
-        # LOGGING DATA
-        train_loss_list.append(train_loss.cpu() / n)
-        val_loss_list.append(val_loss.cpu() / m)
-        if dist.is_initialized():
-            dist.all_reduce(val_loss, async_op=True)
-            val_loss /= dist.get_world_size()
-        if metrics:
-            for key in metrics:
-                pred = results[1].numpy()
-                true = results[0].numpy()
-                metric_result = metrics[key](true, pred)
-                metrics_results[key] = metric_result
-                experiment.log_metric(key, metric_result, epoch=epoch)
-
-        experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
-        experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
-
-        if val_loss < best_loss or epoch == 0:
-
-            best_loss = val_loss
-
-            experiment.save_weights(model)
-            patience = patience_init
+        if experiment.rank == 0:
+            val_loss, results = validation_loop(
+                model, tqdm.tqdm(validation_loader, leave=False, position=device + 1), criterion, device
+            )
+            # LOGGING DATA
+            train_loss_list.append(train_loss.cpu() / n)
+            val_loss_list.append(val_loss.cpu() / m)
             if metrics:
-                summary = metrics_results
+                for key in metrics:
+                    pred = results[1].numpy()
+                    true = results[0].numpy()
+                    metric_result = metrics[key](true, pred)
+                    metrics_results[key] = metric_result
+                    experiment.log_metric(key, metric_result, epoch=epoch)
 
+            experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
+            experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
+
+            if val_loss < best_loss or epoch == 0:
+
+                best_loss = val_loss
+
+                experiment.save_weights(model)
+                patience = patience_init
+                if metrics:
+                    summary = metrics_results
+
+                else:
+                    summary = {}
             else:
-                summary = {}
-        else:
-            patience -= 1
-            print("patience has been reduced by 1")
-        # Finishing the loop
+                patience -= 1
+                print("patience has been reduced by 1")
+            # Finishing the loop
 
         epoch += 1
         if dist.is_initialized():

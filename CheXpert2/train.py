@@ -97,7 +97,13 @@ def initialize_config():
     )
     if experiment.is_wandb:
         config = wandb.config
-
+        try:
+            prob = [0, ] * 5
+            for i in range(5):
+                prob[i] = config[f"augment_prob_{i}"]
+            config["augment_prob"] = prob
+        except:
+            pass
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.device(device)
@@ -162,6 +168,7 @@ def main():
         weight_decay=config["weight_decay"],
     )
     if dist.is_initialized():
+        os.wait(int(dist.get_rank() * 20))
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         local_rank = int(os.environ['LOCAL_RANK'])
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
@@ -247,7 +254,7 @@ def main():
         df = pd.read_csv("data/chexnet_results.csv", index_col=0)
         df.columns = ["chexnet", "chexpert"]
 
-        df["ours"] = summary["auc"]
+        df["ours"] = summary["auc"].values()
         df.fillna(0, inplace=True)
 
         import plotly.graph_objects as go
@@ -260,14 +267,21 @@ def main():
 
             fig.add_trace(go.Scatterpolar(
                 r=df[column],
-                theta=np.arange(0, 360, 360 / 14),
+                theta=names,
                 mode='lines',
                 name=column,
+
                 #    line_color='peru'
             ))
         fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    visible=True,
+                    tick0=0,
+                    dtick=0.2, )),
+            showlegend=True,
             title='Polar chart',
-            showlegend=False,
+
             # color_discrete_sequence=px.colors.sequential.Plasma_r,
             template="plotly_dark",
 

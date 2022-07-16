@@ -13,11 +13,10 @@ class Experiment:
         self.is_wandb = is_wandb
         self.directory = "log/" + directory
         self.weight_dir = "models/models_weights/" + directory
-
+        self.rank = 0
         if torch.distributed.is_initialized():
             self.rank = torch.distributed.get_rank()
-        else:
-            self.rank = 0
+
         if tags is not None:
             self.directory += f"/{tags[0]}"
             self.weight_dir += f"/{tags[0]}"
