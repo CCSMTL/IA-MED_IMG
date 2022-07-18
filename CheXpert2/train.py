@@ -211,7 +211,7 @@ def main():
         clip_norm=config["clip_norm"]
     )
 
-
+    experiment.end(results)
 
 
 if __name__ == "__main__":

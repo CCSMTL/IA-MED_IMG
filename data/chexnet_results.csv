@@ -5,11 +5,11 @@ Edema            ,0.8878 ,0.939
 Pleural Effusion ,0.8638 ,0.938
 Pneumonia        ,0.768  ,0.746
 Pneumothorax     ,0.8887 ,0.956
-Enlarged Cardiom.,       ,0.616
-Lung Lesion      ,       ,0.88
-Lung Opacity     ,       ,0.92
+Enlarged Cardiom.,0      ,0.616
+Lung Lesion      ,0      ,0.88
+Lung Opacity     ,0      ,0.92
 Pleural Other    ,0.8062 ,0.965
-Fracture         ,       ,0
-Support Device   ,       ,0.942
-No Finding       ,       ,0.889
+Fracture         ,0      ,0
+Support Device   ,0      ,0.942
+No Finding       ,0      ,0.889
 mean             ,0.84235,0.811071429

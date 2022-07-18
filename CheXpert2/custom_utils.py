@@ -82,40 +82,27 @@ class Experiment:
                 epoch=None
             )
 
-            df = pd.read_csv("../data/chexnet_results.csv", index_col=0)
+            df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
             df.columns = ["chexnet", "chexpert"]
 
             df["ours"] = self.summary["auc"].values()
             df.fillna(0, inplace=True)
 
             import plotly.graph_objects as go
-            fig = go.Figure()
-            for column in ["chexnet", "chexpert", "ours"]:
-                # fig.add_line_polar(df,r=column, theta=np.arange(0, 2 * np.pi, 2 * np.pi / 14), color=column,
-                #                     line_close=True,
-                #                     color_discrete_sequence=px.colors.sequential.Plasma_r,
-                #                     template="plotly_dark", )
 
-                fig.add_trace(go.Scatterpolar(
-                    r=df[column],
-                    theta=self.names,
-                    mode='lines',
-                    name=column,
-
-                    #    line_color='peru'
-                ))
-            fig.update_layout(
-                polar=dict(
-                    radialaxis=dict(
-                        visible=True,
-                        tick0=0,
-                        dtick=0.2, )),
-                showlegend=True,
-                title='Polar chart',
-
-                # color_discrete_sequence=px.colors.sequential.Plasma_r,
-                template="plotly_dark",
-
+            fig = go.Figure(
+                data=[
+                    go.Scatterpolar(r=(df["chexnet"] * 100).round(0), theta=self.names, fill='toself', name='chexnet'),
+                    go.Scatterpolar(r=(df["chexpert"] * 100).round(0), theta=self.names, fill='toself',
+                                    name='chexpert'),
+                    go.Scatterpolar(r=(df["ours"] * 100).round(0), theta=self.names, fill='toself', name='ours')
+                ],
+                layout=go.Layout(
+                    title=go.layout.Title(text='Class AUC'),
+                    polar={'radialaxis': {'visible': True}},
+                    showlegend=True,
+                    template="plotly_dark"
+                )
             )
             # fig.update_polar(ticktext=names)
             fig.write_image("polar.png")

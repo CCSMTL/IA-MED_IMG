@@ -192,7 +192,7 @@ def training(
 
         epoch += 1
 
-        if experiment.get_rank() == 0:
+        if experiment.rank == 0:
             pbar.update(1)
         else:
             pbar.update(1)
