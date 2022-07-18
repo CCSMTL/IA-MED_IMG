@@ -28,6 +28,24 @@ def init_parser():
         required=False,
         help="width and length to resize the images to. Choose a value between 320 and 608.",
     )
+    parser.add_argument(
+        "--N",
+        default=2,
+        const="all",
+        type=int,
+        nargs="?",
+        required=False,
+        help="width and length to resize the images to. Choose a value between 320 and 608.",
+    )
+    parser.add_argument(
+        "--M",
+        default=9,
+        const="all",
+        type=int,
+        nargs="?",
+        required=False,
+        help="width and length to resize the images to. Choose a value between 320 and 608.",
+    )
 
     parser.add_argument(
         "--device",
@@ -55,10 +73,43 @@ def init_parser():
         help="Number of epochs to train ; a patience of 5 is implemented by default",
     )
     parser.add_argument(
-        "--augment_prob",
-        default=[0],
+        "--augment_prob_4",
+        default=0,
         type=float,
-        nargs="+",
+        nargs="?",
+        required=False,
+        help="the probability of an augmentation. Between 0 and 1",
+    )
+
+    parser.add_argument(
+        "--augment_prob_3",
+        default=0,
+        type=float,
+        nargs="?",
+        required=False,
+        help="the probability of an augmentation. Between 0 and 1",
+    )
+    parser.add_argument(
+        "--augment_prob_2",
+        default=0,
+        type=float,
+        nargs="?",
+        required=False,
+        help="the probability of an augmentation. Between 0 and 1",
+    )
+    parser.add_argument(
+        "--augment_prob_1",
+        default=0,
+        type=float,
+        nargs="?",
+        required=False,
+        help="the probability of an augmentation. Between 0 and 1",
+    )
+    parser.add_argument(
+        "--augment_prob_0",
+        default=0,
+        type=float,
+        nargs="?",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
@@ -79,6 +130,51 @@ def init_parser():
         nargs="?",
         required=False,
         help="Label smoothing. Should be small. Try 0.05",
+    )
+    parser.add_argument(
+        "--clip_norm",
+        default=0,
+        const="all",
+        type=int,
+        nargs="?",
+        required=False,
+        help="Norm for gradient clipping",
+    )
+    parser.add_argument(
+        "--lr",
+        default=0.001,
+        const="all",
+        type=float,
+        nargs="?",
+        required=False,
+        help="learning rate",
+    )
+    parser.add_argument(
+        "--weight_decay",
+        default=0.01,
+        const="all",
+        type=float,
+        nargs="?",
+        required=False,
+        help="weight decay",
+    )
+    parser.add_argument(
+        "--beta1",
+        default=0.9,
+        const="all",
+        type=float,
+        nargs="?",
+        required=False,
+        help="beta1 parameter adamw",
+    )
+    parser.add_argument(
+        "--beta2",
+        default=0.999,
+        const="all",
+        type=float,
+        nargs="?",
+        required=False,
+        help="beta2 parameter of adamw",
     )
     parser.add_argument(
         "--batch_size",

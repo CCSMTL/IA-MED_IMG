@@ -1,5 +1,6 @@
-import torch
 from functools import reduce
+
+import torch
 from torch.autograd import Variable
 
 from CheXpert2.custom_utils import set_parameter_requires_grad
@@ -57,9 +58,9 @@ class CNN(torch.nn.Module):
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
         else:
-            pass
+            raise NotImplementedError("This model has not been found within the available repos.")
 
-        backbone = torch.hub.load(repo, backbone_name, pretrained=True)
+        backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
         if backbone_name.startswith("inception") and self.training:  # rip hardcode forced...
             backbone.transform_input = False
 

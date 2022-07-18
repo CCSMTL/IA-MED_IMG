@@ -71,18 +71,10 @@ def initialize_config():
 
     # ----------- hyperparameters-------------------------------------<
     config = {
-        # AdamW
-        "beta1": 0.9,
-        "beta2": 0.999,
-        "lr": 0.001,
-        "weight_decay": 0.01,
         # loss and optimizer
         "optimizer": "AdamW",
         "criterion": "BCEWithLogitsLoss",
-        # RandAugment
-        "N": 2,
-        "M": 9,
-        "clip_norm": 5
+
     }
 
     config = config | vars(args)
