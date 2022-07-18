@@ -47,7 +47,7 @@ def channels321(backbone):
 
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone_name, num_classes, channels=3, img_size, freeze_backbone=False):
+    def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False):
         super().__init__()
         # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
