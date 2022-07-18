@@ -83,19 +83,20 @@ class Experiment:
             )
 
             df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
-            df.columns = ["chexnet", "chexpert"]
+            # df.columns = ["chexnet", "chexpert"]
+            self.summary["auc"]["No Finding"] = 0
+            df["ours"] = pd.Series(self.summary["auc"])
 
-            df["ours"] = self.summary["auc"].values()
             df.fillna(0, inplace=True)
 
             import plotly.graph_objects as go
 
             fig = go.Figure(
                 data=[
-                    go.Scatterpolar(r=(df["chexnet"] * 100).round(0), theta=self.names, fill='toself', name='chexnet'),
-                    go.Scatterpolar(r=(df["chexpert"] * 100).round(0), theta=self.names, fill='toself',
-                                    name='chexpert'),
-                    go.Scatterpolar(r=(df["ours"] * 100).round(0), theta=self.names, fill='toself', name='ours')
+                    go.Scatterpolar(r=(df["chexnet"] * 100).round(0), fill='toself', name='chexnet'),
+                    go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself',
+                                    name='Chexpert'),
+                    go.Scatterpolar(r=(df["ours"] * 100).round(0), fill='toself', name='ours')
                 ],
                 layout=go.Layout(
                     title=go.layout.Title(text='Class AUC'),
