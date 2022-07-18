@@ -55,12 +55,13 @@ class CNN(torch.nn.Module):
 
         if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
             repo = "pytorch/vision:v0.10.0"
+            backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
+            backbone = torch.hub.load(repo, backbone_name, pretrained=True)
         else:
             raise NotImplementedError("This model has not been found within the available repos.")
 
-        backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
         if backbone_name.startswith("inception") and self.training:  # rip hardcode forced...
             backbone.transform_input = False
 
