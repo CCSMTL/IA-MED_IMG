@@ -47,7 +47,7 @@ def channels321(backbone):
 
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone_name, num_classes, channels=3, freeze_backbone=False):
+    def __init__(self, backbone_name, num_classes, channels=3, img_size, freeze_backbone=False):
         super().__init__()
         # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
@@ -73,7 +73,7 @@ class CNN(torch.nn.Module):
         # -------------------------------------------------------------
 
         # finds the size of the last layer of the model, and name of the first
-        x = torch.zeros((2, channels, 320, 320))
+        x = torch.zeros((2, channels, img_size, img_size))
         size = get_output(self.backbone, x)  # dirty way
 
         # -------------------------------------------------------------

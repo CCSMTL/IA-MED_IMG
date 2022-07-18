@@ -119,7 +119,7 @@ def main():
 
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 13, freeze_backbone=False)
+    model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=False)
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
 
