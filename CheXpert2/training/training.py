@@ -181,22 +181,21 @@ def training(
 
                 experiment.save_weights(model)
                 patience = patience_init
-                if metrics:
-                    summary = metrics_results
+                experiment.summarize()
 
-                else:
-                    summary = {}
+
+
             else:
                 patience -= 1
                 print("patience has been reduced by 1")
             # Finishing the loop
 
         epoch += 1
-        if dist.is_initialized():
-            if dist.get_rank() == 0:
-                pbar.update(1)
+
+        if experiment.get_rank() == 0:
+            pbar.update(1)
         else:
             pbar.update(1)
     print("Finished Training")
 
-    return results,summary
+    return results

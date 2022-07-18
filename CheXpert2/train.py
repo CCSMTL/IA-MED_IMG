@@ -1,11 +1,9 @@
 # ------python import------------------------------------
-import copy
 import os
 import warnings
 from functools import reduce
 
 import numpy as np
-import pandas as pd
 import torch
 import torch.distributed as dist
 import yaml
@@ -82,20 +80,22 @@ def initialize_config():
     optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
 
-
     torch.set_num_threads(config["num_worker"])
+
+    with open("data/data.yaml", "r") as stream:
+        names = yaml.safe_load(stream)["names"]
     experiment = Experiment(
-        f"{config['model']}", is_wandb=device == 0, tags=None, config=config
+        f"{config['model']}", names=names, tags=None, config=config
     )
-    if experiment.is_wandb:
-        config = wandb.config
-        try:
-            prob = [0, ] * 5
-            for i in range(5):
-                prob[i] = config[f"augment_prob_{i}"]
-            config["augment_prob"] = prob
-        except:
-            pass
+
+    config = wandb.config
+    try:
+        prob = [0, ] * 5
+        for i in range(5):
+            prob[i] = config[f"augment_prob_{i}"]
+        config["augment_prob"] = prob
+    except:
+        pass
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.device(device)
@@ -184,14 +184,11 @@ def main():
     print("The data has now been loaded successfully into memory")
 
     # ------------- Metrics & Trackers -----------------------------------------------------------
-    if experiment.is_wandb:
-        wandb.watch(model)
 
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
+    experiment.watch(model)
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-    metric = Metrics(num_classes=13, names=names, threshold=np.zeros((13)) + 0.5)
+    metric = Metrics(num_classes=13, names=experiment.names, threshold=np.zeros((13)) + 0.5)
     metrics = metric.metrics()
 
     # ------------training--------------------------------------------
@@ -199,7 +196,7 @@ def main():
 
     # initialize metrics loggers
 
-    results, summary = training(
+    results = training(
         model,
         optimizer,
         criterion,
@@ -214,75 +211,7 @@ def main():
         clip_norm=config["clip_norm"]
     )
 
-    # -------Final Visualization-------------------------------
-    # TODO : create Visualization of the best model and upload those to wandb
 
-    def convert(array1):
-        array = copy.copy(array1)
-        answers = []
-        array = array.numpy().round(0)
-        for item in array:
-            if np.max(item) == 0:
-                answers.append(13)
-            else:
-                answers.append(np.argmax(item))
-        return answers
-
-    # from CheXpert2.visualization import
-
-    # 1) confusion matrix
-    if wandb.run is not None:
-
-        experiment.log_metric(
-            "conf_mat",
-            wandb.sklearn.plot_confusion_matrix(
-                convert(results[0]),
-                convert(results[1]),
-                names,
-            ),
-            epoch=None
-        )
-
-        df = pd.read_csv("data/chexnet_results.csv", index_col=0)
-        df.columns = ["chexnet", "chexpert"]
-
-        df["ours"] = summary["auc"].values()
-        df.fillna(0, inplace=True)
-
-        import plotly.graph_objects as go
-        fig = go.Figure()
-        for column in ["chexnet", "chexpert", "ours"]:
-            # fig.add_line_polar(df,r=column, theta=np.arange(0, 2 * np.pi, 2 * np.pi / 14), color=column,
-            #                     line_close=True,
-            #                     color_discrete_sequence=px.colors.sequential.Plasma_r,
-            #                     template="plotly_dark", )
-
-            fig.add_trace(go.Scatterpolar(
-                r=df[column],
-                theta=names,
-                mode='lines',
-                name=column,
-
-                #    line_color='peru'
-            ))
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    tick0=0,
-                    dtick=0.2, )),
-            showlegend=True,
-            title='Polar chart',
-
-            # color_discrete_sequence=px.colors.sequential.Plasma_r,
-            template="plotly_dark",
-
-        )
-        # fig.update_polar(ticktext=names)
-        fig.write_image("polar.png")
-        wandb.log({"polar_chart": fig})
-        for key, value in summary.items():
-            wandb.run.summary[key] = value
 
 
 if __name__ == "__main__":

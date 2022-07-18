@@ -73,6 +73,14 @@ def init_parser():
         help="Number of epochs to train ; a patience of 5 is implemented by default",
     )
     parser.add_argument(
+        "--augment_prob",
+        default=[0],
+        type=float,
+        nargs="+",
+        required=False,
+        help="the probability of an augmentation. Between 0 and 1",
+    )
+    parser.add_argument(
         "--augment_prob_4",
         default=0,
         type=float,
