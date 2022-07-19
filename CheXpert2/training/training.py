@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.distributed as dist
 import tqdm
@@ -38,12 +37,9 @@ def training_loop(
         inputs = loader.iterable.dataset.preprocess(inputs)
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
-
-            # assert not torch.isnan(outputs).any(), "Your outputs contain Nans!!!!"
-
             loss = criterion(outputs, labels)
 
-            scaler.scale(loss).backward()
+        scaler.scale(loss).backward()
         running_loss += loss.detach()
 
         # gradient accumulation
@@ -94,7 +90,7 @@ def validation_loop(model, loader, criterion, device):
             inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.iterable.dataset.preprocess(inputs)
+        inputs = loader.dataset.preprocess(inputs)
         # forward + backward + optimize
 
         outputs = model(inputs)
@@ -132,18 +128,11 @@ def training(
     clip_norm = 100
 ):
     epoch = 0
-    train_loss_list = []
-    val_loss_list = []
-    best_loss = np.inf
-
-    patience_init = patience
-
-    pbar = tqdm.tqdm(total=epoch_max, position=0)
 
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
-    n, m = len(training_loader.dataset), len(validation_loader.dataset)
-    while patience > 0 and epoch < epoch_max:  # loop over the dataset multiple times
+    val_loss = None
+    while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
@@ -159,43 +148,23 @@ def training(
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
-                model, tqdm.tqdm(validation_loader, leave=False, position=device + 1), criterion, device
+                model, validation_loader, criterion, device
             )
-            # LOGGING DATA
-            train_loss_list.append(train_loss.cpu() / n)
-            val_loss_list.append(val_loss.cpu() / m)
+
             if metrics:
                 for key in metrics:
                     pred = results[1].numpy()
                     true = results[0].numpy()
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
-                    experiment.log_metric(key, metric_result, epoch=epoch)
 
-            experiment.log_metric("training_loss", train_loss.tolist(), epoch=epoch)
-            experiment.log_metric("validation_loss", val_loss.tolist(), epoch=epoch)
+            experiment.log_metrics(metrics_results, epoch=epoch)
+            experiment.log_metric("training_loss", train_loss.cpu(), epoch=epoch)
+            experiment.log_metric("validation_loss", val_loss.cpu(), epoch=epoch)
 
-            if val_loss < best_loss or epoch == 0:
-
-                best_loss = val_loss
-
-                experiment.save_weights(model)
-                patience = patience_init
-                experiment.summarize()
-
-
-
-            else:
-                patience -= 1
-                print("patience has been reduced by 1")
             # Finishing the loop
+        experiment.next_epoch(val_loss, model)
 
-        epoch += 1
-
-        if experiment.rank == 0:
-            pbar.update(1)
-        else:
-            pbar.update(1)
     print("Finished Training")
 
     return results

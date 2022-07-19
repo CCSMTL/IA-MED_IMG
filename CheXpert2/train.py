@@ -9,9 +9,9 @@ import torch.distributed as dist
 import yaml
 
 import wandb
+from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
-from CheXpert2.custom_utils import Experiment
 from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
@@ -85,7 +85,7 @@ def initialize_config():
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5
     )
 
     config = wandb.config
@@ -99,6 +99,8 @@ def initialize_config():
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.device(device)
+
+    print(config["augment_prob"])
     return config, img_dir, experiment, optimizer, criterion, device
 
 
