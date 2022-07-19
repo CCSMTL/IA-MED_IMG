@@ -11,10 +11,12 @@ import cv2 as cv
 import numpy as np
 import pandas as pd
 import torch
+import tqdm
+from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from CheXpert2 import Transforms
+from CheXpert2 import custom_Transforms
 
 
 class Chexpertloader(Dataset):
@@ -27,7 +29,7 @@ class Chexpertloader(Dataset):
             img_file,
             img_dir="",
             img_size=240,
-            prob=[0],
+            prob=None,
             intensity=0,
             label_smoothing=0,
             cache=False,
@@ -45,12 +47,14 @@ class Chexpertloader(Dataset):
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
-        if len(prob) == 1:
-            prob = prob * 5
-        assert len(prob) == 5
-        self.prob = prob
+
+        self.prob = prob if prob else [0, ] * 5
+        if len(self.prob) == 1:
+            self.prob = self.prob * 5
+
         self.intensity = intensity
         self.img_size = img_size
+
         self.cache = cache
         self.channels = channels
         self.labels = []
@@ -60,15 +64,20 @@ class Chexpertloader(Dataset):
 
         self.preprocess = self.get_preprocess(channels, img_size)
 
-        self.transform = self.get_transform(prob, intensity)
-        self.advanced_transform = self.get_advanced_transform(prob, intensity, N, M)
+        self.transform = self.get_transform(self.prob, intensity)
+        self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
 
         self.files = pd.read_csv(img_file).fillna(0)
 
         if os.environ["DEBUG"] == "True":
-            self.files = self.files[0:1000]
+            self.files = self.files[0:100]
+        if self.cache:
+            with parallel_backend('threading', n_jobs=num_worker):
+                self.images = Parallel()(
+                    delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                    tqdm.tqdm(range(0, len(self.files))))
 
     def __len__(self):
         return len(self.files)
@@ -86,10 +95,9 @@ class Chexpertloader(Dataset):
     def get_advanced_transform(prob, intensity, N, M):
         return transforms.Compose(
             [  # advanced/custom
-                Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                Transforms.Mixing(prob[1], intensity),
-                Transforms.CutMix(prob[2] , intensity),
-
+                custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
+                custom_Transforms.Mixing(prob[1], intensity),
+                custom_Transforms.CutMix(prob[2], intensity),
 
             ]
         )
@@ -152,28 +160,27 @@ class Chexpertloader(Dataset):
 
         return image
 
-
-
     def __getitem__(self, idx):
-
-        image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+        if self.cache:
+            image = self.images[idx]
+        else:
+            image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
         label = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-        image = self.transform(image)
+        # image = self.transform(image)
 
-        if sum(self.prob) > 0:
-            idx = torch.randint(0, len(self), (1,)).item()
-            image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
-            label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-            image2 = self.transform(image2)
+        # if sum(self.prob) > 0:
+        #     idx = torch.randint(0, len(self), (1,)).item()
+        #     image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+        #     label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
+        #     image2 = self.transform(image2)
+        #
+        #     samples = (image, image2, label, label2)
+        #
+        #     image, image2, label, label2 = self.advanced_transform(samples)
+        #     del samples, image2, label2
 
-            samples = (image, image2, label, label2)
-
-            image, image2, label, label2 = self.advanced_transform(samples)
-            del samples, image2, label2
-
-        image = self.preprocess(image)
+        # image = self.preprocess(image)
 
         if self.unet:
             return image, image
         return image, label
-

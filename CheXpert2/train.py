@@ -1,15 +1,17 @@
 # ------python import------------------------------------
-import copy
-import numpy as np
 import os
-import torch
 import warnings
 from functools import reduce
 
+import numpy as np
+import torch
+import torch.distributed as dist
+import yaml
+
 import wandb
+from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
-from CheXpert2.custom_utils import Experiment
 from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
@@ -23,64 +25,87 @@ torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
 
 
+
+
 def initialize_config():
     # -------- proxy config ---------------------------
-    from six.moves import urllib
 
-    proxy = urllib.request.ProxyHandler(
-        {
-            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-        }
-    )
-    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
-    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # proxy = urllib.request.ProxyHandler(
+    #     {
+    #         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+    #         "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+    #     }
+    # )
+    # os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
     # construct a new opener using your proxy settings
-    opener = urllib.request.build_opener(proxy)
+    # opener = urllib.request.build_opener(proxy)
     # install the openen on the module-level
-    urllib.request.install_opener(opener)
+    # urllib.request.install_opener(opener)
 
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
     args = parser.parse_args()
+    # 1) set up debug env variable
     os.environ["DEBUG"] = str(args.debug)
     if args.debug:
         os.environ["WANDB_MODE"] = "offline"
-
+    # 2) load from env.variable the data repository location
     try:
         img_dir = os.environ["img_dir"]
     except:
         img_dir = "data"
+    # 3) Specify cuda device
+    if torch.cuda.is_available():
+        if -1 == args.device:
+            rank = dist.get_rank()
+            device = rank % torch.cuda.device_count()
+        else:
+            device = args.device
+
+    else:
+        device = "cpu"
+        warnings.warn("No gpu is available for the computation")
+
     # ----------- hyperparameters-------------------------------------<
     config = {
-        # AdamW
-        "beta1": 0.9,
-        "beta2": 0.999,
-        "lr": 0.001,
-        "weight_decay": 0.01,
         # loss and optimizer
         "optimizer": "AdamW",
         "criterion": "BCEWithLogitsLoss",
-        # RandAugment
-        "N": 2,
-        "M": 9,
-        "clip_norm": 5
+
     }
 
     config = config | vars(args)
-    wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
 
-    config = wandb.config
-    experiment = Experiment(
-        f"{config['model']}", is_wandb=True, tags=None, config=config
-    )
     optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
 
-    return config, img_dir, experiment, optimizer, criterion
+    torch.set_num_threads(config["num_worker"])
+
+    with open("data/data.yaml", "r") as stream:
+        names = yaml.safe_load(stream)["names"]
+    experiment = Experiment(
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5
+    )
+
+    config = wandb.config
+    try:
+        prob = [0, ] * 5
+        for i in range(5):
+            prob[i] = config[f"augment_prob_{i}"]
+        config["augment_prob"] = prob
+    except:
+        pass
+    if dist.is_initialized():
+        dist.barrier()
+        torch.cuda.device(device)
+
+    print(config["augment_prob"])
+    return config, img_dir, experiment, optimizer, criterion, device
+
 
 def main():
-    config, img_dir, experiment, optimizer, criterion = initialize_config()
+    config, img_dir, experiment, optimizer, criterion, device = initialize_config()
     # ---------- Sampler -------------------------------------------
     from Sampler import Sampler
 
@@ -90,27 +115,18 @@ def main():
             Sampler.samples_weight
         )  # set all weights equal
     # ------- device selection ----------------------------
-    if torch.cuda.is_available():
-        device = f"cuda:{config['device']}" if config['device'] != "parallel" else "cuda:0"
 
-    else:
-        device = "cpu"
-        warnings.warn("No gpu is available for the computation")
 
     print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 13, freeze_backbone=False)
-    model = torch.nn.DataParallel(model)
+    model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=False)
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
-    optimizer = optimizer(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
+
+
+
     # -------data initialisation-------------------------------
 
     train_dataset = Chexpertloader(
@@ -120,7 +136,7 @@ def main():
         prob=config["augment_prob"],
         intensity=config["augment_intensity"],
         label_smoothing=config["label_smoothing"],
-        cache=False,
+        cache=config["cache"],
         num_worker=config["num_worker"],
         unet=False,
         channels=3,
@@ -137,43 +153,52 @@ def main():
         channels=3,
     )
 
-    # rule of thumb : num_worker = 4 * number of gpu ; on windows leave =0
-    # batch_size : maximum possible without crashing
+    sampler = Sampler.sampler()
 
+    optimizer = optimizer(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
+    if dist.is_initialized():
+        os.wait(int(dist.get_rank() * 20))
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+        local_rank = int(os.environ['LOCAL_RANK'])
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+        from torch.utils.data.sampler import SequentialSampler
+        sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
         pin_memory=True,
-        sampler=Sampler.sampler(),
+        sampler=sampler,
+
     )
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config["batch_size"],
         num_workers=os.cpu_count(),
         pin_memory=True,
+        shuffle=False,
     )
     print("The data has now been loaded successfully into memory")
 
     # ------------- Metrics & Trackers -----------------------------------------------------------
 
-    wandb.watch(model)
+    experiment.watch(model)
 
-    import yaml
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
-    if os.environ["DEBUG"] == "False":
-        from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-        metric = Metrics(num_classes=13, names=names, threshold=np.zeros((13)) + 0.5)
-        metrics = metric.metrics()
-    else:
-        metrics = None
+    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+    metric = Metrics(num_classes=13, names=experiment.names, threshold=np.zeros((13)) + 0.5)
+    metrics = metric.metrics()
+
     # ------------training--------------------------------------------
     print("Starting training now")
 
     # initialize metrics loggers
-    print(model._get_name())
-    results, summary = training(
+
+    results = training(
         model,
         optimizer,
         criterion,
@@ -182,56 +207,15 @@ def main():
         device,
         minibatch_accumulate=1,
         epoch_max=config["epoch"],
-        patience=10,
+        patience=5,
         experiment=experiment,
         metrics=metrics,
         clip_norm=config["clip_norm"]
     )
 
-    # -------Final Visualization-------------------------------
-    # TODO : create Visualization of the best model and upload those to wandb
-
-    def convert(array1):
-        array = copy.copy(array1)
-        answers = []
-        array = array.numpy().round(0)
-        for item in array:
-            if np.max(item) == 0:
-                answers.append(13)
-            else:
-                answers.append(np.argmax(item))
-        return answers
-
-    # from CheXpert2.visualization import
-
-    # 1) confusion matrix
-    if wandb.run is not None:
-
-
-        experiment.log_metric(
-            "conf_mat",
-            wandb.sklearn.plot_confusion_matrix(
-                convert(results[0]),
-                convert(results[1]),
-                names,
-            ),
-            epoch=None
-        )
-    # 2) roc curves
-    #     experiment.log_metric(
-    #         "roc_curves",
-    #         wandb.plot.roc_curve(
-    #             convert(results[0]),
-    #             convert(results[1]),
-    #             labels=names[:-1],
-    #
-    #         ),
-    #         epoch=None
-    #     )
-    #TODO : define our own roc curves to plot on wandb
-        for key,value in summary.items() :
-            wandb.run.summary[key] = value
+    experiment.end(results)
 
 
 if __name__ == "__main__":
     main()
+
