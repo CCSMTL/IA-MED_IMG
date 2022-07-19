@@ -1,6 +1,7 @@
 from functools import reduce
 
 import torch
+import torchvision
 from torch.autograd import Variable
 
 from CheXpert2.custom_utils import set_parameter_requires_grad
@@ -59,6 +60,8 @@ class CNN(torch.nn.Module):
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
             backbone = torch.hub.load(repo, backbone_name, pretrained=True)
+        elif "convnext" in backbone_name:
+            backbone = getattr(torchvision.models, backbone_name)(pretrained=True)
         else:
             raise NotImplementedError("This model has not been found within the available repos.")
 

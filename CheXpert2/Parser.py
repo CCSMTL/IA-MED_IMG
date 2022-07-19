@@ -1,8 +1,6 @@
 import argparse
 import os
 
-import torch
-
 
 def init_parser():
     parser = argparse.ArgumentParser(description="Launch training for a specific model")
@@ -13,8 +11,6 @@ def init_parser():
         const="all",
         type=str,
         nargs="?",
-        choices=torch.hub.list("pytorch/vision:v0.10.0")
-                + torch.hub.list("facebookresearch/deit:main"),
         required=False,
         help="Choice of the model",
     )
