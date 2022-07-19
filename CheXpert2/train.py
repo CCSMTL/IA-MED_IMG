@@ -162,11 +162,11 @@ def main():
         weight_decay=config["weight_decay"],
     )
     if dist.is_initialized():
-        os.wait(int(dist.get_rank() * 20))
+        from torch.utils.data.sampler import SequentialSampler
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         local_rank = int(os.environ['LOCAL_RANK'])
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-        from torch.utils.data.sampler import SequentialSampler
+
         sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
