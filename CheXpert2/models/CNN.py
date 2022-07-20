@@ -56,7 +56,7 @@ class CNN(torch.nn.Module):
 
         if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
             repo = "pytorch/vision:v0.10.0"
-            backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
+            backbone = torch.hub.load(repo, backbone_name, pretrained=True)
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
             backbone = torch.hub.load(repo, backbone_name, pretrained=True)

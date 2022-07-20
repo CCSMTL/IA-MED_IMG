@@ -19,10 +19,10 @@ from CheXpert2.training.training import training
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-torch.autograd.set_detect_anomaly(False)
-torch.autograd.profiler.profile(False)
-torch.autograd.profiler.emit_nvtx(False)
-torch.backends.cudnn.benchmark = True
+#torch.autograd.set_detect_anomaly(False)
+#torch.autograd.profiler.profile(False)
+#torch.autograd.profiler.emit_nvtx(False)
+#torch.backends.cudnn.benchmark = True
 
 
 
@@ -157,9 +157,9 @@ def main():
 
     optimizer = optimizer(
         model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
+ #       lr=config["lr"],
+ #       betas=(config["beta1"], config["beta2"]),
+ #       weight_decay=config["weight_decay"],
     )
     if dist.is_initialized():
         from torch.utils.data.sampler import SequentialSampler
