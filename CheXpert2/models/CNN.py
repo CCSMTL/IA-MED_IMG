@@ -56,12 +56,12 @@ class CNN(torch.nn.Module):
 
         if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
             repo = "pytorch/vision:v0.10.0"
-            backbone = torch.hub.load(repo, backbone_name, pretrained=True)
+            backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
             backbone = torch.hub.load(repo, backbone_name, pretrained=True)
         elif "convnext" in backbone_name:
-            backbone = getattr(torchvision.models, backbone_name)(pretrained=True)
+            backbone = getattr(torchvision.models, backbone_name)(weights="DEFAULT")
         else:
             raise NotImplementedError("This model has not been found within the available repos.")
 

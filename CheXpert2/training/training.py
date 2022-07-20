@@ -52,10 +52,10 @@ def training_loop(
             scaler.unscale_(optimizer)
 
             # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-            # torch.nn.utils.clip_grad_norm_(
-            #     model.parameters(), clip_norm
-            # )
-            #optimizer.step()
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), clip_norm
+            )
+            # optimizer.step()
             # optimizer.step()
             scaler.step(optimizer)
             scaler.update()
@@ -96,9 +96,10 @@ def validation_loop(model, loader, criterion, device):
         )
         inputs = loader.dataset.preprocess(inputs)
         # forward + backward + optimize
+        with torch.cuda.amp.autocast():
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
 
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
         running_loss += loss.detach()
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
@@ -136,6 +137,7 @@ def training(
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
     val_loss = None
+    n, m = len(training_loader), len(validation_loader)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -163,8 +165,8 @@ def training(
                     metrics_results[key] = metric_result
 
             experiment.log_metrics(metrics_results, epoch=epoch)
-            experiment.log_metric("training_loss", train_loss.cpu(), epoch=epoch)
-            experiment.log_metric("validation_loss", val_loss.cpu(), epoch=epoch)
+            experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
+            experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
         experiment.next_epoch(val_loss, model)

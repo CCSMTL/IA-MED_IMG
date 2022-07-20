@@ -236,13 +236,6 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--sampler",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="do you wish to run with a sampler (1/n)",
-    )
-
-    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         default=False,

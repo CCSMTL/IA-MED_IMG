@@ -1,7 +1,6 @@
 # ------python import------------------------------------
 import os
 import warnings
-from functools import reduce
 
 import numpy as np
 import torch
@@ -16,6 +15,7 @@ from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
+
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -55,9 +55,10 @@ def initialize_config():
         img_dir = os.environ["img_dir"]
     except:
         img_dir = "data"
-    # 3) Specify cuda device
+
+    # ---------- Device Selection ----------------------------------------
     if torch.cuda.is_available():
-        if -1 == args.device:
+        if dist.is_initialized():
             rank = dist.get_rank()
             device = rank % torch.cuda.device_count()
         else:
@@ -68,56 +69,52 @@ def initialize_config():
         warnings.warn("No gpu is available for the computation")
 
     # ----------- hyperparameters-------------------------------------<
-    config = {
-        # loss and optimizer
-        "optimizer": "AdamW",
-        "criterion": "BCEWithLogitsLoss",
+    # config = {
+    #     # loss and optimizer
+    #     "optimizer": "AdamW",
+    #     "criterion": "BCEWithLogitsLoss",
+    #
+    # }
 
-    }
+    config = vars(args)
 
-    config = config | vars(args)
-
-    optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
-    criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
-
+    # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
+    # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
+    optimizer = torch.optim.AdamW
+    criterion = torch.nn.BCEWithLogitsLoss()
     torch.set_num_threads(config["num_worker"])
 
+    # ----------- load classes ----------------------------------------
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
+
+    if len(config["augment_prob"]) == 1:
+        prob = [0, ] * 5
+        for i in range(5):
+            prob[i] = config[f"augment_prob_{i}"]
+    else:
+        prob = config["augment_prob"]
+
+    # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5
     )
 
-    config = wandb.config
-    try:
-        prob = [0, ] * 5
-        for i in range(5):
-            prob[i] = config[f"augment_prob_{i}"]
-        config["augment_prob"] = prob
-    except:
-        pass
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.device(device)
-
+    else:
+        config = wandb.config
     print(config["augment_prob"])
-    return config, img_dir, experiment, optimizer, criterion, device
+    return config, img_dir, experiment, optimizer, criterion, device, prob
 
 
 def main():
-    config, img_dir, experiment, optimizer, criterion, device = initialize_config()
+    config, img_dir, experiment, optimizer, criterion, device, prob = initialize_config()
     # ---------- Sampler -------------------------------------------
-    from Sampler import Sampler
 
+    from CheXpert2.Sampler import Sampler
     Sampler = Sampler(f"{img_dir}/train.csv")
-    if not config["sampler"]:
-        Sampler.samples_weight = torch.ones_like(
-            Sampler.samples_weight
-        )  # set all weights equal
-    # ------- device selection ----------------------------
-
-
-    print("The model has now been successfully loaded into memory")
 
     # -----------model initialisation------------------------------
 
@@ -125,15 +122,14 @@ def main():
     # send model to gpu
     model = model.to(device, memory_format=torch.channels_last)
 
-
-
+    print("The model has now been successfully loaded into memory")
     # -------data initialisation-------------------------------
 
     train_dataset = Chexpertloader(
         f"{img_dir}/train.csv",
         img_dir=img_dir,
         img_size=config["img_size"],
-        prob=config["augment_prob"],
+        prob=prob,
         intensity=config["augment_intensity"],
         label_smoothing=config["label_smoothing"],
         cache=config["cache"],
@@ -161,13 +157,13 @@ def main():
  #       betas=(config["beta1"], config["beta2"]),
  #       weight_decay=config["weight_decay"],
     )
-    if dist.is_initialized():
+    if dist.is_initialized():  # use of multiple gpu
         from torch.utils.data.sampler import SequentialSampler
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         local_rank = int(os.environ['LOCAL_RANK'])
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-
         sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
+
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],

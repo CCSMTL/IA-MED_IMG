@@ -10,7 +10,11 @@ class Metrics:
         self.names=names
     def accuracy(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
-        return np.mean(np.where(pred == true, 1, 0))
+        accuracy = 0
+        for x, y in zip(true, pred):
+            if (x == y).all():
+                accuracy += 1
+        return accuracy / len(true)
 
     def f1(self, true, pred):
         pred = np.where(pred > self.threshold, 1, 0)
