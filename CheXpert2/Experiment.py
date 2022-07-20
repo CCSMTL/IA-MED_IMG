@@ -78,7 +78,8 @@ class Experiment:
         self.summary = self.metrics
 
     def watch(self, model):
-        wandb.watch(model)
+        if self.rank == 0:
+            wandb.watch(model)
 
     def end(self, results):
         if self.rank == 0:
