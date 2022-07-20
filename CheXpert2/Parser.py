@@ -137,7 +137,7 @@ def init_parser():
     )
     parser.add_argument(
         "--clip_norm",
-        default=0,
+        default=100,
         const="all",
         type=int,
         nargs="?",

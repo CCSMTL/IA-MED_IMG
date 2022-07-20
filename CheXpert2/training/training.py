@@ -39,7 +39,7 @@ def training_loop(
         with torch.cuda.amp.autocast() :
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-            scaler.scale(loss).backward()
+        scaler.scale(loss).backward()
 
 
         running_loss += loss.detach()
