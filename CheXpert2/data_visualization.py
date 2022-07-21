@@ -7,7 +7,6 @@ Created on 2022-06-28$
 """
 import itertools
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

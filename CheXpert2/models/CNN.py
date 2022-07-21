@@ -1,5 +1,7 @@
-import torch
 from functools import reduce
+
+import torch
+import torchvision
 from torch.autograd import Variable
 
 from CheXpert2.custom_utils import set_parameter_requires_grad
@@ -46,7 +48,7 @@ def channels321(backbone):
 
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone_name, num_classes, channels=3, freeze_backbone=False):
+    def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False):
         super().__init__()
         # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
         # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
@@ -54,12 +56,15 @@ class CNN(torch.nn.Module):
 
         if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
             repo = "pytorch/vision:v0.10.0"
+            backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
+            backbone = torch.hub.load(repo, backbone_name, pretrained=True)
+        elif "convnext" in backbone_name:
+            backbone = getattr(torchvision.models, backbone_name)(weights="DEFAULT")
         else:
-            pass
+            raise NotImplementedError("This model has not been found within the available repos.")
 
-        backbone = torch.hub.load(repo, backbone_name, pretrained=True)
         if backbone_name.startswith("inception") and self.training:  # rip hardcode forced...
             backbone.transform_input = False
 
@@ -71,7 +76,7 @@ class CNN(torch.nn.Module):
         # -------------------------------------------------------------
 
         # finds the size of the last layer of the model, and name of the first
-        x = torch.zeros((2, channels, 320, 320))
+        x = torch.zeros((2, channels, img_size, img_size))
         size = get_output(self.backbone, x)  # dirty way
 
         # -------------------------------------------------------------
