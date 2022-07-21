@@ -43,7 +43,7 @@ class Chexpertloader(Dataset):
         self.img_file = img_file
         self.img_dir = img_dir
         self.length = 0
-        self.files = []
+
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
