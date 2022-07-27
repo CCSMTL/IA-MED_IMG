@@ -72,7 +72,7 @@ def training_loop(
     return running_loss
 
 
-@torch.no_grad()
+# @torch.no_grad()
 def validation_loop(model, loader, criterion, device):
     """
 
@@ -84,7 +84,7 @@ def validation_loop(model, loader, criterion, device):
     """
     running_loss = 0
 
-    model.eval()
+    #model.eval()
     results = [torch.tensor([]), torch.tensor([])]
 
     for inputs, labels in loader:
@@ -96,9 +96,9 @@ def validation_loop(model, loader, criterion, device):
         )
         inputs = loader.dataset.preprocess(inputs)
         # forward + backward + optimize
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
+
+        outputs, heatmaps = model(inputs)
+        loss = criterion(outputs, labels)
 
         running_loss += loss.detach()
 
@@ -114,8 +114,9 @@ def validation_loop(model, loader, criterion, device):
             outputs,
             loss,
         )  # garbage management sometimes fails with cuda
+        break
 
-    return running_loss, results
+    return running_loss, results, heatmaps
 
 
 def training(

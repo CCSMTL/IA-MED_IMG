@@ -1,23 +1,23 @@
 # ------python import------------------------------------
 import argparse
+import os
 import time
 import warnings
 
+import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import tqdm
-import yaml
-from sklearn.metrics import confusion_matrix
-
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.training.training import validation_loop
-from sklearn import metrics
 import scipy
-import os
-import wandb
-
+import torch
+import yaml
 # -------- proxy config ---------------------------
 from six.moves import urllib
+from sklearn import metrics
+from sklearn.metrics import confusion_matrix
+
+import wandb
+from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
+from CheXpert2.training.training import validation_loop
+from polycam.polycam.polycam import PCAMp
 
 proxy = urllib.request.ProxyHandler(
     {
@@ -32,28 +32,24 @@ opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
 
+os.environ["DEBUG"] = "True"
 
 
-
-def init_argparse():
+def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Launch testing for a specific model")
 
     parser.add_argument(
-        "-t",
         "--dataset",
-        default="unseen",
+        default="valid",
         type=str,
         choices=["training", "validation"],
-        required=True,
+        required=False,
         help="Choice of the test set",
     )
 
     parser.add_argument(
-        "-m",
-        "--model",
-        default="alexnet",
+        "--run_id",
         type=str,
-        choices=["alexnet", "resnext50_32x4d", "vgg19", "densenet201"],
         required=True,
         help="Choice of the model",
     )
@@ -75,17 +71,19 @@ def find_thresholds(true, pred):
     thresholds = scipy.optimize.minimize(f1, args=(true, pred))
     return thresholds
 
-def find_thresholds_1(tpr, fpr):
-    gmeans= []
-    thresholds= []
-    # calculate the g-mean for each threshold
-    gmeans = sqrt(tpr * (1 - fpr))
 
-    ...
-    # locate the index of the largest g-mean
-    thresholds = argmax(gmeans)
-    print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
-    return thresholds
+#
+# def find_thresholds_1(tpr, fpr):
+#     gmeans= []
+#     thresholds= []
+#     # calculate the g-mean for each threshold
+#     gmeans = sqrt(tpr * (1 - fpr))
+#
+#     ...
+#     # locate the index of the largest g-mean
+#     thresholds = argmax(gmeans)
+#     print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
+#     return thresholds
 
 
 def convert(array, thresholds):
@@ -131,70 +129,88 @@ def main():
     num_classes = 15
 
     # ------loading test set --------------------------------------
-
-    test_dataset = CxrayDataloader(f"data/{args.dataset}", num_classes=14)
+    img_dir = os.environ["img_dir"]
+    test_dataset = Chexpertloader(f"{img_dir}/{args.dataset}.csv", img_dir, img_size=320)
 
     # ----------------loading model -------------------------------
     from CheXpert2.models.CNN import CNN
 
-    model = CNN(args.model, 14)
-    model = torch.nn.DataParallel(model)
-    if not os.path.exists(f"models/models_weights/{args.model}/DataParallel.pt"):
-        wandb.restore(
-            f"models/models_weights/{args.model}/DataParallel.pt",
-            run_path="ai-chexnet/test-project/1oc66oio",
-        )
-    model.load_state_dict(
-        torch.load(
-            f"models/models_weights/{args.model}/DataParallel.pt",  # TODO : load .pt and check name for if dataparallel ?
-            map_location=torch.device("cpu"),
-        )
-    )
+    model = CNN("convnext_base", 13)
+    # model =  torch.nn.parallel.DistributedDataParallel(model)
+
+    api = wandb.Api()
+
+    # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
+    # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
+    state_dict = torch.load("models_weights/convnext_base/DistributedDataParallel.pt")
+
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove 'module.' of DataParallel/DistributedDataParallel
+        new_state_dict[name] = v
+
+    model.load_state_dict(new_state_dict)
+
     model = model.to(device)
+    model.eval()
+    model = PCAMp(model)
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=8,
+        batch_size=1,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
     )
 
     a = time.time()
-    running_loss, results = validation_loop(
-        model=model, loader=tqdm.tqdm(test_loader), criterion=criterion, device=device
+    running_loss, results, heatmaps = validation_loop(
+        model=model, loader=test_loader, criterion=criterion, device=device
     )
     print("time :", (time.time() - a) / len(test_dataset))
+    plt.plot(np.sum(heatmaps[0][0].detach().cpu().numpy(), axis=0))
+    plt.savefig("heatmaps.png")
+    # m = create_confusion_matrix(results)
+    # # -----------------------------------------------------------------------------------
+    #
+    # with open("data/data.yaml", "r") as stream :
+    #     names = yaml.safe_load(stream)["names"]
+    #
+    # # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
+    # print("avg class : ", np.mean(np.diag(m)))
+    #
+    # z_text = [[str(y) for y in x] for x in m]
+    #
+    # import plotly.figure_factory as ff
+    #
+    # fig = ff.create_annotated_heatmap(
+    #     m, x=names, y=names, annotation_text=z_text, colorscale="Blues"
+    # )
+    #
+    # fig.update_layout(
+    #     margin=dict(t=50, l=200),
+    #     # title="ResNext50 3.0",
+    #     xaxis_title="True labels",
+    #     yaxis_title="Predictions",
+    # )
+    #
+    # fig["data"][0]["showscale"] = True
+    # import plotly.io as pio
+    #
+    # pio.write_image(fig, f"{model._get_name()}_conf_mat.png", width=1920, height=1080)
+    # fig.show()
 
-    m = create_confusion_matrix(results)
-    # -----------------------------------------------------------------------------------
-
+    from CheXpert2.results_visualization import plot_polar_chart
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
+    from CheXpert2.Metrics import Metrics
+    metrics = Metrics(num_classes=13, names=names).metrics()
+    summary = {}
+    for key, value in metrics.items():
+        summary[key] = value(results[0].detach().cpu().numpy(), results[1].detach().cpu().numpy())
 
-    # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
-    print("avg class : ", np.mean(np.diag(m)))
-
-    z_text = [[str(y) for y in x] for x in m]
-
-    import plotly.figure_factory as ff
-
-    fig = ff.create_annotated_heatmap(
-        m, x=names, y=names, annotation_text=z_text, colorscale="Blues"
-    )
-
-    fig.update_layout(
-        margin=dict(t=50, l=200),
-        # title="ResNext50 3.0",
-        xaxis_title="True labels",
-        yaxis_title="Predictions",
-    )
-
-    fig["data"][0]["showscale"] = True
-    import plotly.io as pio
-
-    pio.write_image(fig, f"{model._get_name()}_conf_mat.png", width=1920, height=1080)
-    fig.show()
+    plot_polar_chart(summary)
 
 
 if __name__ == "__main__":
