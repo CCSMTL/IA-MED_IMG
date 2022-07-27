@@ -44,6 +44,7 @@ class Experiment:
         if self.rank == 0:
             if val_loss < self.best_loss or self.epoch == 0:
                 self.best_loss = val_loss
+                experiment.log_metric("best_loss", val_loss, epoch=self.epoch)
                 self.patience = self.max_patience
                 self.summarize()
                 self.save_weights(model)
