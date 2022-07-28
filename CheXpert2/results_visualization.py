@@ -10,8 +10,6 @@ import os
 import pandas as pd
 import plotly.graph_objects as go
 
-import wandb
-
 
 def plot_polar_chart(summary):
     df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
@@ -39,6 +37,6 @@ def plot_polar_chart(summary):
     if os.environ["DEBUG"] == "False":
         fig.write_image("polar.png")
 
-    wandb.log({"polar_chart": fig})
-    for key, value in summary.items():
-        wandb.run.summary[key] = value
+    # wandb.log({"polar_chart": fig})
+    # for key, value in summary.items():
+    #    wandb.run.summary[key] = value
