@@ -5,9 +5,9 @@ import warnings
 import numpy as np
 import torch
 import torch.distributed as dist
+import wandb
 import yaml
 
-import wandb
 from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
@@ -106,15 +106,14 @@ def initialize_config():
     else:
         config = wandb.config
     print(config["augment_prob"])
-    return config, img_dir, experiment, optimizer, criterion, device, prob
-
-
-def main():
-    config, img_dir, experiment, optimizer, criterion, device, prob = initialize_config()
-    # ---------- Sampler -------------------------------------------
-
     from CheXpert2.Sampler import Sampler
     Sampler = Sampler(f"{img_dir}/train.csv")
+    sampler = Sampler.sampler()
+    return config, img_dir, experiment, optimizer, criterion, device, prob, sampler
+
+
+def main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler):
+    # ---------- Sampler -------------------------------------------
 
     # -----------model initialisation------------------------------
 
@@ -149,7 +148,7 @@ def main():
         channels=3,
     )
 
-    sampler = Sampler.sampler()
+
 
     optimizer = optimizer(
         model.parameters(),
@@ -202,8 +201,6 @@ def main():
         validation_loader,
         device,
         minibatch_accumulate=1,
-        epoch_max=config["epoch"],
-        patience=5,
         experiment=experiment,
         metrics=metrics,
         clip_norm=config["clip_norm"]
@@ -213,5 +210,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
+    config, img_dir, experiment, optimizer, criterion, device, prob, sampler = initialize_config()
+    main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler)

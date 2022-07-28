@@ -11,8 +11,8 @@ import pathlib
 import numpy as np
 import torch
 import tqdm
-
 import wandb
+
 from CheXpert2.custom_utils import convert
 from CheXpert2.results_visualization import plot_polar_chart
 
@@ -44,6 +44,7 @@ class Experiment:
         if self.rank == 0:
             if val_loss < self.best_loss or self.epoch == 0:
                 self.best_loss = val_loss
+                self.log_metric("best_loss", self.best_loss, epoch=self.epoch)
                 self.patience = self.max_patience
                 self.summarize()
                 self.save_weights(model)
