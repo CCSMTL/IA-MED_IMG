@@ -152,9 +152,9 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
 
     optimizer = optimizer(
         model.parameters(),
- #       lr=config["lr"],
- #       betas=(config["beta1"], config["beta2"]),
- #       weight_decay=config["weight_decay"],
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
     )
     if dist.is_initialized():  # use of multiple gpu
         from torch.utils.data.sampler import SequentialSampler
@@ -166,7 +166,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
-        num_workers=os.cpu_count(),
+        num_workers=config["num_worker"],
         pin_memory=True,
         sampler=sampler,
 
@@ -174,7 +174,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config["batch_size"],
-        num_workers=os.cpu_count(),
+        num_workers=config["num_worker"],
         pin_memory=True,
         shuffle=False,
     )
