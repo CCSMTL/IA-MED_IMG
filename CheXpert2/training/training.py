@@ -139,13 +139,14 @@ def training(
     scaler = torch.cuda.amp.GradScaler()
     val_loss = None
     n, m = len(training_loader), len(validation_loader)
+    position = device if type(device) ==  int else 0
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
         train_loss = training_loop(
             model,
-            tqdm.tqdm(training_loader, leave=False, position=device + 1),
+            tqdm.tqdm(training_loader, leave=False, position=position + 1),
             optimizer,
             criterion,
             device,
@@ -164,6 +165,7 @@ def training(
                     true = results[0].numpy()
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
+
 
             experiment.log_metrics(metrics_results, epoch=epoch)
             experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
