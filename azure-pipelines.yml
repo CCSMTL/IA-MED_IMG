@@ -34,7 +34,6 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: |
-      SET DEBUG=False
       python -m pytest ./tests
     displayName: 'pytest'
   
