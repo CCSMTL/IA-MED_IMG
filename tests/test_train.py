@@ -24,7 +24,7 @@ def test_train():
         "model": "densenet201",
         "batch_size": 2,
         "img_size": 320,
-        "num_worker": 0,
+        "num_worker": 1,
         "augment_intensity": 0,
         "cache": False,
         "N": 0,
