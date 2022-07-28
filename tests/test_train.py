@@ -22,7 +22,7 @@ def test_train():
 
     config = {
         "model": "densenet201",
-        "batch_size": 1,
+        "batch_size": 2,
         "img_size": 320,
         "num_worker": 8,
         "augment_intensity": 0,
@@ -35,6 +35,7 @@ def test_train():
 
     img_dir = "tests/data_test"
     names = pd.read_csv("tests/data_test/valid.csv").columns[5:19]
+    names = names + ["No Findings"]
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )

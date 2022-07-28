@@ -99,7 +99,7 @@ def validation_loop(model, loader, criterion, device):
         inputs = loader.dataset.preprocess(inputs)
         # forward + backward + optimize
 
-        outputs, heatmaps = model(inputs)
+        outputs = model(inputs)
         loss = criterion(outputs, labels)
 
         running_loss += loss.detach()
@@ -118,7 +118,7 @@ def validation_loop(model, loader, criterion, device):
         )  # garbage management sometimes fails with cuda
         break
 
-    return running_loss, results, heatmaps
+    return running_loss, results,
 
 
 def training(
