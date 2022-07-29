@@ -26,7 +26,7 @@ jobs:
       
   - script: |
       
-      python3 -m ensurepip --upgrade
+      pip install --upgrade pip
       python3 -m pip config set global.trusted-host "pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org" 
       python3 -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt 
       python3 -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/requirements_dev.txt
