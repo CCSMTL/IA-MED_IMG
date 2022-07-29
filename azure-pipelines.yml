@@ -34,7 +34,7 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: |
-      python -m pytest ./tests
+      python3 -m pytest ./tests
     displayName: 'pytest'
   
 #  - script: |
