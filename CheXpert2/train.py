@@ -5,9 +5,9 @@ import warnings
 import numpy as np
 import torch
 import torch.distributed as dist
-import wandb
 import yaml
 
+import wandb
 from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
@@ -80,7 +80,7 @@ def initialize_config():
 
     # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
-    optimizer = torch.optim.AdamW
+    optimizer = torch.optim.Adam
     criterion = torch.nn.BCEWithLogitsLoss()
     torch.set_num_threads(config["num_worker"])
 

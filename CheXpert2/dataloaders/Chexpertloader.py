@@ -88,6 +88,7 @@ class Chexpertloader(Dataset):
             [
                 transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
+                transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
             ]
         )
 
