@@ -25,16 +25,16 @@ jobs:
 
       
   - script: |
-      
+      source /data/home/jonathan/IA-MED_IMG/venv/bin/activate
       python -m ensurepip --upgrade
       python -m pip config set global.trusted-host "pypi.org files.pythonhosted.org pypi.python.org download.pytorch.org" 
       python -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/CheXpert2/requirements.txt 
       python -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r $(Build.Repository.LocalPath)/requirements_dev.txt
       python -m pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 pytest-azurepipelines
+      python -m   pip install -e .
     displayName: 'Install dependencies'
 
   - script: |
-      SET DEBUG=False
       python -m pytest -v ./tests
     displayName: 'pytest'
   
