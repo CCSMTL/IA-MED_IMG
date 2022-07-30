@@ -35,6 +35,7 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: |
+      source /data/home/jonathan/IA-MED_IMG/venv/bin/activate
       python -m pytest -v ./tests
     displayName: 'pytest'
   
