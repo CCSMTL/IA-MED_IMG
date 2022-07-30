@@ -17,7 +17,7 @@ def init_parser():
 
     parser.add_argument(
         "--img_size",
-        default=320,
+        default=500,
         const="all",
         type=int,
         nargs="?",
@@ -45,7 +45,7 @@ def init_parser():
 
     parser.add_argument(
         "--device",
-        default=-1,
+        default=0,
         type=int,
         nargs="?",
         required=False,
@@ -137,7 +137,7 @@ def init_parser():
     )
     parser.add_argument(
         "--clip_norm",
-        default=10,
+        default=100,
         const="all",
         type=int,
         nargs="?",
@@ -182,7 +182,7 @@ def init_parser():
     )
     parser.add_argument(
         "--batch_size",
-        default=300,
+        default=100,
         const="all",
         type=int,
         nargs="?",
