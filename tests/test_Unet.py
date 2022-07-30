@@ -17,9 +17,10 @@ opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
 
-os.environ["DEBUG"] = "False"
+
 
 def test_unet_RGB():
+    os.environ["DEBUG"] = "True"
     from CheXpert2.models.Unet import Unet
 
     x = torch.zeros((2, 3, 320, 320))
@@ -33,6 +34,7 @@ def test_unet_RGB():
 
 
 def test_unet_grayscale():  # still in developpment
+    os.environ["DEBUG"] = "True"
     from CheXpert2.models.Unet import Unet
 
     x = torch.zeros((2, 1, 320, 320))

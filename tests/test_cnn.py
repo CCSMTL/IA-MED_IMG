@@ -18,9 +18,9 @@ os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
-os.environ["DEBUG"] = "False"
-def test_cnn_grayscale():
 
+def test_cnn_grayscale():
+    os.environ["DEBUG"] = "True"
     x = torch.randn((2, 1, 320, 320))
     for name in [
         "resnet18",
@@ -32,7 +32,7 @@ def test_cnn_grayscale():
 
 
 def test_cnn_RGB():
-
+    os.environ["DEBUG"] = "True"
     x = torch.randn((2, 3, 320, 320))
     for name in [
         "resnet18",

@@ -13,7 +13,6 @@ from CheXpert2.Experiment import Experiment
 
 os.environ["WANDB_MODE"] = "offline"
 experiment = Experiment(directory="/debug", names=np.arange(0, 13).astype(str))
-os.environ["DEBUG"] = "True"
 
 
 def test_experiment_log_metric():
