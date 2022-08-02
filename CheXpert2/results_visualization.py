@@ -22,10 +22,12 @@ def plot_polar_chart(summary):
 
     fig = go.Figure(
         data=[
-            go.Scatterpolar(r=(df["chexnet"] * 100).round(0), fill='toself', name='chexnet',theta=list(summary.keys())),
-            go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself',theta=list(summary.keys()),
+            go.Scatterpolar(r=(df["chexnet"] * 100).round(0), fill='toself', name='chexnet',
+                            theta=list(summary["auc"].keys())),
+            go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself', theta=list(summary["auc"].keys()),
                             name='Chexpert'),
-            go.Scatterpolar(r=(df["ours"] * 100).round(0), fill='toself', name='ours',theta=list(summary.keys()))
+            go.Scatterpolar(r=(df["ours"] * 100).round(0), fill='toself', name='ours',
+                            theta=list(summary["auc"].keys()))
         ],
         layout=go.Layout(
             title=go.layout.Title(text='Class AUC'),
@@ -38,6 +40,6 @@ def plot_polar_chart(summary):
     if os.environ["DEBUG"] == "False":
         fig.write_image("polar.png")
 
-    # wandb.log({"polar_chart": fig})
+    wandb.log({"polar_chart": fig})
     # for key, value in summary.items():
     #    wandb.run.summary[key] = value
