@@ -28,10 +28,10 @@ class Mixing(object):
         :return: mixed image and labels
         """
 
-        image1 = ((1 - self.intensity) * image1 + self.intensity * image2).byte()
+        image1 = (1 - self.intensity) * image1 + self.intensity * image2
         label1 = (1 - self.intensity) * label1 + self.intensity * label2
-
-        return image1, label1
+        # image1 = image1 - torch.max(image1,dim=0)*255/(torch.max(image1,dim=0)-torch.min(image1,dim=0))
+        return image1.byte(), label1
 
     def __call__(self, samples: tuple[torch.Tensor, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         if self.prob == 0:
@@ -42,11 +42,12 @@ class Mixing(object):
         idxs = torch.randint(0, n, (n,))  # random indexes
 
         mask = probs < self.prob
+        m = len(mask)
         idxs = idxs[mask]
         image1 = images[mask]
-        image2 = images[idxs]
+        image2 = images[idxs[:m]]
         label1 = labels[mask]
-        label2 = labels[idxs]
+        label2 = labels[idxs[:m]]
         images[mask], labels[mask] = self.mixing(image1, image2, label1, label2)
 
         return (images, labels)
