@@ -15,7 +15,7 @@ class Metrics:
         for i in range(self.num_classes):
             max_score = 0
             for threshold in np.arange(0.1, 1, 0.1):
-                pred2 = np.where(pred[:, i] > threshold, 1, 0)
+                pred2 = np.where(np.copy(pred[:, i]) > threshold, 1, 0)
                 score = metrics.f1_score(
                     true[:, i], pred2, average="macro", zero_division=0
                 )  # weighted??
@@ -28,11 +28,12 @@ class Metrics:
 
     def accuracy(self, true, pred):
         n, m = true.shape
+        pred2 = np.copy(pred)
         for i in range(0, m):
-            pred[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
 
         accuracy = 0
-        for x, y in zip(true, pred):
+        for x, y in zip(true, pred2):
             if (x == y).all():
                 accuracy += 1
         return accuracy / n
@@ -41,23 +42,26 @@ class Metrics:
 
         self.set_thresholds(true, pred)
         _, m = true.shape
+        pred2 = np.copy(pred)
         for i in range(0, m):
-            pred[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
         return metrics.f1_score(
-            true, pred, average="macro", zero_division=0
+            true, pred2, average="macro", zero_division=0
         )  # weighted??
 
     def precision(self, true, pred):
         _, m = true.shape
+        pred2 = np.copy(pred)
         for i in range(0, m):
-            pred[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
-        return metrics.precision_score(true, pred, average="macro", zero_division=0)
+            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+        return metrics.precision_score(true, pred2, average="macro", zero_division=0)
 
     def recall(self, true, pred):
         _, m = true.shape
+        pred2 = np.copy(pred)
         for i in range(0, m):
-            pred[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
-        return metrics.recall_score(true, pred, average="macro", zero_division=0)
+            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+        return metrics.recall_score(true, pred2, average="macro", zero_division=0)
 
     def computeAUROC(self, true, pred):
 
