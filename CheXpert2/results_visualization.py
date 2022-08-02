@@ -10,6 +10,8 @@ import os
 import pandas as pd
 import plotly.graph_objects as go
 
+import wandb
+
 
 def plot_polar_chart(summary):
     print(summary["auc"])
