@@ -119,14 +119,16 @@ class CutMix(object):
         n = images.shape[0]  # number of samples
 
         probs = torch.rand((n,), device=images.device)
-        idxs = torch.randint(0, n, (n,), device=images.device)  # random indexes
+        idx1 = probs < self.prob
 
-        images[probs < self.prob], labels[probs < self.prob] = self.cutmix(images[probs < self.prob],
-                                                                           images[idxs[probs < self.prob]][
-                                                                               torch.randperm(len(idxs))],
-                                                                           labels[probs < self.prob],
-                                                                           labels[idxs[probs < self.prob]])
+        image1 = images[idx1]
+        label1 = labels[idx1]
+        m = len(image1)
+        idx2 = torch.randperm(n)[:m]
+        image2 = images[idx2]
 
+        label2 = labels[idx2]
+        images[idx1], labels[idx1] = self.cutmix(image1, image2, label1, label2)
         return (images, labels)
 
 
