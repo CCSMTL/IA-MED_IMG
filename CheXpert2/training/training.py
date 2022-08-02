@@ -36,31 +36,25 @@ def training_loop(
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 
-        with torch.cuda.amp.autocast() :
+        with torch.cuda.amp.autocast():
             outputs = model(inputs)
             loss = criterion(outputs, labels)
         scaler.scale(loss).backward()
 
-
         running_loss += loss.detach()
 
-        # gradient accumulation
-        if True :
-            i = 1
+        # Unscales the gradients of optimizer's assigned params in-place
+        scaler.unscale_(optimizer)
 
-            # Unscales the gradients of optimizer's assigned params in-place
-            scaler.unscale_(optimizer)
+        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+        torch.nn.utils.clip_grad_norm_(
+            model.parameters(), clip_norm
+        )
 
-            # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-            torch.nn.utils.clip_grad_norm_(
-                model.parameters(), clip_norm
-            )
-            # optimizer.step()
-            # optimizer.step()
-            scaler.step(optimizer)
-            scaler.update()
+        scaler.step(optimizer)
+        scaler.update()
 
-            optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad(set_to_none=True)
         # ending loop
         del (
             outputs,
@@ -116,7 +110,6 @@ def validation_loop(model, loader, criterion, device):
             outputs,
             loss,
         )  # garbage management sometimes fails with cuda
-        break
 
     return running_loss, results,
 
@@ -176,7 +169,7 @@ def training(
             experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
-        experiment.next_epoch(val_loss, model)
+            experiment.next_epoch(val_loss, model)
 
     print("Finished Training")
 
