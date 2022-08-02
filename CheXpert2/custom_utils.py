@@ -1,57 +1,21 @@
-import os
-import torch
-import pathlib
-import wandb
-import json
 import contextlib
+import copy
+
+import numpy as np
+
 
 # -----------------------------------------------------------------------------------
-class Experiment:
-    def __init__(self, directory, is_wandb=False, tags=None, config=None):
-        self.is_wandb = is_wandb
-        self.directory = "log/" + directory
-        self.weight_dir = "models/models_weights/" + directory
-        if tags is not None:
 
-            self.directory += f"/{tags[0]}"
-            self.weight_dir += f"/{tags[0]}"
-
-        if not os.path.exists(self.directory):
-            os.makedirs(self.directory)
-
-        path = pathlib.Path(self.weight_dir)
-        path.mkdir(parents=True, exist_ok=True)
-
-        root, dir, files = list(os.walk(self.directory))[0]
-
-        for f in files:
-            os.remove(root + "/" + f)
-
-        if config is not None:
-            for key, value in config.items():
-                config[key] = str(value)
-            with open(f"{self.directory}/config.json", "w") as f:
-                json.dump(config, f)
-
-    def log_metric(self, metric_name, value, epoch):
-
-        f = open(f"{self.directory}/{metric_name}.txt", "a")
-        if type(value) == list:
-            f.write("\n".join(str(item) for item in value))
+def convert(array1):
+    array = copy.copy(array1)
+    answers = []
+    array = array.numpy().round(0)
+    for item in array:
+        if np.max(item) == 0:
+            answers.append(13)
         else:
-            f.write(f"{epoch} , {str(value)}")
-
-        if self.is_wandb:
-            wandb.log({metric_name: value})
-        else:
-            print({metric_name: value})
-
-    def save_weights(self, model):
-        if not os.environ["DEBUG"]=="True":
-            torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
-
-            if self.is_wandb:
-                wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
+            answers.append(np.argmax(item))
+    return answers
 
 
 # -----------------------------------------------------------------------------------

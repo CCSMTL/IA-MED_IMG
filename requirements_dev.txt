@@ -2,4 +2,4 @@ black
 pylint
 pytest
 pytest-run-changed
-pre-commit
+mne-connectivity

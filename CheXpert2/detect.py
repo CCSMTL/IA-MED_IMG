@@ -1,23 +1,20 @@
 # ------python import------------------------------------
 import argparse
-import time
+import os
 import warnings
 
+import matplotlib.pyplot as plt
 import numpy as np
-import torch
-import tqdm
-import yaml
-from sklearn.metrics import confusion_matrix
-
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.training.training import validation_loop
-from sklearn import metrics
 import scipy
-import os
-import wandb
-
+import torch
 # -------- proxy config ---------------------------
 from six.moves import urllib
+from sklearn import metrics
+
+import wandb
+from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
+from CheXpert2.models.CNN import CNN
+from polycam.polycam.polycam import PCAMp
 
 proxy = urllib.request.ProxyHandler(
     {
@@ -32,28 +29,69 @@ opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
 
+os.environ["DEBUG"] = "True"
 
 
+@torch.no_grad()
+def infer_loop(model, loader, criterion, device):
+    """
 
-def init_argparse():
+    :param model: model to evaluate
+    :param loader: dataset loader
+    :param criterion: criterion to evaluate the loss
+    :param device: device to do the computation on
+    :return: val_loss for the N epoch, tensor of concatenated labels and predictions
+    """
+    running_loss = 0
+    results = [torch.tensor([]), torch.tensor([])]
+
+    for inputs, labels in loader:
+        # get the inputs; data is a list of [inputs, labels]
+
+        inputs, labels = (
+            inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
+            labels.to(device, non_blocking=True),
+        )
+        inputs = loader.dataset.preprocess(inputs)
+        # forward + backward + optimize
+
+        outputs, heatmaps = model(inputs)
+        loss = criterion(outputs, labels)
+
+        running_loss += loss.detach()
+
+        if inputs.shape != labels.shape:  # prevent storing images if training unets
+            results[1] = torch.cat(
+                (results[1], torch.sigmoid(outputs).detach().cpu()), dim=0
+            )
+            results[0] = torch.cat((results[0], labels.cpu()), dim=0)
+
+        del (
+            inputs,
+            labels,
+            outputs,
+            loss,
+        )  # garbage management sometimes fails with cuda
+        break
+
+    return running_loss, results, heatmaps
+
+
+def init_argparse() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Launch testing for a specific model")
 
     parser.add_argument(
-        "-t",
         "--dataset",
-        default="unseen",
+        default="valid",
         type=str,
         choices=["training", "validation"],
-        required=True,
+        required=False,
         help="Choice of the test set",
     )
 
     parser.add_argument(
-        "-m",
-        "--model",
-        default="alexnet",
+        "--run_id",
         type=str,
-        choices=["alexnet", "resnext50_32x4d", "vgg19", "densenet201"],
         required=True,
         help="Choice of the model",
     )
@@ -75,47 +113,6 @@ def find_thresholds(true, pred):
     thresholds = scipy.optimize.minimize(f1, args=(true, pred))
     return thresholds
 
-def find_thresholds_1(tpr, fpr):
-    gmeans= []
-    thresholds= []
-    # calculate the g-mean for each threshold
-    gmeans = sqrt(tpr * (1 - fpr))
-
-    ...
-    # locate the index of the largest g-mean
-    thresholds = argmax(gmeans)
-    print('Best Threshold=%f, G-Mean=%.3f' % (thresholds[ix], gmeans[ix]))
-    return thresholds
-
-
-def convert(array, thresholds):
-    array = array.numpy()
-    answers = []
-    for item in array:
-        item = np.where(item > thresholds, 1, 0)
-        if np.max(item) == 0:
-            answers.append(14)
-        else:
-            answers.append(np.argmax(item))
-    return answers
-
-
-def create_confusion_matrix(results):
-    from CheXpert2.Metrics import Metrics  # had to reimport due to bug
-
-    metrics = Metrics(14)
-    metrics = metrics.metrics()
-    for metric in metrics.keys():
-        print(metric + " : ", metrics[metric](results[0].numpy(), results[1].numpy()))
-    thresholds = find_thresholds(results[0], results[1])
-
-    y_true, y_pred = convert(results[0]), convert(results[1], thresholds)
-    m = (
-        confusion_matrix(np.int32(y_true), np.int32(y_pred), normalize="pred") * 100
-    ).round(0)
-
-    return m
-
 
 def main():
     criterion = torch.nn.CrossEntropyLoss()
@@ -128,74 +125,53 @@ def main():
     # ----- parsing arguments --------------------------------------
     parser = init_argparse()
     args = parser.parse_args()
-    num_classes = 15
 
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
     # ------loading test set --------------------------------------
-
-    test_dataset = CxrayDataloader(f"data/{args.dataset}", num_classes=14)
+    img_dir = os.environ["img_dir"]
+    test_dataset = Chexpertloader(f"{img_dir}/{args.dataset}.csv", img_dir, img_size=320)
 
     # ----------------loading model -------------------------------
-    from CheXpert2.models.CNN import CNN
 
-    model = CNN(args.model, 14)
-    model = torch.nn.DataParallel(model)
-    if not os.path.exists(f"models/models_weights/{args.model}/DataParallel.pt"):
-        wandb.restore(
-            f"models/models_weights/{args.model}/DataParallel.pt",
-            run_path="ai-chexnet/test-project/1oc66oio",
-        )
-    model.load_state_dict(
-        torch.load(
-            f"models/models_weights/{args.model}/DataParallel.pt",  # TODO : load .pt and check name for if dataparallel
-            map_location=torch.device("cpu"),
-        )
-    )
+    model = CNN("convnext_base", 13)
+    # model =  torch.nn.parallel.DistributedDataParallel(model)
+
+    api = wandb.Api()
+
+    # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
+    # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
+    state_dict = torch.load("models_weights/convnext_base/DistributedDataParallel.pt")
+
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        name = k[7:]  # remove 'module.' of DataParallel/DistributedDataParallel
+        new_state_dict[name] = v
+
+    model.load_state_dict(new_state_dict)
+
     model = model.to(device)
+    model.eval()
+    model = PCAMp(model)
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
-        batch_size=8,
+        batch_size=1,
         shuffle=False,
         num_workers=8,
         pin_memory=True,
     )
 
-    a = time.time()
-    running_loss, results = validation_loop(
-        model=model, loader=tqdm.tqdm(test_loader), criterion=criterion, device=device
+    start.record()
+    running_loss, results, heatmaps = infer_loop(
+        model=model, loader=test_loader, criterion=criterion, device=device
     )
-    print("time :", (time.time() - a) / len(test_dataset))
-
-    m = create_confusion_matrix(results)
-    # -----------------------------------------------------------------------------------
-
-    with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
-        names = yaml.safe_load(stream)["names"]
-
-    # np.savetxt(f"{model._get_name()}_confusion_matrix.txt",m)
-    print("avg class : ", np.mean(np.diag(m)))
-
-    z_text = [[str(y) for y in x] for x in m]
-
-    import plotly.figure_factory as ff
-
-    fig = ff.create_annotated_heatmap(
-        m, x=names, y=names, annotation_text=z_text, colorscale="Blues"
-    )
-
-    fig.update_layout(
-        margin=dict(t=50, l=200),
-        # title="ResNext50 3.0",
-        xaxis_title="True labels",
-        yaxis_title="Predictions",
-    )
-
-    fig["data"][0]["showscale"] = True
-    import plotly.io as pio
-
-    pio.write_image(fig, f"{model._get_name()}_conf_mat.png", width=1920, height=1080)
-    fig.show()
-
+    end.record()
+    torch.cuda.synchronize()
+    print("time : ", start.elapsed_time(end))
+    plt.imshow(np.sum(heatmaps[0][0].detach().cpu().numpy(), axis=0))
+    plt.savefig("heatmaps.png")
 
 if __name__ == "__main__":
     main()

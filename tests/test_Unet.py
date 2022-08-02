@@ -1,14 +1,6 @@
 import os
+
 import torch
-import numpy as np
-from torchvision import transforms
-from PIL import Image
-
-
-from CheXpert2.dataloaders.CxrayDataloader import CxrayDataloader
-from CheXpert2.custom_utils import dummy_context_mgr
-from CheXpert2.models.CNN import CNN
-
 # -------- proxy config ---------------------------
 from six.moves import urllib
 
@@ -28,6 +20,7 @@ urllib.request.install_opener(opener)
 
 
 def test_unet_RGB():
+    os.environ["DEBUG"] = "True"
     from CheXpert2.models.Unet import Unet
 
     x = torch.zeros((2, 3, 320, 320))
@@ -41,6 +34,7 @@ def test_unet_RGB():
 
 
 def test_unet_grayscale():  # still in developpment
+    os.environ["DEBUG"] = "True"
     from CheXpert2.models.Unet import Unet
 
     x = torch.zeros((2, 1, 320, 320))
