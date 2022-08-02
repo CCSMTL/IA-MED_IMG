@@ -80,7 +80,7 @@ def initialize_config():
 
     # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
-    optimizer = torch.optim.AdamW
+    optimizer = torch.optim.Adam
     criterion = torch.nn.BCEWithLogitsLoss()
     torch.set_num_threads(config["num_worker"])
 
@@ -106,15 +106,14 @@ def initialize_config():
     else:
         config = wandb.config
     print(config["augment_prob"])
-    return config, img_dir, experiment, optimizer, criterion, device, prob
-
-
-def main():
-    config, img_dir, experiment, optimizer, criterion, device, prob = initialize_config()
-    # ---------- Sampler -------------------------------------------
-
     from CheXpert2.Sampler import Sampler
     Sampler = Sampler(f"{img_dir}/train.csv")
+    sampler = Sampler.sampler()
+    return config, img_dir, experiment, optimizer, criterion, device, prob, sampler
+
+
+def main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler):
+    # ---------- Sampler -------------------------------------------
 
     # -----------model initialisation------------------------------
 
@@ -149,13 +148,13 @@ def main():
         channels=3,
     )
 
-    sampler = Sampler.sampler()
+
 
     optimizer = optimizer(
         model.parameters(),
- #       lr=config["lr"],
- #       betas=(config["beta1"], config["beta2"]),
- #       weight_decay=config["weight_decay"],
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
     )
     if dist.is_initialized():  # use of multiple gpu
         from torch.utils.data.sampler import SequentialSampler
@@ -167,7 +166,7 @@ def main():
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
-        num_workers=os.cpu_count(),
+        num_workers=config["num_worker"],
         pin_memory=True,
         sampler=sampler,
 
@@ -175,7 +174,7 @@ def main():
     validation_loader = torch.utils.data.DataLoader(
         val_dataset,
         batch_size=config["batch_size"],
-        num_workers=os.cpu_count(),
+        num_workers=config["num_worker"],
         pin_memory=True,
         shuffle=False,
     )
@@ -202,8 +201,6 @@ def main():
         validation_loader,
         device,
         minibatch_accumulate=1,
-        epoch_max=config["epoch"],
-        patience=5,
         experiment=experiment,
         metrics=metrics,
         clip_norm=config["clip_norm"]
@@ -213,5 +210,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
+    config, img_dir, experiment, optimizer, criterion, device, prob, sampler = initialize_config()
+    main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler)

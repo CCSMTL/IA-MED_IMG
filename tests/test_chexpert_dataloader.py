@@ -5,6 +5,7 @@ import torch
 
 from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
 
+
 # -------- proxy config ---------------------------
 
 # proxy = urllib.request.ProxyHandler(
@@ -19,10 +20,11 @@ from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
 # opener = urllib.request.build_opener(proxy)
 # # install the openen on the module-level
 # urllib.request.install_opener(opener)
-os.environ["DEBUG"] = "False"
+
 
 
 def test_dataloader_get_label():
+    os.environ["DEBUG"] = "True"
     vectors = np.array([0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, -1, -1])
     labels = Chexpertloader.get_label(vectors, label_smoothing=0.05).tolist()
 
@@ -32,6 +34,7 @@ def test_dataloader_get_label():
 
 
 def test_dataloader_get_item():
+    os.environ["DEBUG"] = "True"
     img_file = os.path.join(os.getcwd(), "tests/data_test/valid.csv")
     cxraydataloader = Chexpertloader(
         img_file=img_file, channels=3, img_size=224, img_dir="tests/data_test",
@@ -42,6 +45,7 @@ def test_dataloader_get_item():
 
 
 def test_dataloader_transform():
+    os.environ["DEBUG"] = "True"
     transform = Chexpertloader.get_transform([0.2, ] * 5, 0.1)
     # testing outputs
     x = torch.randint(0, 255, (224, 224, 3), dtype=torch.uint8)
@@ -54,7 +58,7 @@ def test_dataloader_transform():
 
 def test_dataloader_advanced_transform():
     # testing outputs
-
+    os.environ["DEBUG"] = "True"
     img = torch.randint(0, 255, (16, 3, 224, 224), dtype=torch.uint8).to(memory_format=torch.channels_last)
     transform = Chexpertloader.get_advanced_transform([0.2, ] * 5, 0.1, 2, 9)
     label = torch.randint(0, 2, (16, 13), dtype=torch.float32)

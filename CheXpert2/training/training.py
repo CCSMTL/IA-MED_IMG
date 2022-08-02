@@ -84,7 +84,9 @@ def validation_loop(model, loader, criterion, device):
     """
     running_loss = 0
 
+
     model.eval()
+
     results = [torch.tensor([]), torch.tensor([])]
 
     for inputs, labels in loader:
@@ -96,9 +98,9 @@ def validation_loop(model, loader, criterion, device):
         )
         inputs = loader.dataset.preprocess(inputs)
         # forward + backward + optimize
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
+
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
 
         running_loss += loss.detach()
 
@@ -114,8 +116,9 @@ def validation_loop(model, loader, criterion, device):
             outputs,
             loss,
         )  # garbage management sometimes fails with cuda
+        break
 
-    return running_loss, results
+    return running_loss, results,
 
 
 def training(
@@ -128,8 +131,7 @@ def training(
     metrics=None,
     minibatch_accumulate=1,
     experiment=None,
-    patience=5,
-    epoch_max=50,
+
     clip_norm = 100
 ):
     epoch = 0
@@ -138,13 +140,17 @@ def training(
     scaler = torch.cuda.amp.GradScaler()
     val_loss = None
     n, m = len(training_loader), len(validation_loader)
+
+    position = device + 1 if type(device) == int else 1
+
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
         train_loss = training_loop(
             model,
-            tqdm.tqdm(training_loader, leave=False, position=device + 1),
+            tqdm.tqdm(training_loader, leave=False, position=position),
+
             optimizer,
             criterion,
             device,
@@ -163,6 +169,7 @@ def training(
                     true = results[0].numpy()
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
+
 
             experiment.log_metrics(metrics_results, epoch=epoch)
             experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
