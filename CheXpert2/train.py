@@ -80,7 +80,7 @@ def initialize_config():
 
     # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
-    optimizer = torch.optim.Adam
+    optimizer = torch.optim.AdamW
     criterion = torch.nn.BCEWithLogitsLoss()
     torch.set_num_threads(config["num_worker"])
 
@@ -119,7 +119,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
 
     model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=False)
     # send model to gpu
-    model = model.to(device, memory_format=torch.channels_last)
+    model = model.to(device)
 
     print("The model has now been successfully loaded into memory")
     # -------data initialisation-------------------------------
