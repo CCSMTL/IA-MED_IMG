@@ -49,20 +49,18 @@ def channels321(backbone):
 
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False):
+    def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True):
         super().__init__()
-        # TODO : VERIFY IMAGE SIZE WITH PRETRAINED MODELS!!
-        # self.backbone=torch.hub.load('pytorch/vision:v0.10.0',backbone, pretrained=True)
-        # print(torch.hub.list("facebookresearch/deit:main"))
-
         if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
             repo = "pytorch/vision:v0.10.0"
-            backbone = torch.hub.load(repo, backbone_name, weights="DEFAULT")
+            weights = "DEFAULT" if pretrained else None
+            backbone = torch.hub.load(repo, backbone_name, weights=weights)
         elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
             repo = "facebookresearch/deit:main"
-            backbone = torch.hub.load(repo, backbone_name, pretrained=True)
+            backbone = torch.hub.load(repo, backbone_name, pretrained=pretrained)
         elif "convnext" in backbone_name:
-            backbone = getattr(torchvision.models, backbone_name)(weights="DEFAULT")
+            weights = "DEFAULT" if pretrained else None
+            backbone = getattr(torchvision.models, backbone_name)(weights=weights)
         else:
             try:
                 import timm
