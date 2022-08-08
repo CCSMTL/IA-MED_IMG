@@ -37,6 +37,7 @@ def test_train():
         "weight_decay": 0.01,
         "freeze": False,
         "pretrained": True,
+        "channels": 1
     }
 
     img_dir = "tests/data_test"
