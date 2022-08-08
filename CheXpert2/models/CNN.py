@@ -70,6 +70,14 @@ def channels321(backbone):
         setattr(item, last_item, new_first_layer)
 
 
+class Identity(torch.nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return x
+
+
 class CNN(torch.nn.Module):
     def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True):
         super().__init__()
@@ -77,10 +85,12 @@ class CNN(torch.nn.Module):
             repo = "pytorch/vision:v0.10.0"
             weights = "DEFAULT" if pretrained else None
             backbone = torch.hub.load(repo, backbone_name, weights=weights)
+            backbone = backbone.features
         else:
             try:
                 import timm
                 backbone = timm.create_model(backbone_name, pretrained=True)
+                backbone.forward_head = Identity()
             except:
                 raise NotImplementedError("This model has not been found within the available repos.")
 
