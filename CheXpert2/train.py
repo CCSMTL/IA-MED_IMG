@@ -136,7 +136,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
         cache=config["cache"],
         num_worker=config["num_worker"],
         unet=False,
-        channels=3,
+        channels=config["channels"],
         N=config["N"],
         M=config["M"],
     )
@@ -147,7 +147,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
         cache=False,
         num_worker=config["num_worker"],
         unet=False,
-        channels=3,
+        channels=config["channels"],
     )
 
 
