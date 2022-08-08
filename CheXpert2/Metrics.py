@@ -79,8 +79,7 @@ class Metrics:
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        score = -np.sum(pred, axis=1) + 1
-        score = np.where(score < 0, 0, score)
+        score = -np.mean(pred, axis=1) + 1
 
         fpr, tpr, _ = roc_curve(-np.max(true, axis=1) + 1, score)
         outAUROC["No Finding"] = auc(fpr, tpr)
