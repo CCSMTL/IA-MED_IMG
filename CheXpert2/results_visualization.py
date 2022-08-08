@@ -17,7 +17,7 @@ def plot_polar_chart(summary):
     print(summary["auc"])
     df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
     # df.columns = ["chexnet", "chexpert"]
-    summary["auc"]["No Finding"] = 0
+
     df["ours"] = list(summary["auc"].values())
     print(df)
     df.fillna(0, inplace=True)
