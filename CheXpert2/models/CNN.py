@@ -27,14 +27,14 @@ def channels321(backbone):
             first_layer = first_layer[0]
         except:
             pass
-
+        bias = True if first_layer.bias is not None else False
         new_first_layer = torch.nn.Conv2d(
             1,
             first_layer.out_channels,
             kernel_size=first_layer.kernel_size,
             stride=first_layer.stride,
             padding=first_layer.padding,
-            bias=first_layer.bias,
+            bias=bias,
         ).requires_grad_()
 
         new_first_layer.weight[:, :, :, :].data[...].fill_(0)
@@ -49,14 +49,16 @@ def channels321(backbone):
 
     except:  # transformers
         name = "patch_embed.proj"
+        weight1 = backbone.patch_embed.proj.weight
         first_layer = backbone.patch_embed.proj
+        bias = True if first_layer.bias is not None else False
         new_first_layer = torch.nn.Conv2d(
             1,
             first_layer.out_channels,
             kernel_size=first_layer.kernel_size,
             stride=first_layer.stride,
             padding=first_layer.padding,
-            bias=first_layer.bias,
+            bias=bias,
         ).requires_grad_()
         new_first_layer.weight[:, :, :, :].data[...].fill_(0)
         new_first_layer.weight[:, :, :, :].data[...] += Variable(
