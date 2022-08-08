@@ -5,7 +5,6 @@ Created on 2022-06-30$
 
 @author: Jonathan Beaulieu-Emond
 """
-import os
 
 import cv2 as cv
 import numpy as np
@@ -71,8 +70,6 @@ class Chexpertloader(Dataset):
 
         self.files = pd.read_csv(img_file).fillna(0)
 
-        if os.environ["DEBUG"] == "True":
-            self.files = self.files[0:100]
         if self.cache:
             with parallel_backend('threading', n_jobs=num_worker):
                 self.images = Parallel()(
