@@ -3,8 +3,6 @@ from functools import reduce
 import torch
 from torch.autograd import Variable
 
-from CheXpert2.custom_utils import set_parameter_requires_grad
-
 
 @torch.no_grad()
 def get_output(model, x):
@@ -81,52 +79,46 @@ class Identity(torch.nn.Module):
 class CNN(torch.nn.Module):
     def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True):
         super().__init__()
-        if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
-            repo = "pytorch/vision:v0.10.0"
-            weights = "DEFAULT" if pretrained else None
-            backbone = torch.hub.load(repo, backbone_name, weights=weights)
-            backbone = backbone.features
-        else:
-            try:
-                import timm
-                backbone = timm.create_model(backbone_name, pretrained=True)
-                backbone.forward_head = Identity()
-            except:
-                raise NotImplementedError("This model has not been found within the available repos.")
-
-        if backbone_name.startswith("inception") and self.training:  # rip hardcode forced...
-            backbone.transform_input = False
-
-        if channels == 1:
-            channels321(backbone)
+        # if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
+        #     repo = "pytorch/vision:v0.10.0"
+        #     weights = "DEFAULT" if pretrained else None
+        #     backbone = torch.hub.load(repo, backbone_name, weights=weights)
+        #     backbone = backbone.features
+        # else:
+        try:
+            import timm
+            backbone = timm.create_model(backbone_name, pretrained=True, in_chans=channels, num_classes=num_classes)
+            backbone.forward_head = Identity()
+        except:
+            raise NotImplementedError("This model has not been found within the available repos.")
 
         self.backbone = backbone
 
         # -------------------------------------------------------------
 
         # finds the size of the last layer of the model, and name of the first
-        x = torch.zeros((2, channels, img_size, img_size))
-        size = get_output(self.backbone, x)  # dirty way
-
-        # -------------------------------------------------------------
-
-        if freeze_backbone:
-            set_parameter_requires_grad(self.backbone)
-
-        # --------------------------------------------------------------
-        self.classifier = torch.nn.Sequential(
-            torch.nn.Linear(size, num_classes, bias=True)
-        )
+        # x = torch.zeros((2, channels, img_size, img_size))
+        # size = get_output(self.backbone, x)  # dirty way
+        #
+        # # -------------------------------------------------------------
+        #
+        # if freeze_backbone:
+        #     set_parameter_requires_grad(self.backbone)
+        #
+        # # --------------------------------------------------------------
+        # self.classifier = torch.nn.Sequential(
+        #     torch.nn.Linear(size, num_classes, bias=True)
+        # )
 
     def forward(self, x):
 
         x = self.backbone(x)
 
-        name = self.backbone._get_name().lower()
-
-        if "inception" in name and self.training:
-            x = x.logits
-        x = self.classifier(x)
+        # name = self.backbone._get_name().lower()
+        #
+        # if "inception" in name and self.training:
+        #     x = x.logits
+        # x = self.classifier(x)
 
         return x
 
