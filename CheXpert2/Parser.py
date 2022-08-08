@@ -209,6 +209,17 @@ def init_parser():
     )
 
     parser.add_argument(
+        "--channels",
+        default=3,
+        nargs="?",
+        const="all",
+        type=int,
+        choices=[1, 3],
+        required=False,
+        help="The number of channels for the inputs",
+    )
+
+    parser.add_argument(
         "--tags",
         default=None,
         nargs="+",
@@ -217,11 +228,18 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--frozen",
+        "--freeze",
         action=argparse.BooleanOptionalAction,
         default=False,
         help="do you wish  to freeze the backbone?",
     )
+    parser.add_argument(
+        "--pretrained",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="do you wish  to use pretrained weights?",
+    )
+
     parser.add_argument(
         "--cache",
         action=argparse.BooleanOptionalAction,

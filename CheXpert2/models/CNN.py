@@ -1,7 +1,6 @@
 from functools import reduce
 
 import torch
-import torchvision
 from torch.autograd import Variable
 
 from CheXpert2.custom_utils import set_parameter_requires_grad
@@ -16,36 +15,57 @@ def get_output(model, x):
 
 
 def channels321(backbone):
-    for name, weight1 in backbone.named_parameters():
-        break
-
-    name = name[:-7]  # removed the .weight of first conv
-
-    first_layer = reduce(getattr, [backbone] + name.split("."))
-
     try:
-        first_layer = first_layer[0]
-    except:
-        pass
+        for name, weight1 in backbone.named_parameters():
+            break
 
-    new_first_layer = torch.nn.Conv2d(
-        1,
-        first_layer.out_channels,
-        kernel_size=first_layer.kernel_size,
-        stride=first_layer.stride,
-        padding=first_layer.padding,
-        bias=first_layer.bias,
-    ).requires_grad_()
+        name = name[:-7]  # removed the .weight of first conv
 
-    new_first_layer.weight[:, :, :, :].data[...].fill_(0)
-    new_first_layer.weight[:, :, :, :].data[...] += Variable(
-        weight1[:, 1:2, :, :], requires_grad=True
-    )
-    # change first layer attribute
-    name = name.split(".")
-    last_item = name.pop()
-    item = reduce(getattr, [backbone] + name)  # item is a pointer!
-    setattr(item, last_item, new_first_layer)
+        first_layer = reduce(getattr, [backbone] + name.split("."))
+
+        try:
+            first_layer = first_layer[0]
+        except:
+            pass
+
+        new_first_layer = torch.nn.Conv2d(
+            1,
+            first_layer.out_channels,
+            kernel_size=first_layer.kernel_size,
+            stride=first_layer.stride,
+            padding=first_layer.padding,
+            bias=first_layer.bias,
+        ).requires_grad_()
+
+        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
+        new_first_layer.weight[:, :, :, :].data[...] += Variable(
+            weight1[:, 1:2, :, :], requires_grad=True
+        )
+        # change first layer attribute
+        name = name.split(".")
+        last_item = name.pop()
+        item = reduce(getattr, [backbone] + name)  # item is a pointer!
+        setattr(item, last_item, new_first_layer)
+
+    except:  # transformers
+        name = "patch_embed.proj"
+        first_layer = backbone.patch_embed.proj
+        new_first_layer = torch.nn.Conv2d(
+            1,
+            first_layer.out_channels,
+            kernel_size=first_layer.kernel_size,
+            stride=first_layer.stride,
+            padding=first_layer.padding,
+            bias=first_layer.bias,
+        ).requires_grad_()
+        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
+        new_first_layer.weight[:, :, :, :].data[...] += Variable(
+            weight1[:, 1:2, :, :], requires_grad=True
+        )
+        name = name.split(".")
+        last_item = name.pop()
+        item = reduce(getattr, [backbone] + name)  # item is a pointer!
+        setattr(item, last_item, new_first_layer)
 
 
 class CNN(torch.nn.Module):
@@ -55,12 +75,6 @@ class CNN(torch.nn.Module):
             repo = "pytorch/vision:v0.10.0"
             weights = "DEFAULT" if pretrained else None
             backbone = torch.hub.load(repo, backbone_name, weights=weights)
-        elif backbone_name in torch.hub.list("facebookresearch/deit:main"):
-            repo = "facebookresearch/deit:main"
-            backbone = torch.hub.load(repo, backbone_name, pretrained=pretrained)
-        elif "convnext" in backbone_name:
-            weights = "DEFAULT" if pretrained else None
-            backbone = getattr(torchvision.models, backbone_name)(weights=weights)
         else:
             try:
                 import timm

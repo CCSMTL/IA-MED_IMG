@@ -1,5 +1,6 @@
 # ------python import------------------------------------
 import os
+import urllib
 import warnings
 
 import numpy as np
@@ -30,18 +31,18 @@ from CheXpert2.training.training import training
 def initialize_config():
     # -------- proxy config ---------------------------
 
-    # proxy = urllib.request.ProxyHandler(
-    #     {
-    #         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-    #         "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-    #     }
-    # )
-    # os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
-    # os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    proxy = urllib.request.ProxyHandler(
+        {
+            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+        }
+    )
+    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
     # construct a new opener using your proxy settings
-    # opener = urllib.request.build_opener(proxy)
+    opener = urllib.request.build_opener(proxy)
     # install the openen on the module-level
-    # urllib.request.install_opener(opener)
+    urllib.request.install_opener(opener)
 
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
@@ -117,7 +118,8 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
 
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=False)
+    model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                pretrained=config["pretrained"])
     # send model to gpu
     model = model.to(device)
 
