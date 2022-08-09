@@ -114,12 +114,15 @@ class CNN(torch.nn.Module):
 
         x = self.backbone(x)
 
+        x2 = torch.zeros_like(x)
+
         # implement hierarchical disease prediction
         # sick = torch.prod(x)
-        x[:, 1] = x[:, 1] * x[:, 0]  # *sick
-
-        x[:, 3:8] = x[::, 2][:, None] * x[:, 3:8]  # *sick
-
+        x2[:, 1] = x[:, 1] * x[:, 0]  # *sick
+        x2[:, 0] = x[:, 0]
+        x2[:, 1:3] = x[:, 1:3]
+        x2[:, 3:8] = x[::, 2][:, None] * x[:, 3:8]  # *sick
+        x2[:, 8::] = x[:, 8::]
         # x[8:11] = x[14] * x[8:11]
 
         # torch.cat(x,torch.tensor([sick]))
