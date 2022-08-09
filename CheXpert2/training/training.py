@@ -36,23 +36,24 @@ def training_loop(
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
-        scaler.scale(loss).backward()
-
+        # with torch.cuda.amp.autocast():
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        # scaler.scale(loss).backward()
+        loss.backward()
         running_loss += loss.detach()
 
         # Unscales the gradients of optimizer's assigned params in-place
-        scaler.unscale_(optimizer)
+        # scaler.unscale_(optimizer)
 
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), clip_norm
         )
 
-        scaler.step(optimizer)
-        scaler.update()
+        # scaler.step(optimizer)
+        # scaler.update()
+        optimizer.step()
         scheduler.step(scheduler.last_epoch + 1 / n)
         optimizer.zero_grad(set_to_none=True)
         # ending loop
