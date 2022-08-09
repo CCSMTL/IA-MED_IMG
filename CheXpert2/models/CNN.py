@@ -113,10 +113,12 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
+
         # implement hierarchical disease prediction
         # sick = torch.prod(x)
-        x[1] = x[1] * x[0]  # *sick
-        x[3:8] = x[2] * x[3:8]  # *sick
+        x[:, 1] = x[:, 1] * x[:, 0]  # *sick
+
+        x[:, 3:8] = x[::, 2][:, None] * x[:, 3:8]  # *sick
 
         # x[8:11] = x[14] * x[8:11]
 
