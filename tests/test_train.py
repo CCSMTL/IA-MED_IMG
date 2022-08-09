@@ -41,8 +41,9 @@ def test_train():
     }
 
     img_dir = "tests/data_test"
+    os.environ["img_dir"] = img_dir
     names = pd.read_csv("tests/data_test/valid.csv").columns[5:19]
-    names = names + ["No Findings"]
+
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )

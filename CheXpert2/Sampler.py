@@ -11,8 +11,8 @@ class Sampler:
 
         data = pd.read_csv(datafolder)
         data = data.replace(-1, 0.5).fillna(0)
-        self.data = data.iloc[:, 5:19]
-        count = self.data.sum().to_numpy()
+        self.data = data
+        count = self.data.iloc[:, 5:19].sum().to_numpy()
         count = 1 / count
 
         weights = np.zeros((len(data)))
@@ -46,13 +46,20 @@ class Sampler:
         )
 
     def auc_based_sampler(self, auc):
+        names = self.data.columns[5:19]
 
-        for ex, data in enumerate(self.data.iterrows()):
-            classes = data.columns[np.where(data == 1)]
+        for ex, data in self.data.iterrows():
+            classes = names[np.where(data.to_numpy()[5:19] == 1)[0]]
             n = len(classes)
             if n > 1:
                 classes = classes[np.random.randint(0, n)]
-            self.weights[ex] = 1 / auc[classes]
+
+            try:
+                self.weights[ex] = 1 / auc[classes]
+            except:
+                self.weights[ex] = 10
+            if n == 0:
+                self.weights = 1 / auc["No Finding"]
 
         return self.weights
 
