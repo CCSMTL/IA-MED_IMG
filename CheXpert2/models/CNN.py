@@ -114,7 +114,7 @@ class CNN(torch.nn.Module):
 
         x = self.backbone(x)
 
-        x2 = torch.zeros_like(x)
+        x2 = torch.zeros_like(x, dtype=torch.float, device=x.device)
 
         # implement hierarchical disease prediction
         # sick = torch.prod(x)
