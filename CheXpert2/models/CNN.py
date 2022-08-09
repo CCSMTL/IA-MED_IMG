@@ -131,7 +131,7 @@ class CNN(torch.nn.Module):
 
         # x = self.classifier(x)
 
-        return x
+        return x2.float()
 
 
 if __name__ == "__main__":  # for debugging purpose

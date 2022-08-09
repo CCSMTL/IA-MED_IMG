@@ -121,7 +121,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
-    model = model.to(device)
+    model = model.to(device, dtype=torch.float)
 
     print("The model has now been successfully loaded into memory")
     # -------data initialisation-------------------------------

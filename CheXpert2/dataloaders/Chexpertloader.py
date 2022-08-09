@@ -181,4 +181,4 @@ class Chexpertloader(Dataset):
 
         if self.unet:
             return image, image
-        return image, label
+        return image, label.float()
