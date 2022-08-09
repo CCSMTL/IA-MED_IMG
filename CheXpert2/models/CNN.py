@@ -118,11 +118,13 @@ class CNN(torch.nn.Module):
 
         # implement hierarchical disease prediction
         # sick = torch.prod(x)
-        x2[:, 1] = x[:, 1] * x[:, 0]  # *sick
-        x2[:, 0] = x[:, 0]
-        x2[:, 1:3] = x[:, 1:3]
-        x2[:, 3:8] = x[::, 2][:, None] * x[:, 3:8]  # *sick
-        x2[:, 8::] = x[:, 8::]
+        x2[:, 1] = torch.sigmoid(x[:, 1]) * torch.sigmoid(x[:, 0])  # *sick
+        x2[:, 0] = torch.sigmoid(x[:, 0])
+        x2[:, 1:3] = torch.softmax(x[:, 1:3], dim=1)
+
+        x2[:, 3:8] = torch.sigmoid(x[:, 2])[:, None] * torch.softmax(x[:, 3:8], dim=1)
+        x2[:, 8::] = torch.sigmoid(x[:, 8::])
+
         # x[8:11] = x[14] * x[8:11]
 
         # torch.cat(x,torch.tensor([sick]))

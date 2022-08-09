@@ -82,7 +82,7 @@ def initialize_config():
     # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
     optimizer = torch.optim.AdamW
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.BCELoss()
     torch.set_num_threads(config["num_worker"])
 
     # ----------- load classes ----------------------------------------

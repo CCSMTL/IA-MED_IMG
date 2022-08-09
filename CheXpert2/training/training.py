@@ -100,7 +100,7 @@ def validation_loop(model, loader, criterion, device):
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
             results[1] = torch.cat(
-                (results[1], torch.sigmoid(outputs).detach().cpu()), dim=0
+                (results[1], outputs.detach().cpu()), dim=0
             )
             results[0] = torch.cat((results[0], labels.cpu()), dim=0)
 
