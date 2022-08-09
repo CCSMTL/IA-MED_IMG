@@ -36,7 +36,7 @@ class Sampler:
         print(f"A total of {no_cat} samples had no category defined!")
         if os.environ["DEBUG"] == "True":
             weights = weights[0:100]
-
+            self.data = data.iloc[0:100]
         self.weights = weights
 
     def sampler(self):
@@ -59,7 +59,7 @@ class Sampler:
             except:
                 self.weights[ex] = 10
             if n == 0:
-                self.weights = 1 / auc["No Finding"]
+                self.weights[ex] = 1 / auc["No Finding"]
 
         return self.weights
 

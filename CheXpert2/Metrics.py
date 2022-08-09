@@ -14,7 +14,7 @@ class Metrics:
         best_threshold = np.zeros((self.num_classes))
         for i in range(self.num_classes):
             max_score = 0
-            for threshold in np.arange(0.1, 1, 0.1):
+            for threshold in np.arange(0.01, 1, 0.01):
                 pred2 = np.where(np.copy(pred[:, i]) > threshold, 1, 0)
                 score = metrics.f1_score(
                     true[:, i], pred2, average="macro", zero_division=0
@@ -78,8 +78,9 @@ class Metrics:
                 outAUROC[self.names[i]] = 0
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
+
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        score = -np.mean(pred, axis=1) + 1
+        score = -np.max(pred, axis=1) + 1
 
         fpr, tpr, _ = roc_curve(-np.max(true, axis=1) + 1, score)
         outAUROC["No Finding"] = auc(fpr, tpr)
