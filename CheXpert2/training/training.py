@@ -174,20 +174,20 @@ def training(
             # Finishing the loop
             experiment.next_epoch(val_loss.cpu() / m, model)
 
-        # dynamic sampling
-        weights = Sampler.auc_based_sampler(
-            experiment.metrics["auc"])
-        sampler = torch.utils.data.sampler.WeightedRandomSampler(
-            weights, len(weights)
-        )
-        training_loader = torch.utils.data.DataLoader(
-            training_loader.dataset,
-            batch_size=training_loader.batch_size,
-            num_workers=training_loader.num_workers,
-            pin_memory=True,
-            sampler=sampler,
-
-        )
+            # # dynamic sampling
+            # weights = Sampler.auc_based_sampler(
+            #     experiment.metrics["auc"])
+            # sampler = torch.utils.data.sampler.WeightedRandomSampler(
+            #     weights, len(weights)
+            # )
+            # training_loader = torch.utils.data.DataLoader(
+            #     training_loader.dataset,
+            #     batch_size=training_loader.batch_size,
+            #     num_workers=training_loader.num_workers,
+            #     pin_memory=True,
+            #     sampler=sampler,
+            #
+            # )
 
     print("Finished Training")
 

@@ -113,11 +113,15 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
+        # implement hierarchical disease prediction
+        # sick = torch.prod(x)
+        x[1] = x[1] * x[0]  # *sick
+        x[3:8] = x[2] * x[3:8]  # *sick
 
-        # name = self.backbone._get_name().lower()
-        #
-        # if "inception" in name and self.training:
-        #     x = x.logits
+        # x[8:11] = x[14] * x[8:11]
+
+        # torch.cat(x,torch.tensor([sick]))
+
         # x = self.classifier(x)
 
         return x
@@ -125,6 +129,6 @@ class CNN(torch.nn.Module):
 
 if __name__ == "__main__":  # for debugging purpose
     x = torch.zeros((2, 1, 320, 320))
-    for name in ["densenet121", "resnet18", "inception_v3"]:
+    for name in ["densenet121", "resnet18"]:
         cnn = CNN(name, 14)
         y = cnn(x)  # test forward loop
