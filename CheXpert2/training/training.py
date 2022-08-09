@@ -175,7 +175,8 @@ def training(
             experiment.next_epoch(val_loss, model)
 
         # dynamic sampling
-        training_loader.sampler.weights = Sampler.auc_based_sampler(experiment.metrics["auc"])
+        training_loader.sampler.weights = Sampler.auc_based_sampler(
+            experiment.metrics["auc"]) * training_loader.sampler.weights
 
     print("Finished Training")
 
