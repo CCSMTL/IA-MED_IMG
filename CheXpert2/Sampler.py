@@ -8,36 +8,35 @@ import torch
 class Sampler:
     def __init__(self, datafolder):
         no_cat = 0
-        if os.path.exists(f"data/sampler_weights.txt"):
-            weights = np.loadtxt(f"data/sampler_weights.txt")
-        else:
-            data = pd.read_csv(datafolder)
-            data = data.replace(-1, 0.5).fillna(0)
-            count = data.iloc[:, 5:19].sum().to_numpy()
-            count = 1 / (count / count.sum())
 
-            weights = np.zeros((len(data)))
-            for i, line in data.iterrows():
+        data = pd.read_csv(datafolder)
+        data = data.replace(-1, 0.5).fillna(0)
+        self.data = data.iloc[:, 5:19]
+        count = self.data.sum().to_numpy()
+        count = 1 / count
 
-                vector = line.to_numpy()[5:19]
+        weights = np.zeros((len(data)))
+        for i, line in data.iterrows():
 
-                weight = count[np.where(np.array(vector) == 1)]
-                n = len(weight)
-                if n > 1:
-                    weight = weight[np.random.randint(0, n)]
+            vector = line.to_numpy()[5:19]
 
-                elif n == 0:
-                    weight = count[np.random.randint(0,
-                                                     14)]  # assigns random weight to each sample that does not have defined category
-                    # print("No category had been identified!")
-                    no_cat += 1
+            weight = count[np.where(np.array(vector) == 1)]
+            n = len(weight)
+            if n > 1:
+                weight = weight[np.random.randint(0, n)]
 
-                weights[i] = weight
-            np.savetxt(f"data/sampler_weights.txt", weights)
+            elif n == 0:
+                weight = count[np.random.randint(0,
+                                                 14)]  # assigns random weight to each sample that does not have defined category
+                # print("No category had been identified!")
+                no_cat += 1
+
+            weights[i] = weight
 
         print(f"A total of {no_cat} samples had no category defined!")
         if os.environ["DEBUG"] == "True":
             weights = weights[0:100]
+
         self.weights = weights
 
     def sampler(self):
@@ -46,7 +45,17 @@ class Sampler:
             self.weights, len(self.weights)
         )
 
+    def auc_based_sampler(self, auc):
 
-if __name__=="__main__" :
+        for ex, data in enumerate(self.data.iterrows()):
+            classes = data.columns[np.where(data == 1)]
+            n = len(classes)
+            if n > 1:
+                classes = classes[np.random.randint(0, n)]
+            self.weights[ex] = 1 / auc[classes]
 
-    sampler=Sampler(f"{os.environ['img_dir']}/training").sampler()
+        return self.weights
+
+
+if __name__ == "__main__":
+    sampler = Sampler(f"{os.environ['img_dir']}/training").sampler()

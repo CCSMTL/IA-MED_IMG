@@ -136,6 +136,9 @@ def training(
 
     position = device + 1 if type(device) == int else 1
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
+    from CheXpert2.Sampler import Sampler
+    import os
+    Sampler = Sampler(f"{os.environ['img_dir']}/train.csv")
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -164,13 +167,15 @@ def training(
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
 
-
             experiment.log_metrics(metrics_results, epoch=epoch)
             experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
             experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
             experiment.next_epoch(val_loss, model)
+
+        # dynamic sampling
+        training_loader.sampler.weights = Sampler.auc_based_sampler(experiment.metrics["auc"])
 
     print("Finished Training")
 
