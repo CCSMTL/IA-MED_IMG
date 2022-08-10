@@ -118,12 +118,15 @@ class CNN(torch.nn.Module):
 
         # implement hierarchical disease prediction
         # sick = torch.prod(x)
-        x2[:, 1] = torch.sigmoid(x[:, 1]) * torch.sigmoid(x[:, 0])  # *sick
-        x2[:, 0] = torch.sigmoid(x[:, 0])
-        x2[:, 1:3] = torch.softmax(x[:, 1:3], dim=1)
 
-        x2[:, 3:8] = torch.sigmoid(x[:, 2])[:, None] * torch.softmax(x[:, 3:8], dim=1)
-        x2[:, 8::] = torch.sigmoid(x[:, 8::])
+        x[:, [1, 3, 9, 10, 11, 12, 13]] = (1 - torch.sigmoid(x[:, 0])[:, None]) * torch.sigmoid(
+            x[:, [1, 3, 9, 10, 11, 12, 13]])
+        x2[:, 1] = x[:, 1] * torch.sigmoid(x[:, 2])
+        # x2[:, 2] = torch.sigmoid(x[:, 2]) * torch.sigmoid(x[:, 1])
+
+        x  # 2[:,3] = torch.sigmoid(x[:, 2]) * torch.sum(torch.softmax(x[:, 4:9], dim=1), dim=1)
+        x2[:, 4:9] = x[:, 3][:, None] * torch.softmax(x[:, 4:9], dim=1)
+        x2[:, 9:14] = x[:, 9:14]
 
         # x[8:11] = x[14] * x[8:11]
 
@@ -131,6 +134,8 @@ class CNN(torch.nn.Module):
 
         # x = self.classifier(x)
 
+        # x2[:,0] = 1- torch.sigmoid(x[:,0]) * torch.sum(torch.sigmoid(x[:,[1,3,13,9,10,11,12]]), dim=1)
+        x2 = -torch.log((1 / (x2 + 1e-8)) - 1)
         return x2.float()
 
 

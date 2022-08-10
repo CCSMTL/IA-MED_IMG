@@ -82,7 +82,7 @@ def initialize_config():
     # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
     optimizer = torch.optim.AdamW
-    criterion = torch.nn.BCELoss()
+    criterion = torch.nn.BCEWithLogitsLoss()
     torch.set_num_threads(config["num_worker"])
 
     # ----------- load classes ----------------------------------------
@@ -118,7 +118,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
 
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 13, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
     model = model.to(device, dtype=torch.float)
@@ -187,7 +187,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     experiment.watch(model)
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-    metric = Metrics(num_classes=13, names=experiment.names, threshold=np.zeros((13)) + 0.5)
+    metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
 
     # ------------training--------------------------------------------

@@ -36,11 +36,11 @@ def training_loop(
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 
-        # with torch.cuda.amp.autocast():
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        # scaler.scale(loss).backward()
-        loss.backward()
+        with torch.cuda.amp.autocast():
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+        scaler.scale(loss).backward()
+
         running_loss += loss.detach()
 
         # Unscales the gradients of optimizer's assigned params in-place
@@ -51,9 +51,9 @@ def training_loop(
             model.parameters(), clip_norm
         )
 
-        # scaler.step(optimizer)
-        # scaler.update()
-        optimizer.step()
+        scaler.step(optimizer)
+        scaler.update()
+        # optimizer.step()
         scheduler.step(scheduler.last_epoch + 1 / n)
         optimizer.zero_grad(set_to_none=True)
         # ending loop
@@ -103,7 +103,7 @@ def validation_loop(model, loader, criterion, device):
             results[1] = torch.cat(
                 (results[1], outputs.detach().cpu()), dim=0
             )
-            results[0] = torch.cat((results[0], labels.cpu()), dim=0)
+            results[0] = torch.cat((torch.sigmoid(results[0]), labels.cpu()), dim=0)
 
         del (
             inputs,
@@ -164,7 +164,7 @@ def training(
             if metrics:
                 for key in metrics:
                     pred = results[1].numpy()
-                    true = results[0].numpy()
+                    true = results[0].numpy().round(0)
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
 
