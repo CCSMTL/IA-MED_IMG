@@ -8,7 +8,7 @@ Created on 2022-07-13$
 import torch
 import torch.distributed as dist
 
-from CheXpert2.train import main
+from CheXpert2.train import main, initialize_config
 
 
 def cleanup():
@@ -18,5 +18,6 @@ def cleanup():
 
 if __name__ == "__main__":
     dist.init_process_group("nccl")
-    main()
+    config, img_dir, experiment, optimizer, criterion, device, prob, sampler = initialize_config()
+    main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler)
     cleanup()

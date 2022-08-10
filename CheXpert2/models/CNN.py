@@ -37,7 +37,8 @@ def channels321(backbone):
         bias=first_layer.bias,
     ).requires_grad_()
 
-    new_first_layer.weight[:, :, :, :].data[...] = Variable(
+    new_first_layer.weight[:, :, :, :].data[...].fill_(0)
+    new_first_layer.weight[:, :, :, :].data[...] += Variable(
         weight1[:, 1:2, :, :], requires_grad=True
     )
     # change first layer attribute
@@ -63,7 +64,11 @@ class CNN(torch.nn.Module):
         elif "convnext" in backbone_name:
             backbone = getattr(torchvision.models, backbone_name)(weights="DEFAULT")
         else:
-            raise NotImplementedError("This model has not been found within the available repos.")
+            try:
+                import timm
+                backbone = timm.create_model(backbone_name, pretrained=True)
+            except:
+                raise NotImplementedError("This model has not been found within the available repos.")
 
         if backbone_name.startswith("inception") and self.training:  # rip hardcode forced...
             backbone.transform_input = False

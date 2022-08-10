@@ -59,7 +59,7 @@ def test_dataloader_transform():
 def test_dataloader_advanced_transform():
     # testing outputs
     os.environ["DEBUG"] = "True"
-    img = torch.randint(0, 255, (16, 3, 224, 224), dtype=torch.uint8).to(memory_format=torch.channels_last)
+    img = torch.randint(0, 255, (16, 3, 224, 224), dtype=torch.uint8)
     transform = Chexpertloader.get_advanced_transform([0.2, ] * 5, 0.1, 2, 9)
     label = torch.randint(0, 2, (16, 13), dtype=torch.float32)
     for i in range(5):
