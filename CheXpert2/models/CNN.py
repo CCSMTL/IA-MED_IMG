@@ -114,29 +114,8 @@ class CNN(torch.nn.Module):
 
         x = self.backbone(x)
 
-        x2 = torch.zeros_like(x, dtype=torch.float, device=x.device)
 
-        # implement hierarchical disease prediction
-        # sick = torch.prod(x)
-
-        x[:, [1, 3, 9, 10, 11, 12, 13]] = (1 - torch.sigmoid(x[:, 0])[:, None]) * torch.sigmoid(
-            x[:, [1, 3, 9, 10, 11, 12, 13]])
-        x2[:, 1] = x[:, 1] * torch.sigmoid(x[:, 2])
-        # x2[:, 2] = torch.sigmoid(x[:, 2]) * torch.sigmoid(x[:, 1])
-
-        x  # 2[:,3] = torch.sigmoid(x[:, 2]) * torch.sum(torch.softmax(x[:, 4:9], dim=1), dim=1)
-        x2[:, 4:9] = x[:, 3][:, None] * torch.softmax(x[:, 4:9], dim=1)
-        x2[:, 9:14] = x[:, 9:14]
-
-        # x[8:11] = x[14] * x[8:11]
-
-        # torch.cat(x,torch.tensor([sick]))
-
-        # x = self.classifier(x)
-
-        # x2[:,0] = 1- torch.sigmoid(x[:,0]) * torch.sum(torch.sigmoid(x[:,[1,3,13,9,10,11,12]]), dim=1)
-        x2 = -torch.log((1 / (x2 + 1e-8)) - 1)
-        return x2.float()
+        return x
 
 
 if __name__ == "__main__":  # for debugging purpose
