@@ -137,9 +137,7 @@ def training(
 
     position = device + 1 if type(device) == int else 1
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
-    from CheXpert2.Sampler import Sampler
-    import os
-    Sampler = Sampler(f"{os.environ['img_dir']}/train.csv")
+    i = 0
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -156,7 +154,7 @@ def training(
             clip_norm,
             scheduler
         )
-        if experiment.rank == 0:
+        if experiment.rank == 0 and not training_loader.dataset.pretrain:
             val_loss, results = validation_loop(
                 model, validation_loader, criterion, device
             )
@@ -174,21 +172,12 @@ def training(
 
             # Finishing the loop
             experiment.next_epoch(val_loss.cpu() / m, model)
-
-            # # dynamic sampling
-            # weights = Sampler.auc_based_sampler(
-            #     experiment.metrics["auc"])
-            # sampler = torch.utils.data.sampler.WeightedRandomSampler(
-            #     weights, len(weights)
-            # )
-            # training_loader = torch.utils.data.DataLoader(
-            #     training_loader.dataset,
-            #     batch_size=training_loader.batch_size,
-            #     num_workers=training_loader.num_workers,
-            #     pin_memory=True,
-            #     sampler=sampler,
-            #
-            # )
+        if i == 5:
+            training_loader.dataset.pretrain = False
+            validation_loader.dataset.pretrain = False
+            model.backbone.reset_classifier(14)
+            model = model.to(device)
+        i +=1
 
     print("Finished Training")
 

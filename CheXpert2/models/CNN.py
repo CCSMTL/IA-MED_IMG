@@ -77,7 +77,8 @@ class Identity(torch.nn.Module):
 
 
 class CNN(torch.nn.Module):
-    def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True):
+    def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True,
+                 pretraining=True):
         super().__init__()
         # if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
         #     repo = "pytorch/vision:v0.10.0"
@@ -92,7 +93,7 @@ class CNN(torch.nn.Module):
         except:
             raise NotImplementedError("This model has not been found within the available repos.")
 
-        self.backbone = backbone
+
 
         # -------------------------------------------------------------
 
@@ -110,12 +111,14 @@ class CNN(torch.nn.Module):
         #     torch.nn.Linear(size, num_classes, bias=True)
         # )
 
+        self.backbone = backbone
+
     def forward(self, x):
 
         x = self.backbone(x)
-
-
         return x
+
+
 
 
 if __name__ == "__main__":  # for debugging purpose

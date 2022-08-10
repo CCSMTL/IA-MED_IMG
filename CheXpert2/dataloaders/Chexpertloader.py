@@ -37,6 +37,7 @@ class Chexpertloader(Dataset):
             unet=False,
             N=2,
             M=9,
+            pretrain=True
     ):
         # ----- Variable definition ------------------------------------------------------
         self.img_file = img_file
@@ -76,6 +77,7 @@ class Chexpertloader(Dataset):
                     delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                     tqdm.tqdm(range(0, len(self.files))))
 
+        self.pretrain = pretrain
     def __len__(self):
         return len(self.files)
 
@@ -100,21 +102,34 @@ class Chexpertloader(Dataset):
             ]
         )
 
-    @staticmethod
-    def get_label(vector, label_smoothing):
+    def get_label(self, idx):
         """
         This function returns the labels as a vector of probabilities. The input vectors are taken as is from
         the chexpert dataset, with 0,1,-1 corresponding to negative, positive, and uncertain, respectively.
         """
 
-        vector = vector
-        # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
-        # source : https://arxiv.org/pdf/1911.06475.pdf
-        labels = np.zeros((len(vector),))
-        labels[vector == 1] = 1 - label_smoothing
-        labels[vector == 0] = label_smoothing
-        labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+        convert = {
+            "Male": 0,
+            "Female": 1,
+            "Frontal": 0,
+            "Lateral": 1,
+            "AP": 1,
+            "PA": 0,
+            0: 0.5
+        }
+        if not self.pretrain:
+            vector, label_smoothing = self.files.iloc[idx, 5:19].to_numpy(), self.label_smoothing
 
+            # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
+            # source : https://arxiv.org/pdf/1911.06475.pdf
+            labels = np.zeros((len(vector),))
+            labels[vector == 1] = 1 - label_smoothing
+            labels[vector == 0] = label_smoothing
+            labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+
+        else:
+            data = self.files.iloc[idx, 1:5].iloc
+            labels = np.array([convert[data[0]], int(data[1]) / 100, convert[data[2]], convert[data[3]]])
         return torch.from_numpy(labels)
 
     @staticmethod
@@ -163,7 +178,7 @@ class Chexpertloader(Dataset):
             image = self.images[idx]
         else:
             image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
-        label = self.get_label(self.files.iloc[idx, 5:19].to_numpy(), self.label_smoothing)
+        label = self.get_label(idx)
         # image = self.transform(image)
 
         # if sum(self.prob) > 0:
