@@ -16,6 +16,8 @@ from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+from DATABASE.Database import mongodb
+
 from CheXpert2 import custom_Transforms
 
 
@@ -82,6 +84,23 @@ class Chexpertloader(Dataset):
     def __len__(self):
         return len(self.files)
 
+    @staticmethod
+    def get_TrainDataset():
+        
+        # Calling DataFrame constructor on list
+        Traindf = pd.DataFrame(mdb.GetDocForTrain())
+        
+        return Traindf
+    
+    
+    @staticmethod
+    def get_ValidDataset():
+        
+        # Calling DataFrame constructor on list
+        Valdf = pd.DataFrame(mdb.GetDocForVal())
+        
+        return Valdf
+        
     @staticmethod
     def get_transform(prob, intensity):  # for transform that would require pil images
         return transforms.Compose(
