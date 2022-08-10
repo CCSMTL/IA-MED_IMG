@@ -115,7 +115,8 @@ class Chexpertloader(Dataset):
             "Lateral": 1,
             "AP": 1,
             "PA": 0,
-            0: 0.5
+            0: 0.5,
+            "LL": 0.5,
         }
         if not self.pretrain:
             vector, label_smoothing = self.files.iloc[idx, 5:19].to_numpy(), self.label_smoothing
