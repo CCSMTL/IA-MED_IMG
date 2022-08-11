@@ -1,4 +1,5 @@
 # ------python import------------------------------------
+import copy
 import os
 import urllib
 import warnings
@@ -194,7 +195,30 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     print("Starting training now")
 
     # initialize metrics loggers
+    experiment2 = copy.copy(experiment)
 
+    experiment2.epoch_max = 1
+    results = training(
+        model,
+        optimizer,
+        criterion,
+        training_loader,
+        validation_loader,
+        device,
+        minibatch_accumulate=1,
+        experiment=experiment2,
+        metrics=None,
+        clip_norm=config["clip_norm"]
+    )
+
+    if dist.is_initialized():
+        model.module.backbone.reset_classifier(14)
+        model = torch.nn.parallel.DistributedDataParallel(model.module.to(device))
+
+    else:
+        model.backbone.reset_classifier(14)
+    training_loader.dataset.pretrain = False
+    validation_loader.dataset.pretrain = False
     results = training(
         model,
         optimizer,

@@ -88,7 +88,8 @@ class CNN(torch.nn.Module):
         # else:
         try:
             import timm
-            backbone = timm.create_model(backbone_name, pretrained=True, in_chans=channels, num_classes=num_classes)
+            backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
+                                         num_classes=num_classes)
             backbone.forward_head = Identity()
         except:
             raise NotImplementedError("This model has not been found within the available repos.")
