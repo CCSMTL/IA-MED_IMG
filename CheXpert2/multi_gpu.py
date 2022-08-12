@@ -18,6 +18,6 @@ def cleanup():
 
 if __name__ == "__main__":
     dist.init_process_group("nccl")
-    config, img_dir, experiment, optimizer, criterion, device, prob, sampler = initialize_config()
-    main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler)
+    config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler = initialize_config()
+    main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler)
     cleanup()

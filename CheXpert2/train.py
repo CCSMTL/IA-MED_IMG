@@ -1,5 +1,4 @@
 # ------python import------------------------------------
-import copy
 import os
 import urllib
 import warnings
@@ -83,6 +82,7 @@ def initialize_config():
     # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
     # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
     optimizer = torch.optim.AdamW
+    optimizer2 = torch.optim.AdamW
     criterion = torch.nn.BCEWithLogitsLoss()
     torch.set_num_threads(config["num_worker"])
 
@@ -101,7 +101,9 @@ def initialize_config():
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5
     )
-
+    experiment2 = Experiment(
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
+    )
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.device(device)
@@ -111,10 +113,10 @@ def initialize_config():
     from CheXpert2.Sampler import Sampler
     Sampler = Sampler(f"{img_dir}/train.csv")
     sampler = Sampler.sampler()
-    return config, img_dir, experiment, optimizer, criterion, device, prob, sampler
+    return config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler
 
 
-def main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler):
+def main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler):
     # ---------- Sampler -------------------------------------------
 
     # -----------model initialisation------------------------------
@@ -153,12 +155,7 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
 
 
 
-    optimizer = optimizer(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
+
     if dist.is_initialized():  # use of multiple gpu
         from torch.utils.data.sampler import SequentialSampler
         model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
@@ -195,10 +192,13 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     print("Starting training now")
 
     # initialize metrics loggers
-    experiment2 = copy.copy(experiment)
 
-    experiment2.epoch_max = 1
-    optimizer2 = copy.copy(optimizer)
+    optimizer2 = optimizer2(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
 
     results = training(
         model,
@@ -216,14 +216,25 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     if dist.is_initialized():
         dist.barrier()
         model.module.backbone.reset_classifier(14)
-        model = torch.nn.parallel.DistributedDataParallel(model.module.to(device))
+        model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                     pretrained=False, channels=config["channels"])
+        model2.load_state_dict(model.state_dict())
+        model = model2.to(device)
+        model = torch.nn.parallel.DistributedDataParallel(model)
 
     else:
         model.backbone.reset_classifier(14)
         model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
                      pretrained=False, channels=config["channels"])
         model2.load_state_dict(model.state_dict())
-        model = model2
+        model = model2.to(device)
+
+    optimizer = optimizer(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
     training_loader.dataset.pretrain = False
     validation_loader.dataset.pretrain = False
     results = training(
@@ -243,5 +254,5 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
 
 
 if __name__ == "__main__":
-    config, img_dir, experiment, optimizer, criterion, device, prob, sampler = initialize_config()
-    main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler)
+    config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler = initialize_config()
+    main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler)
