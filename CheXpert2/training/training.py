@@ -176,6 +176,8 @@ def training(
             experiment.next_epoch(val_loss.cpu() / m, model)
 
         experiment.epoch += 1
+        if experiment.epoch == experiment.max_epoch:
+            experiment.keep_training = False
 
     print("Finished Training")
 
