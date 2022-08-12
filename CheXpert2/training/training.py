@@ -96,7 +96,7 @@ def validation_loop(model, loader, criterion, device):
         # forward + backward + optimize
 
         outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
 
