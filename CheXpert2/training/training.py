@@ -130,7 +130,7 @@ def training(
     clip_norm = 100
 ):
     epoch = 0
-
+    results = None
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
     val_loss = None
