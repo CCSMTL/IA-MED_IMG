@@ -38,8 +38,9 @@ def training_loop(
 
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
-            loss = criterion(outputs, labels)
-        scaler.scale(loss).backward()
+
+        loss = criterion(outputs, labels)
+        loss.backward()
 
         running_loss += loss.detach()
 
@@ -51,9 +52,9 @@ def training_loop(
             model.parameters(), clip_norm
         )
 
-        scaler.step(optimizer)
-        scaler.update()
-        # optimizer.step()
+        # scaler.step(optimizer)
+        # scaler.update()
+        optimizer.step()
         scheduler.step(scheduler.last_epoch + 1 / n)
         optimizer.zero_grad(set_to_none=True)
         # ending loop

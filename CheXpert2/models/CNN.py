@@ -113,10 +113,18 @@ class CNN(torch.nn.Module):
         # )
 
         self.backbone = backbone
+        self.pretrain = pretraining
 
     def forward(self, x):
 
         x = self.backbone(x)
+
+        if not self.pretrain:
+            x = torch.sigmoid(x)
+            x[:, 1] = x[:, 1] * x[:, 0]
+            x[:, [3, 4, 5, 7]] = x[:, [3, 4, 5, 7]] * x[:, 2][:, None]
+            x[:, 6] = x[:, 2] * x[:, 5] * x[:, 6]
+
         return x
 
 

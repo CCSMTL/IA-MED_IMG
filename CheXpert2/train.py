@@ -198,9 +198,11 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     experiment2 = copy.copy(experiment)
 
     experiment2.epoch_max = 1
+    optimizer2 = copy.copy(optimizer)
+
     results = training(
         model,
-        optimizer,
+        optimizer2,
         criterion,
         training_loader,
         validation_loader,
@@ -212,11 +214,16 @@ def main(config, img_dir, experiment, optimizer, criterion, device, prob, sample
     )
 
     if dist.is_initialized():
+        dist.barrier()
         model.module.backbone.reset_classifier(14)
         model = torch.nn.parallel.DistributedDataParallel(model.module.to(device))
 
     else:
         model.backbone.reset_classifier(14)
+        model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                     pretrained=False, channels=config["channels"])
+        model2.load_state_dict(model.state_dict())
+        model = model2
     training_loader.dataset.pretrain = False
     validation_loader.dataset.pretrain = False
     results = training(
