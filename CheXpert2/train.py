@@ -220,12 +220,12 @@ def main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criter
                      pretrained=False, channels=config["channels"])
         model2.load_state_dict(model.module.state_dict())
         model = model2.to(device)
-        model.pretrain = False
+        # model.pretrain = False
         model = torch.nn.parallel.DistributedDataParallel(model)
 
     else:
         model.backbone.reset_classifier(14)
-        model.pretrain = False
+        #model.pretrain = False
         model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
                      pretrained=False, channels=config["channels"])
         model2.load_state_dict(model.state_dict())

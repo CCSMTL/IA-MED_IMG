@@ -38,7 +38,7 @@ def training_loop(
 
         with torch.cuda.amp.autocast():
             outputs = model(inputs)
-
+        # outputs = torch.nan_to_num(outputs,0)
         loss = criterion(outputs.float(), labels.float())
         loss.backward()
 
@@ -96,6 +96,7 @@ def validation_loop(model, loader, criterion, device):
         # forward + backward + optimize
 
         outputs = model(inputs)
+        #outputs = torch.nan_to_num(outputs, 0)
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
