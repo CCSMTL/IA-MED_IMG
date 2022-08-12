@@ -143,6 +143,7 @@ def training(
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
+
         train_loss = training_loop(
             model,
             tqdm.tqdm(training_loader, leave=False, position=position),
@@ -173,7 +174,8 @@ def training(
 
             # Finishing the loop
             experiment.next_epoch(val_loss.cpu() / m, model)
-            experiment.epoch += 1
+
+        experiment.epoch += 1
 
     print("Finished Training")
 
