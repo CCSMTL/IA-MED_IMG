@@ -5,13 +5,13 @@ Created on 2022-07-13$
 
 @author: Jonathan Beaulieu-Emond
 """
-import copy
 import os
 
 import numpy as np
 import torch
 import torch.distributed as dist
 
+from CheXpert2.Experiment import Experiment
 from CheXpert2.models.CNN import CNN
 from CheXpert2.train import main, initialize_config
 
@@ -23,24 +23,29 @@ def cleanup():
 
 if __name__ == "__main__":
     dist.init_process_group("nccl")
-    config, img_dir, experiment, experiment2, device, prob, sampler = initialize_config()
+    config, img_dir, experiment, device, prob, sampler, names = initialize_config()
+    rank = dist.get_rank()
+    device = rank % torch.cuda.device_count()
     # -----------model initialisation------------------------------
 
     model = CNN(config["model"], 4, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
-
+    model = model.to(device)
     print("The model has now been successfully loaded into memory")
     # ---pretraining-------------------------------------
-    experiment2 = copy.copy(experiment)
-    experiment2.max_epoch = 5
+    experiment2 = Experiment(
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
+    )
     from torch.utils.data.sampler import SequentialSampler
 
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     local_rank = int(os.environ['LOCAL_RANK'])
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
     sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
-    main(config, img_dir, model, experiment2, device, prob, sampler, None, pretrain=True)
+    optimizer = torch.optim.AdamW
+    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+                   metrics=None, pretrain=True)
 
     # -----setting up training-------------------------------------
     dist.barrier()
@@ -50,7 +55,8 @@ if __name__ == "__main__":
     model2.load_state_dict(model.module.state_dict())
 
     model2.pretrain = False
-    model = model2.to(local_rank)
+    model = model2.to(device)
+    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model)
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
@@ -61,5 +67,8 @@ if __name__ == "__main__":
 
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-    main(config, img_dir, model, experiment, device, prob, sampler, metrics, pretrain=False)
+
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+                   metrics=metrics, pretrain=False)
+    experiment.end(results)
     cleanup()

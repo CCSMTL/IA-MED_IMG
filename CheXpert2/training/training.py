@@ -36,28 +36,31 @@ def training_loop(
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 
-        #with torch.cuda.amp.autocast(enabled=autocast):
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        with torch.cuda.amp.autocast(enabled=autocast):
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
         # outputs = torch.nan_to_num(outputs,0)
 
-        #scaler.scale(loss).backward()
-        loss.backward()
-        running_loss += loss.detach()
-
-        # Unscales the gradients of optimizer's assigned params in-place
-        # scaler.unscale_(optimizer)
+        if autocast:
+            scaler.scale(loss).backward()
+            # Unscales the gradients of optimizer's assigned params in-place
+            scaler.unscale_(optimizer)
+        else:
+            loss.backward()
 
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), clip_norm
         )
-
-        #scaler.step(optimizer)
-        #scaler.update()
-        optimizer.step()
+        if autocast:
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            optimizer.step()
+        # optimizer.step()
         scheduler.step(scheduler.last_epoch + 1 / n)
         optimizer.zero_grad(set_to_none=True)
+        running_loss += loss.detach()
         # ending loop
         del (
             outputs,
@@ -97,7 +100,6 @@ def validation_loop(model, loader, criterion, device):
         # forward + backward + optimize
 
         outputs = model(inputs)
-        #outputs = torch.nan_to_num(outputs, 0)
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()

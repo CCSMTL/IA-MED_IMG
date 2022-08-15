@@ -1,5 +1,4 @@
 # ------python import------------------------------------
-import copy
 import os
 import urllib
 import warnings
@@ -21,8 +20,8 @@ from CheXpert2.training.training import training
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-#torch.autograd.set_detect_anomaly(False)
-#torch.autograd.profiler.profile(False)
+# torch.autograd.set_detect_anomaly(True)
+# torch.autograd.profiler.profile(False)
 #torch.autograd.profiler.emit_nvtx(False)
 #torch.backends.cudnn.benchmark = True
 
@@ -185,17 +184,15 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         validation_loader,
         device,
         minibatch_accumulate=1,
-        experiment=experiment2,
+        experiment=experiment,
         metrics=metrics,
         clip_norm=config["clip_norm"],
         autocast=config["autocast"]
     )
 
+    return results
 
 
-
-
-    experiment.end(results)
 
 
 if __name__ == "__main__":
@@ -210,23 +207,27 @@ if __name__ == "__main__":
 
     print("The model has now been successfully loaded into memory")
     # pre-training
-    experiment2 = copy.copy(experiment)
-    experiment2.max_epoch = 5
-    main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
-         metrics=None, pretrain=True)
+    experiment2 = Experiment(
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
+    )
+    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+                   metrics=None, pretrain=True)
 
     # setting up for the training
     model.backbone.reset_classifier(14)
-    model.pretrain = False
+
     model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
                  pretrained=False, channels=config["channels"])
     model2.load_state_dict(model.state_dict())
     model = model2.to(device)
+    model.pretrain = False
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
     # training
-    main(config, img_dir, model, experiment, optimizer, optimizer, torch.nn.BCELoss(), device, prob, sampler, metrics,
-         pretrain=False)
+
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCELoss(), device, prob, sampler, metrics,
+                   pretrain=False)
+    experiment.end(results)
