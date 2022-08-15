@@ -2,7 +2,7 @@ import contextlib
 import copy
 
 import numpy as np
-
+import torch
 
 # -----------------------------------------------------------------------------------
 
@@ -40,3 +40,11 @@ def collate_fn(batch):
 def dummy_context_mgr():
     yield None
 
+def Myloss(x,y) :
+    x = torch.sigmoid(x)
+    x2 = torch.zeros_like(x,device=x.device).requires_grad_(True)
+    x[:, 1] = torch.mul(x2[:, 1], x[:, 0])
+    x[:, [3, 4, 5, 7]] = torch.mul(x[:, [3, 4, 5, 7]], x2[:, 2][:, None])
+    x[:, 6] = torch.mul(x2[:, 2], torch.mul(x2[:, 5], x[:, 6]))
+    loss = torch.mean((x - y)**2)
+    return loss

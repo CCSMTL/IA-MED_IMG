@@ -79,11 +79,7 @@ def initialize_config():
 
     config = vars(args)
 
-    # optimizer = reduce(getattr, [torch.optim] + config["optimizer"].split("."))
-    # criterion = reduce(getattr, [torch.nn] + config["criterion"].split("."))()
-    optimizer = torch.optim.AdamW
-    optimizer2 = torch.optim.AdamW
-    criterion = torch.nn.BCEWithLogitsLoss()
+
     torch.set_num_threads(config["num_worker"])
 
     # ----------- load classes ----------------------------------------
@@ -101,9 +97,7 @@ def initialize_config():
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5
     )
-    experiment2 = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
-    )
+
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.device(device)
@@ -113,20 +107,12 @@ def initialize_config():
     from CheXpert2.Sampler import Sampler
     Sampler = Sampler(f"{img_dir}/train.csv")
     sampler = Sampler.sampler()
-    return config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler
+    return config, img_dir, experiment, device, prob, sampler,names
 
 
-def main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler):
-    # ---------- Sampler -------------------------------------------
+def main(config, img_dir,model, experiment, optimizer, criterion, device, prob, sampler,pretrain=False):
 
-    # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 4, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                pretrained=config["pretrained"], channels=config["channels"])
-    # send model to gpu
-    model = model.to(device, dtype=torch.float)
-
-    print("The model has now been successfully loaded into memory")
     # -------data initialisation-------------------------------
 
     train_dataset = Chexpertloader(
@@ -193,16 +179,20 @@ def main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criter
 
     # initialize metrics loggers
 
-    optimizer2 = optimizer2(
+    optimizer = optimizer(
         model.parameters(),
         lr=config["lr"],
         betas=(config["beta1"], config["beta2"]),
         weight_decay=config["weight_decay"],
     )
 
+    if not pretrain :
+        training_loader.dataset.pretrain = False
+        validation_loader.dataset.pretrain = False
+
     results = training(
         model,
-        optimizer2,
+        optimizer,
         criterion,
         training_loader,
         validation_loader,
@@ -210,51 +200,39 @@ def main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criter
         minibatch_accumulate=1,
         experiment=experiment2,
         metrics=None,
-        clip_norm=config["clip_norm"]
+        clip_norm=config["clip_norm"],
+        autocast=config["autocast"]
     )
 
-    if dist.is_initialized():
-        dist.barrier()
-        model.module.backbone.reset_classifier(14)
-        model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                     pretrained=False, channels=config["channels"])
-        model2.load_state_dict(model.module.state_dict())
-        model = model2.to(device)
-        # model.pretrain = False
-        model = torch.nn.parallel.DistributedDataParallel(model)
 
-    else:
-        model.backbone.reset_classifier(14)
-        #model.pretrain = False
-        model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                     pretrained=False, channels=config["channels"])
-        model2.load_state_dict(model.state_dict())
-        model = model2.to(device)
 
-    optimizer = optimizer(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
-    training_loader.dataset.pretrain = False
-    validation_loader.dataset.pretrain = False
-    results = training(
-        model,
-        optimizer,
-        torch.nn.BCELoss(),
-        training_loader,
-        validation_loader,
-        device,
-        minibatch_accumulate=1,
-        experiment=experiment,
-        metrics=metrics,
-        clip_norm=config["clip_norm"]
-    )
+
 
     experiment.end(results)
 
 
 if __name__ == "__main__":
-    config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler = initialize_config()
-    main(config, img_dir, experiment, experiment2, optimizer, optimizer2, criterion, device, prob, sampler)
+    config, img_dir, experiment, experiment2, optimizer, criterion, device, prob, sampler,names = initialize_config()
+
+    # -----------model initialisation------------------------------
+
+    model = CNN(config["model"], 4, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                pretrained=config["pretrained"], channels=config["channels"])
+    # send model to gpu
+    model = model.to(device, dtype=torch.float)
+
+    print("The model has now been successfully loaded into memory")
+    #pre-training
+    main(config, img_dir,model, experiment, optimizer, criterion, device, prob, sampler,pretrain=True)
+
+    #setting up for the training
+    model.backbone.reset_classifier(14)
+    model.pretrain = False
+    model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                 pretrained=False, channels=config["channels"])
+    model2.load_state_dict(model.state_dict())
+    model = model2.to(device)
+
+
+    #training
+    main(config, img_dir,model, experiment, optimizer, optimizer, criterion, device, prob, sampler,pretrain=False)

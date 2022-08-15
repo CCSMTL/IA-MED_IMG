@@ -259,5 +259,11 @@ def init_parser():
         default=False,
         help="do you wish to run in debug mode ? Only 100 images will be loaded",
     )
+    parser.add_argument(
+        "--autocast",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="do you wish to disable autocast",
+    )
 
     return parser

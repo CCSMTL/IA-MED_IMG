@@ -95,7 +95,7 @@ class CNN(torch.nn.Module):
             raise NotImplementedError("This model has not been found within the available repos.")
 
 
-
+        self.num_classes=num_classes
         # -------------------------------------------------------------
 
         # finds the size of the last layer of the model, and name of the first
@@ -119,11 +119,12 @@ class CNN(torch.nn.Module):
 
         x = self.backbone(x)
 
-        if not self.pretrain:
+        if not self.pretrain :
+
             x = torch.sigmoid(x)
-            x[:, 1] = x[:, 1] * x[:, 0]
-            x[:, [3, 4, 5, 7]] = x[:, [3, 4, 5, 7]] * x[:, 2][:, None]
-            x[:, 6] = x[:, 2] * x[:, 5] * x[:, 6]
+            x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
+            x[:, [3, 4, 5, 7]] = torch.mul(x[:, [3, 4, 5, 7]].clone(), x[:, 2][:, None].clone())
+            x[:, 6] = torch.mul(x[:, 2].clone(), torch.mul(x[:, 5].clone(), x[:, 6].clone()))
 
         return x
 

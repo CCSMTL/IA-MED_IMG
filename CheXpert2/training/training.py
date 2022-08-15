@@ -4,7 +4,7 @@ import tqdm
 
 
 def training_loop(
-        model, loader, optimizer, criterion, device, minibatch_accumulate, scaler, clip_norm, scheduler
+        model, loader, optimizer, criterion, device, minibatch_accumulate, scaler, clip_norm, scheduler,autocast
 ):
     """
 
@@ -36,12 +36,13 @@ def training_loop(
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 
-        with torch.cuda.amp.autocast():
-            outputs = model(inputs)
+        #with torch.cuda.amp.autocast(enabled=autocast):
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
         # outputs = torch.nan_to_num(outputs,0)
-        loss = criterion(outputs.float(), labels.float())
-        loss.backward()
 
+        #scaler.scale(loss).backward()
+        loss.backward()
         running_loss += loss.detach()
 
         # Unscales the gradients of optimizer's assigned params in-place
@@ -52,8 +53,8 @@ def training_loop(
             model.parameters(), clip_norm
         )
 
-        # scaler.step(optimizer)
-        # scaler.update()
+        #scaler.step(optimizer)
+        #scaler.update()
         optimizer.step()
         scheduler.step(scheduler.last_epoch + 1 / n)
         optimizer.zero_grad(set_to_none=True)
@@ -128,7 +129,8 @@ def training(
     minibatch_accumulate=1,
     experiment=None,
 
-    clip_norm = 100
+    clip_norm = 100,
+    autocast=True
 ):
     epoch = 0
     results = None
@@ -155,7 +157,8 @@ def training(
             minibatch_accumulate,
             scaler,
             clip_norm,
-            scheduler
+            scheduler,
+            autocast
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
