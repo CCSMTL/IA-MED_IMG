@@ -1,4 +1,5 @@
 # ------python import------------------------------------
+import copy
 import os
 import urllib
 import warnings
@@ -110,9 +111,7 @@ def initialize_config():
     return config, img_dir, experiment, device, prob, sampler,names
 
 
-def main(config, img_dir,model, experiment, optimizer, criterion, device, prob, sampler,pretrain=False):
-
-
+def main(config, img_dir, model, experiment, optimizer, criterion, device, prob, sampler, metrics, pretrain=False):
     # -------data initialisation-------------------------------
 
     train_dataset = Chexpertloader(
@@ -139,16 +138,6 @@ def main(config, img_dir,model, experiment, optimizer, criterion, device, prob, 
         channels=config["channels"],
     )
 
-
-
-
-    if dist.is_initialized():  # use of multiple gpu
-        from torch.utils.data.sampler import SequentialSampler
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-        local_rank = int(os.environ['LOCAL_RANK'])
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-        sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
-
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
@@ -170,9 +159,7 @@ def main(config, img_dir,model, experiment, optimizer, criterion, device, prob, 
 
     experiment.watch(model)
 
-    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-    metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
-    metrics = metric.metrics()
+
 
     # ------------training--------------------------------------------
     print("Starting training now")
@@ -199,7 +186,7 @@ def main(config, img_dir,model, experiment, optimizer, criterion, device, prob, 
         device,
         minibatch_accumulate=1,
         experiment=experiment2,
-        metrics=None,
+        metrics=metrics,
         clip_norm=config["clip_norm"],
         autocast=config["autocast"]
     )
@@ -212,8 +199,8 @@ def main(config, img_dir,model, experiment, optimizer, criterion, device, prob, 
 
 
 if __name__ == "__main__":
-    config, img_dir, experiment, experiment2, optimizer, criterion, device, prob, sampler,names = initialize_config()
-
+    config, img_dir, experiment, device, prob, sampler, names = initialize_config()
+    optimizer = torch.optim.AdamW
     # -----------model initialisation------------------------------
 
     model = CNN(config["model"], 4, img_size=config["img_size"], freeze_backbone=config["freeze"],
@@ -222,10 +209,13 @@ if __name__ == "__main__":
     model = model.to(device, dtype=torch.float)
 
     print("The model has now been successfully loaded into memory")
-    #pre-training
-    main(config, img_dir,model, experiment, optimizer, criterion, device, prob, sampler,pretrain=True)
+    # pre-training
+    experiment2 = copy.copy(experiment)
+    experiment2.max_epoch = 5
+    main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+         metrics=None, pretrain=True)
 
-    #setting up for the training
+    # setting up for the training
     model.backbone.reset_classifier(14)
     model.pretrain = False
     model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
@@ -233,6 +223,10 @@ if __name__ == "__main__":
     model2.load_state_dict(model.state_dict())
     model = model2.to(device)
 
+    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
-    #training
-    main(config, img_dir,model, experiment, optimizer, optimizer, criterion, device, prob, sampler,pretrain=False)
+    metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
+    metrics = metric.metrics()
+    # training
+    main(config, img_dir, model, experiment, optimizer, optimizer, torch.nn.BCELoss(), device, prob, sampler, metrics,
+         pretrain=False)

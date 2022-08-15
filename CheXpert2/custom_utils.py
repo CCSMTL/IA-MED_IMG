@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import torch
 
+
 # -----------------------------------------------------------------------------------
 
 def convert(array1):
@@ -39,6 +40,7 @@ def collate_fn(batch):
 @contextlib.contextmanager
 def dummy_context_mgr():
     yield None
+
 
 def Myloss(x,y) :
     x = torch.sigmoid(x)
