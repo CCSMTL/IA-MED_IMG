@@ -22,10 +22,8 @@ from CheXpert2.training.training import training
 # DANGER ZONE !!!!!
 # torch.autograd.set_detect_anomaly(True)
 # torch.autograd.profiler.profile(False)
-#torch.autograd.profiler.emit_nvtx(False)
-#torch.backends.cudnn.benchmark = True
-
-
+# torch.autograd.profiler.emit_nvtx(False)
+# torch.backends.cudnn.benchmark = True
 
 
 def initialize_config():
@@ -213,7 +211,7 @@ if __name__ == "__main__":
     results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
                    metrics=None, pretrain=True)
 
-    # setting up for the training
+    #setting up for the training
     model.backbone.reset_classifier(14)
 
     model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],

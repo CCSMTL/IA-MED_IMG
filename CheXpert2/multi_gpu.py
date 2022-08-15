@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     local_rank = int(os.environ['LOCAL_RANK'])
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=list(range(torch.cuda.device_count())))
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
     sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
     optimizer = torch.optim.AdamW
     results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
