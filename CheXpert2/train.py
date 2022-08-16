@@ -134,6 +134,9 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         num_worker=config["num_worker"],
         unet=False,
         channels=config["channels"],
+        N=0,
+        M=0,
+        pretrain=False
     )
 
     training_loader = torch.utils.data.DataLoader(
