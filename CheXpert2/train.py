@@ -209,7 +209,7 @@ if __name__ == "__main__":
     print("The model has now been successfully loaded into memory")
     # pre-training
     experiment2 = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=15, patience=5
     )
     results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
                    metrics=None, pretrain=True)
