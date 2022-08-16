@@ -88,7 +88,7 @@ def validation_loop(model, loader, criterion, device):
     model.eval()
 
     results = [torch.tensor([]), torch.tensor([])]
-
+    count = 0
     for inputs, labels in loader:
         # get the inputs; data is a list of [inputs, labels]
 
@@ -116,7 +116,9 @@ def validation_loop(model, loader, criterion, device):
             outputs,
             loss,
         )  # garbage management sometimes fails with cuda
-
+        count += 1
+        if count == 200:  # only run on 200 batches
+            break
     return running_loss, results,
 
 
