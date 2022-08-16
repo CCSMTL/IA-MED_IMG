@@ -2,6 +2,7 @@
 import os
 import urllib
 import warnings
+import copy
 
 import numpy as np
 import torch
@@ -93,7 +94,7 @@ def initialize_config():
 
     # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=10
     )
 
     if dist.is_initialized():
@@ -195,6 +196,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 if __name__ == "__main__":
     config, img_dir, experiment, device, prob, sampler, names = initialize_config()
+    sampler2 = copy.copy(sampler)
+    sampler2.weights = 1/sampler2.weights
     optimizer = torch.optim.AdamW
     # -----------model initialisation------------------------------
 
@@ -208,7 +211,7 @@ if __name__ == "__main__":
     experiment2 = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
     )
-    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
                    metrics=None, pretrain=True)
 
     #setting up for the training

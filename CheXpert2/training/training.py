@@ -69,8 +69,7 @@ def training_loop(
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
-        if i == 200:  # only run on 200 batches
-            break
+
     return running_loss
 
 
@@ -106,11 +105,15 @@ def validation_loop(model, loader, criterion, device):
 
         running_loss += loss.detach()
 
-        if inputs.shape != labels.shape:  # prevent storing images if training unets
+        if model.pretrain :
+            results[1] = torch.cat(
+                (torch.sigmoid(results[1]), outputs.detach().cpu()), dim=0
+            )
+        else :
             results[1] = torch.cat(
                 (results[1], outputs.detach().cpu()), dim=0
             )
-            results[0] = torch.cat((torch.sigmoid(results[0]), labels.cpu()), dim=0)
+        results[0] = torch.cat((results[0], labels.cpu()), dim=0)
 
         del (
             inputs,

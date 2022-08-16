@@ -42,7 +42,7 @@ class Sampler:
     def sampler(self):
 
         return torch.utils.data.sampler.WeightedRandomSampler(
-            self.weights, len(self.weights)
+            self.weights,num_samples=32000
         )
 
     def auc_based_sampler(self, auc):
