@@ -35,8 +35,8 @@ class Chexpertloader(Dataset):
             num_worker=0,
             channels=3,
             unet=False,
-            N=2,
-            M=9,
+            N=0,
+            M=0,
             pretrain=True
     ):
         # ----- Variable definition ------------------------------------------------------
