@@ -125,6 +125,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=config["N"],
         M=config["M"],
+        pretrain=True
     )
     val_dataset = Chexpertloader(
         f"{img_dir}/valid.csv",
@@ -136,7 +137,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=0,
         M=0,
-        pretrain=False
+        pretrain=True
     )
 
     training_loader = torch.utils.data.DataLoader(
@@ -145,6 +146,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         num_workers=config["num_worker"],
         pin_memory=True,
         sampler=sampler,
+
 
     )
     validation_loader = torch.utils.data.DataLoader(
