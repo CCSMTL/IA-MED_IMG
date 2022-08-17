@@ -20,6 +20,32 @@ from torchvision import transforms
 from CheXpert2 import custom_Transforms
 
 
+def GetDocPerClassAndCollection(ClassName, collectionName, query):
+    listResult = []
+    queryRequest = {}
+    query1 = {ClassName: "1"}
+
+    if (query == 'Train'):
+        query2 = {"Train": {'$in': ["1", "-1"]}}
+    else:
+        query2 = {query: '1'}
+
+    # Merge the query dictionaries
+    queryRequest = dictMerge(query1, query2)
+
+    for collect in CollectionList:
+        print(collect.name)
+
+        if collect.name == collectionName:
+            # The find() returns a cursor on the device but not a regular list
+            res = collect.find(queryRequest)
+
+            # Collect data and store the records into a list
+            for x in res:
+                listResult.append(x)
+                print(x)
+
+    return listResult
 
 
 class CXRLoader(Dataset):
