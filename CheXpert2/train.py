@@ -227,7 +227,8 @@ if __name__ == "__main__":
     #model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
     #             pretrained=False, channels=config["channels"])
     #model2.load_state_dict(model.state_dict())
-    #model = model2.to(device)
+    model = model.to(device,dtype=torch.float)
+ 
     model.pretrain = False
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug

@@ -14,10 +14,11 @@ import wandb
 
 
 def plot_polar_chart(summary):
-    print(summary["auc"])
-    df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
 
-    df["ours"] = pd.Series(summary["auc"])
+    df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
+    df.fillna(0, inplace=True)
+
+    df["ours"] = summary["auc"].values()
 
 
 
@@ -38,8 +39,8 @@ def plot_polar_chart(summary):
         )
     )
 
-    #if os.environ["DEBUG"] == "False":
-    fig.write_image("polar.png")
+    if os.environ["DEBUG"] == "False":
+        fig.write_image("polar.png")
 
     wandb.log({"polar_chart": fig})
 

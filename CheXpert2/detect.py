@@ -129,10 +129,10 @@ def main():
     # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
     # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
     weights = [
-        "/mnt/c/Users/bejo2361/Downloads/convnext_base.pt",
-        "/mnt/c/Users/bejo2361/Downloads/convnext_base_2.pt",
-        "/mnt/c/Users/bejo2361/Downloads/densenet201.pt",
-        "/mnt/c/Users/bejo2361/Downloads/densenet201_2.pt",
+        "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base.pt",
+        "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base_2.pt",
+        "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201.pt",
+        "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201_2.pt",
     ]
 
     for model,weight in zip (models, weights) :

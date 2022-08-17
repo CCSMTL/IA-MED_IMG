@@ -12,7 +12,7 @@ import torch
 
 from CheXpert2.Experiment import Experiment
 from CheXpert2.train import main
-
+from CheXpert2.models.CNN import CNN
 
 def test_train():
     torch.cuda.is_available = lambda: False
@@ -36,8 +36,9 @@ def test_train():
         "beta2": 0.999,
         "weight_decay": 0.01,
         "freeze": False,
-        "pretrained": True,
-        "channels": 1
+        "pretrained": False,
+        "channels": 1,
+        "autocast" : False,
     }
 
     img_dir = "tests/data_test"
@@ -51,7 +52,9 @@ def test_train():
     criterion = torch.nn.BCEWithLogitsLoss()
     device = "cpu"
     prob = [0, ] * 5
-    main(config, img_dir, experiment, optimizer, criterion, device, prob, sampler=None)
+    model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                pretrained=config["pretrained"], channels=config["channels"],pretraining=False)
+    main(config, img_dir,model, experiment, optimizer, criterion, device, prob, sampler=None,metrics=None,pretrain=False)
     assert experiment.best_loss != 0
 
 
