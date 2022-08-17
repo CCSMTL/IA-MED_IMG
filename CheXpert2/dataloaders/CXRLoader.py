@@ -19,6 +19,30 @@ from torchvision import transforms
 
 from CheXpert2 import custom_Transforms
 
+# Python code to merge dict using update() method
+
+myClient = pymongo.MongoClient("mongodb://10.128.107.212:27017/")
+
+classes_name = ['Cardiomegaly', 'Emphysema', 'Effusion', 'Lung Opacity', 'Lung Lesion', 'Pleural Effusion', 'Pleural Other', 'Fracture',
+                'Consolidation', 'Hernia', 'Infiltration', 'Mass', 'Nodule', 'Atelectasis',
+                'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema',
+                'Enlarged Cardiomediastinum', 'Opacity', 'Pleural', 'Lesion',
+                'No Finding', 'Normal']
+
+#Access to databases
+print(myClient.list_database_names())
+
+#Access to all documents
+ImagesDb = myClient["Public_Images"]
+CiusssDb = myClient["CIUSSS"]
+
+print(ImagesDb.list_collection_names())
+
+ChexPertCollection = ImagesDb["ChexPert"]
+ChexNetCollection  = ImagesDb["ChexNet"]
+ChexXRayCollection  = ImagesDb["ChexXRay"]
+
+CollectionList = [ChexPertCollection, ChexNetCollection, ChexXRayCollection]
 
 def GetDocPerClassAndCollection(ClassName, collectionName, query):
     listResult = []
@@ -31,7 +55,7 @@ def GetDocPerClassAndCollection(ClassName, collectionName, query):
         query2 = {query: '1'}
 
     # Merge the query dictionaries
-    queryRequest = dictMerge(query1, query2)
+    queryRequest = query1 | query2
 
     for collect in CollectionList:
         print(collect.name)
