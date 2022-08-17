@@ -24,7 +24,10 @@ def cleanup():
 if __name__ == "__main__":
     dist.init_process_group("nccl")
     config, img_dir, experiment, device, prob, sampler, names = initialize_config()
-    sampler2 = copy.copy(sampler)
+    from CheXpert2.Sampler import Sampler
+
+    Sampler2 = Sampler(f"{img_dir}/train.csv")
+    sampler2= Sampler2.sampler()
     sampler2.weights = 1 / sampler2.weights
     sampler2 = torch.utils.data.DistributedSampler(SequentialSampler(sampler2))
     sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
@@ -39,18 +42,20 @@ if __name__ == "__main__":
     model = model.to(device)
     print("The model has now been successfully loaded into memory")
     # ---pretraining-------------------------------------
-    experiment2 = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
-    )
-
-
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     local_rank = int(os.environ['LOCAL_RANK'])
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+    if config["pretraining"] !=0 :
+        experiment2 = Experiment(
+            f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
+        )
 
 
-    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
-                   metrics=None, pretrain=True)
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
+
+
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
+                       metrics=None, pretrain=True)
 
     # -----setting up training-------------------------------------
     dist.barrier()
@@ -60,10 +65,11 @@ if __name__ == "__main__":
     model2.load_state_dict(model.module.state_dict())
 
     model2.pretrain = False
-    model = model2.to(device)
+    model = model2
+    model = model.to(device)
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model)
-    sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
+
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
