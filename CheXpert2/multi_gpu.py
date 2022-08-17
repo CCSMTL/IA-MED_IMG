@@ -6,7 +6,7 @@ Created on 2022-07-13$
 @author: Jonathan Beaulieu-Emond
 """
 import os
-
+import copy
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -24,6 +24,8 @@ def cleanup():
 if __name__ == "__main__":
     dist.init_process_group("nccl")
     config, img_dir, experiment, device, prob, sampler, names = initialize_config()
+    sampler2 = copy.copy(sampler)
+    sampler2.weights = 1 / sampler2.weights
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
     # -----------model initialisation------------------------------
@@ -42,9 +44,9 @@ if __name__ == "__main__":
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     local_rank = int(os.environ['LOCAL_RANK'])
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
-    sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
+    sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler2))
     optimizer = torch.optim.AdamW
-    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
                    metrics=None, pretrain=True)
 
     # -----setting up training-------------------------------------
@@ -58,6 +60,7 @@ if __name__ == "__main__":
     model = model2.to(device)
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     model = torch.nn.parallel.DistributedDataParallel(model)
+    sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)

@@ -16,12 +16,10 @@ import wandb
 def plot_polar_chart(summary):
     print(summary["auc"])
     df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
-    # df.columns = ["chexnet", "chexpert"]
-    # print(df)
-    # print(list(summary["auc"].values()))
+
     df["ours"] = pd.Series(summary["auc"])
-    # print(df)
-    df.fillna(0, inplace=True)
+
+
 
     fig = go.Figure(
         data=[
@@ -39,10 +37,9 @@ def plot_polar_chart(summary):
             template="plotly_dark"
         )
     )
-    # fig.update_polar(ticktext=names)
-    if os.environ["DEBUG"] == "False":
-        fig.write_image("polar.png")
+
+    #if os.environ["DEBUG"] == "False":
+    fig.write_image("polar.png")
 
     wandb.log({"polar_chart": fig})
-    # for key, value in summary.items():
-    #    wandb.run.summary[key] = value
+

@@ -265,5 +265,15 @@ def init_parser():
         default=True,
         help="do you wish to disable autocast",
     )
+    parser.add_argument(
+        "--pretraining",
+        default=0,
+        nargs="?",
+        const="all",
+        type=int,
+
+        required=False,
+        help="The number of channels for the inputs",
+    )
 
     return parser

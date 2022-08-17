@@ -18,7 +18,7 @@ from CheXpert2.results_visualization import plot_polar_chart
 
 
 class Experiment:
-    def __init__(self, directory, names, tags=None, config=None, epoch_max=50, patience=5):
+    def __init__(self, directory, names, tags=None, config=None, epoch_max=50, patience=5,no_log=False):
         self.names = names
         self.weight_dir = "models_weights/" + directory
 
@@ -39,6 +39,7 @@ class Experiment:
         if self.rank == 0:
             wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
 
+        self.no_log = no_log
     def next_epoch(self, val_loss, model):
 
         if val_loss < self.best_loss or self.epoch == 0:
@@ -58,7 +59,7 @@ class Experiment:
         print(self.summary)
 
     def log_metric(self, metric_name, value, epoch=None):
-        if self.rank == 0:
+        if self.rank == 0 and not self.no_log:
             if epoch is not None:
                 wandb.log({metric_name: value, "epoch": epoch})
             else:
@@ -66,13 +67,13 @@ class Experiment:
             self.metrics[metric_name] = value
 
     def log_metrics(self, metrics, epoch=None):
-        if self.rank == 0:
+        if self.rank == 0 and not self.no_log:
             metrics["epoch"] = epoch
             wandb.log(metrics)
             self.metrics = self.metrics | metrics
 
     def save_weights(self, model):
-        if self.rank == 0 and os.environ["DEBUG"] == "False":
+        if self.rank == 0 and os.environ["DEBUG"] == "False" and not self.no_log:
             torch.save(model.state_dict(), f"{self.weight_dir}/{model._get_name()}.pt")
             wandb.save(f"{self.weight_dir}/{model._get_name()}.pt")
 
@@ -80,11 +81,12 @@ class Experiment:
         self.summary = self.metrics
 
     def watch(self, model):
-        if self.rank == 0:
+        if self.rank == 0 and not self.no_log:
             wandb.watch(model)
 
     def end(self, results):
-        if self.rank == 0:
+
+        if self.rank == 0 and not self.no_log:
             # 1) confusion matrix
 
             self.log_metric(

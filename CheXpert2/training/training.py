@@ -105,7 +105,7 @@ def validation_loop(model, loader, criterion, device):
 
         running_loss += loss.detach()
 
-        if model.pretrain :
+        if loader.dataset.pretrain :
             results[1] = torch.cat(
                 (torch.sigmoid(results[1]), outputs.detach().cpu()), dim=0
             )
