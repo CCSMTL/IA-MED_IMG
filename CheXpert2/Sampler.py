@@ -34,15 +34,16 @@ class Sampler:
             weights[i] = weight
 
         print(f"A total of {no_cat} samples had no category defined!")
-        if os.environ["DEBUG"] == "True":
-            weights = weights[0:100]
-            self.data = data.iloc[0:100]
+
         self.weights = weights
 
     def sampler(self):
-
+        if os.environ["DEBUG"] == "True":
+            num_samples = 10
+        else :
+            num_samples = 32000
         return torch.utils.data.sampler.WeightedRandomSampler(
-            self.weights,num_samples=32000
+            self.weights,num_samples=num_samples
         )
 
     def auc_based_sampler(self, auc):

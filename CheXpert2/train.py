@@ -94,7 +94,7 @@ def initialize_config():
 
     # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=10
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5,no_log=False
     )
 
     if dist.is_initialized():
@@ -213,19 +213,21 @@ if __name__ == "__main__":
 
     print("The model has now been successfully loaded into memory")
     # pre-training
-    experiment2 = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
-    )
-    results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
-                   metrics=None, pretrain=True)
+
+    if config["pretraining"] !=0 :
+        experiment2 = Experiment(
+            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,no_log=True
+        )
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
+                       metrics=None, pretrain=True)
 
     #setting up for the training
     model.backbone.reset_classifier(14)
 
-    model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                 pretrained=False, channels=config["channels"])
-    model2.load_state_dict(model.state_dict())
-    model = model2.to(device)
+    #model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    #             pretrained=False, channels=config["channels"])
+    #model2.load_state_dict(model.state_dict())
+    #model = model2.to(device)
     model.pretrain = False
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
