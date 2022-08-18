@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
 
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.MSELoss(), device, prob, sampler2,
                        metrics=None, pretrain=True)
 
     # -----setting up training-------------------------------------
@@ -77,10 +77,8 @@ if __name__ == "__main__":
 
     # -----training-------------------------------------------
 
-    model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.MSELoss(), device, prob, sampler,
                    metrics=metrics, pretrain=False)
     experiment.end(results)
     cleanup()

@@ -1,6 +1,6 @@
 import pymongo
-
-
+import pandas as pd
+from functools import reduce
 
 class MongoDB :
     def __init__(self,address,port,collectionnames):
@@ -12,24 +12,29 @@ class MongoDB :
             self.data.append(self.db_public[name])
         #self.data.append(self.db_CIUSSS[$put_name_here$])
 
-    def train(self):
-        train_dataset=pd.DataFrame([])
-        query = {"Train": {'$in': [ "1", "-1" ]}}
+    def dataset(self,datasetname):
+        assert datasetname == "Train" or datasetname == "Valid"
+        train_dataset=[]
+        query = {datasetname: {'$in': [ "1", "-1" ]}}
         for collection in self.data :
-            results = collect.find(query)
-            for item in results :
-                pd.concat([train_dataset,pd.Series(item["x"])],axis=0)
+            results = list(collection.find(query))
 
-        return train_dataset
-    def valid(self):
-        val_dataset = pd.DataFrame([])
-        query = {"Valid": {'$in': ["1", "-1"]}}
-        for collection in self.data:
-            results = collect.find(query)
-            for item in results:
-                pd.concat([val_dataset, pd.Series(item["x"])], axis=0)
+            if len(results) >0 :
+                train_dataset.append(pd.DataFrame(results,columns = results[0].keys()))
 
-        return val_dataset
+
+        df =reduce(lambda left,right: pd.merge(left,right,on=list(results[0].keys()),how='outer'), train_dataset)
+        df.fillna(0,inplace=True)
+        return df
 
     def pretrain(self):
         pass
+
+
+
+if __name__  == "__main__" :
+    db = MongoDB("localhost",27017,["ChexPert","ChexNet","ChexXRay"])
+
+    valid=db.dataset("Valid")
+    print(valid.head(100))
+    valid.iloc[0:100].to_csv("valid.csv")

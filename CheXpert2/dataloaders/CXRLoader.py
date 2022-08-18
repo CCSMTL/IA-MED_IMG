@@ -9,8 +9,8 @@ Created on 2022-06-30$
 import cv2 as cv
 import numpy as np
 import pandas as pd
-import pymongo
 
+from MongoDB import MongoDB
 import torch
 import tqdm
 from joblib import Parallel, delayed, parallel_backend
@@ -19,58 +19,12 @@ from torchvision import transforms
 
 from CheXpert2 import custom_Transforms
 
-# Python code to merge dict using update() method
-
-myClient = pymongo.MongoClient("mongodb://10.128.107.212:27017/")
-
-classes_name = ['Cardiomegaly', 'Emphysema', 'Effusion', 'Lung Opacity', 'Lung Lesion', 'Pleural Effusion', 'Pleural Other', 'Fracture',
-                'Consolidation', 'Hernia', 'Infiltration', 'Mass', 'Nodule', 'Atelectasis',
-                'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema',
-                'Enlarged Cardiomediastinum', 'Opacity', 'Pleural', 'Lesion',
-                'No Finding', 'Normal']
-
-#Access to databases
-print(myClient.list_database_names())
-
-#Access to all documents
-ImagesDb = myClient["Public_Images"]
-CiusssDb = myClient["CIUSSS"]
-
-print(ImagesDb.list_collection_names())
-
-ChexPertCollection = ImagesDb["ChexPert"]
-ChexNetCollection  = ImagesDb["ChexNet"]
-ChexXRayCollection  = ImagesDb["ChexXRay"]
-
-CollectionList = [ChexPertCollection, ChexNetCollection, ChexXRayCollection]
-
-def GetDocPerClassAndCollection(ClassName, collectionName, query):
-    listResult = []
-    queryRequest = {}
-    query1 = {ClassName: "1"}
-
-    if (query == 'Train'):
-        query2 = {"Train": {'$in': ["1", "-1"]}}
-    else:
-        query2 = {query: '1'}
-
-    # Merge the query dictionaries
-    queryRequest = query1 | query2
-
-    for collect in CollectionList:
-        print(collect.name)
-
-        if collect.name == collectionName:
-            # The find() returns a cursor on the device but not a regular list
-            res = collect.find(queryRequest)
-
-            # Collect data and store the records into a list
-            for x in res:
-                listResult.append(x)
-                print(x)
-
-    return listResult
-
+classes = [
+    "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
+    "Lung Lesion"",Pleural Effusion","Pleural Other","Fracture",
+    "Consolidation","Hernia","Infiltration","Mass","Nodule","Atelectasis",
+    "Pneumothorax","Pleural_Thickening","Fibrosis","Edema","Enlarged Cardiomediastinum",
+    "Opacity","Lesion","Normal"
 
 class CXRLoader(Dataset):
     """
@@ -123,7 +77,7 @@ class CXRLoader(Dataset):
 
         # ------- Caching & Reading -----------------------------------------------------------
 
-        self.files = pd.read_csv(img_file).fillna(0)
+        self.files =  MongoDB("localhost",27017,["ChexPert","ChexNet","ChexXRay"]).dataset("Train")
 
         if self.cache:
             with parallel_backend('threading', n_jobs=num_worker):
@@ -176,7 +130,7 @@ class CXRLoader(Dataset):
 
         }
         if not self.pretrain:
-            vector, label_smoothing = self.files.iloc[idx, 5:19].to_numpy(), self.label_smoothing
+            vector, label_smoothing = self.files[classes].iloc[idx, :].to_numpy(), self.label_smoothing
 
             # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
             # source : https://arxiv.org/pdf/1911.06475.pdf
@@ -237,21 +191,5 @@ class CXRLoader(Dataset):
         else:
             image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
         label = self.get_label(idx)
-        # image = self.transform(image)
 
-        # if sum(self.prob) > 0:
-        #     idx = torch.randint(0, len(self), (1,)).item()
-        #     image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
-        #     label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-        #     image2 = self.transform(image2)
-        #
-        #     samples = (image, image2, label, label2)
-        #
-        #     image, image2, label, label2 = self.advanced_transform(samples)
-        #     del samples, image2, label2
-
-        # image = self.preprocess(image)
-
-        if self.unet:
-            return image, image
         return image, label.float()

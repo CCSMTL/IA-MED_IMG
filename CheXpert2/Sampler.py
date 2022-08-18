@@ -41,7 +41,7 @@ class Sampler:
         if os.environ["DEBUG"] == "True":
             num_samples = 10
         else :
-            num_samples = 32000
+            num_samples = 200000
         return torch.utils.data.sampler.WeightedRandomSampler(
             self.weights,num_samples=num_samples
         )
