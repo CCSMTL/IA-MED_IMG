@@ -229,7 +229,7 @@ if __name__ == "__main__":
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
 
-    set_parameter_requires_grad(model.features)
+    set_parameter_requires_grad(model.backbone.features)
     # training
 
     results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler, metrics,
