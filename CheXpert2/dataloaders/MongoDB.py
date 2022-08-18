@@ -19,7 +19,7 @@ class MongoDB:
         train_dataset = []
         query = {datasetname: {'$in': ["1", "-1"]}}
         for classname in classnames:
-            query[classname] = {"$in": {["1", "-1"]}}
+            query[classname] = {"$in": ["1", "-1"]}
 
         for collection in self.data:
             results = list(collection.find(query))
@@ -39,6 +39,6 @@ class MongoDB:
 if __name__  == "__main__" :
     db = MongoDB("localhost",27017,["ChexPert","ChexNet","ChexXRay"])
 
-    valid=db.dataset("Valid")
+    valid=db.dataset("Valid",[])
     print(valid.head(100))
     valid.iloc[0:100].to_csv("valid.csv")

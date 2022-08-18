@@ -114,6 +114,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
     train_dataset = CXRLoader(
         dataset="Train",
+        img_dir=img_dir,
         img_size=config["img_size"],
         prob=prob,
         intensity=config["augment_intensity"],
@@ -128,6 +129,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
     )
     val_dataset = CXRLoader(
         dataset="Valid",
+        img_dir=img_dir,
         img_size=config["img_size"],
         cache=False,
         num_worker=config["num_worker"],

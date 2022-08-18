@@ -34,7 +34,8 @@ class CXRLoader(Dataset):
 
     def __init__(
             self,
-            dataset="train",
+            dataset="Train",
+            img_dir = "data",
             img_size=240,
             prob=None,
             intensity=0,
@@ -53,7 +54,7 @@ class CXRLoader(Dataset):
             self.classes = yaml.safe_load(stream)["names"]
 
         self.length = 0
-
+        self.img_dir = img_dir
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
@@ -78,10 +79,9 @@ class CXRLoader(Dataset):
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
-        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum", "pleural"]
+        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum", "Pneumonia"] if pretrain else []
         # ,"ChexNet","ChexXRay"
-        self.files = MongoDB("localhost", 27017, ["ChexPert"]).dataset(dataset, pretrain=pretrain,
-                                                                       classnames=classnames)
+        self.files = MongoDB("localhost", 27017, ["ChexPert"]).dataset(dataset,classnames=classnames)
 
         if self.cache:
             with parallel_backend('threading', n_jobs=num_worker):
@@ -135,7 +135,6 @@ class CXRLoader(Dataset):
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.456], std=[0.224])
         else:
-
             normalize = transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             )
@@ -175,7 +174,19 @@ class CXRLoader(Dataset):
         if self.cache:
             image = self.images[idx]
         else:
-            image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+            image = self.read_img(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
         label = self.get_label(idx)
 
         return image, label.float()
+
+
+
+if __name__ == "__main__" :
+
+    train = CXRLoader(dataset="Train",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
+    valid = CXRLoader(dataset="Valid",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
+
+    for dataset in [train,valid] :
+        for image,label in dataset :
+            print(image.shape, label.shape)
+            break
