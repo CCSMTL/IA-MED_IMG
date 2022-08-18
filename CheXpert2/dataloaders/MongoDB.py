@@ -1,30 +1,34 @@
-import pymongo
-import pandas as pd
 from functools import reduce
 
-class MongoDB :
-    def __init__(self,address,port,collectionnames):
-        self.client = pymongo.MongoClient(address,port)
+import pandas as pd
+import pymongo
+
+
+class MongoDB:
+    def __init__(self, address, port, collectionnames):
+        self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
         self.db_CIUSSS = self.client["CIUSSS"]
         self.data = []
-        for name in collectionnames :
+        for name in collectionnames:
             self.data.append(self.db_public[name])
-        #self.data.append(self.db_CIUSSS[$put_name_here$])
+        # self.data.append(self.db_CIUSSS[$put_name_here$])
 
-    def dataset(self,datasetname):
+    def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
-        train_dataset=[]
-        query = {datasetname: {'$in': [ "1", "-1" ]}}
-        for collection in self.data :
+        train_dataset = []
+        query = {datasetname: {'$in': ["1", "-1"]}}
+        for classname in classnames:
+            query[classname] = {"$in": {["1", "-1"]}}
+
+        for collection in self.data:
             results = list(collection.find(query))
 
-            if len(results) >0 :
-                train_dataset.append(pd.DataFrame(results,columns = results[0].keys()))
+            if len(results) > 0:
+                train_dataset.append(pd.DataFrame(results, columns=results[0].keys()))
 
-
-        df =reduce(lambda left,right: pd.merge(left,right,on=list(results[0].keys()),how='outer'), train_dataset)
-        df.fillna(0,inplace=True)
+        df = reduce(lambda left, right: pd.merge(left, right, on=list(results[0].keys()), how='outer'), train_dataset)
+        df.fillna(0, inplace=True)
         return df
 
     def pretrain(self):

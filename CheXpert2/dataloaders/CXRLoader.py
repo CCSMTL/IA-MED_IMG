@@ -8,23 +8,24 @@ Created on 2022-06-30$
 
 import cv2 as cv
 import numpy as np
-import pandas as pd
-
-from MongoDB import MongoDB
 import torch
 import tqdm
+import yaml
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 
 from CheXpert2 import custom_Transforms
+from MongoDB import MongoDB
 
-classes = [
-    "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
-    "Lung Lesion"",Pleural Effusion","Pleural Other","Fracture",
-    "Consolidation","Hernia","Infiltration","Mass","Nodule","Atelectasis",
-    "Pneumothorax","Pleural_Thickening","Fibrosis","Edema","Enlarged Cardiomediastinum",
-    "Opacity","Lesion","Normal"
+
+# classes = [
+#     "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
+#     "Lung Lesion"",Pleural Effusion","Pleural Other","Fracture",
+#     "Consolidation","Hernia","Infiltration","Mass","Nodule","Atelectasis",
+#     "Pneumothorax","Pleural_Thickening","Fibrosis","Edema","Enlarged Cardiomediastinum",
+#     "Opacity","Lesion","Normal"
+
 
 class CXRLoader(Dataset):
     """
@@ -33,23 +34,24 @@ class CXRLoader(Dataset):
 
     def __init__(
             self,
-            img_file,
-            img_dir="",
+            dataset="train",
             img_size=240,
             prob=None,
             intensity=0,
             label_smoothing=0,
             cache=False,
             num_worker=0,
-            channels=3,
+            channels=1,
             unet=False,
             N=0,
             M=0,
-            pretrain=True
+            pretrain=False,
     ):
         # ----- Variable definition ------------------------------------------------------
-        self.img_file = img_file
-        self.img_dir = img_dir
+
+        with open("data/data.yaml", "r") as stream:
+            self.classes = yaml.safe_load(stream)["names"]
+
         self.length = 0
 
         self.annotation_files = {}
@@ -65,7 +67,7 @@ class CXRLoader(Dataset):
 
         self.cache = cache
         self.channels = channels
-        self.labels = []
+
         self.unet = unet
 
         # ----- Transform definition ------------------------------------------------------
@@ -76,8 +78,10 @@ class CXRLoader(Dataset):
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
-
-        self.files =  MongoDB("localhost",27017,["ChexPert","ChexNet","ChexXRay"]).dataset("Train")
+        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum", "pleural"]
+        # ,"ChexNet","ChexXRay"
+        self.files = MongoDB("localhost", 27017, ["ChexPert"]).dataset(dataset, pretrain=pretrain,
+                                                                       classnames=classnames)
 
         if self.cache:
             with parallel_backend('threading', n_jobs=num_worker):
@@ -85,7 +89,6 @@ class CXRLoader(Dataset):
                     delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                     tqdm.tqdm(range(0, len(self.files))))
 
-        self.pretrain = pretrain
     def __len__(self):
         return len(self.files)
 
@@ -116,32 +119,15 @@ class CXRLoader(Dataset):
         the chexpert dataset, with 0,1,-1 corresponding to negative, positive, and uncertain, respectively.
         """
 
-        convert = {
-            "Male": 0,
-            "Female": 1,
-            "Frontal": 0,
-            "Lateral": 1,
-            "AP": 1,
-            "PA": 0,
-            0: 0.5,
-            "LL": 0.5,
-            "Unknown": 0.5,
-            "RL": 0.5,
+        vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
 
-        }
-        if not self.pretrain:
-            vector, label_smoothing = self.files[classes].iloc[idx, :].to_numpy(), self.label_smoothing
+        # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
+        # source : https://arxiv.org/pdf/1911.06475.pdf
+        labels = np.zeros((len(vector),))
+        labels[vector == 1] = 1 - label_smoothing
+        labels[vector == 0] = label_smoothing
+        labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
 
-            # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
-            # source : https://arxiv.org/pdf/1911.06475.pdf
-            labels = np.zeros((len(vector),))
-            labels[vector == 1] = 1 - label_smoothing
-            labels[vector == 0] = label_smoothing
-            labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
-
-        else:
-            data = self.files.iloc[idx, 1:5].iloc
-            labels = np.array([convert[data[0]], int(data[1]) / 100, convert[data[2]], convert[data[3]]])
         return torch.from_numpy(labels)
 
     @staticmethod

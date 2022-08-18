@@ -1,8 +1,8 @@
 # ------python import------------------------------------
+import copy
 import os
 import urllib
 import warnings
-import copy
 
 import numpy as np
 import torch
@@ -13,7 +13,7 @@ import wandb
 from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
-from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
+from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
@@ -112,9 +112,8 @@ def initialize_config():
 def main(config, img_dir, model, experiment, optimizer, criterion, device, prob, sampler, metrics, pretrain=False):
     # -------data initialisation-------------------------------
 
-    train_dataset = Chexpertloader(
-        f"{img_dir}/train.csv",
-        img_dir=img_dir,
+    train_dataset = CXRLoader(
+        dataset="Train",
         img_size=config["img_size"],
         prob=prob,
         intensity=config["augment_intensity"],
@@ -125,11 +124,10 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=config["N"],
         M=config["M"],
-        pretrain=True
+        pretrain=pretrain
     )
-    val_dataset = Chexpertloader(
-        f"{img_dir}/valid.csv",
-        img_dir=img_dir,
+    val_dataset = CXRLoader(
+        dataset="Valid",
         img_size=config["img_size"],
         cache=False,
         num_worker=config["num_worker"],
@@ -137,7 +135,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=0,
         M=0,
-        pretrain=True
+        pretrain=pretrain
     )
 
     training_loader = torch.utils.data.DataLoader(
@@ -222,11 +220,7 @@ if __name__ == "__main__":
                        metrics=None, pretrain=True)
 
     #setting up for the training
-    model.backbone.reset_classifier(14)
 
-    #model2 = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
-    #             pretrained=False, channels=config["channels"])
-    #model2.load_state_dict(model.state_dict())
     model = model.to(device,dtype=torch.float)
  
     model.pretrain = False
