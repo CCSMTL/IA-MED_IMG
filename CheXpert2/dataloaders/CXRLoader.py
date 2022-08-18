@@ -184,7 +184,7 @@ class CXRLoader(Dataset):
 if __name__ == "__main__" :
 
     train = CXRLoader(dataset="Train",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
-    valid = CXRLoader(dataset="Valid",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
+    valid = CXRLoader(dataset="Valid",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
 
     for dataset in [train,valid] :
         for image,label in dataset :

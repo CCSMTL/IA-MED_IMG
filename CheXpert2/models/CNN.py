@@ -118,18 +118,6 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)
-        x = torch.sigmoid(x).clone()
-        if not self.pretrain:
-            #x[:,[0,1,2,6,8,9,10,11,12,13]] = torch.sigmoid(x[:,[0,1,2,6,8,9,10,11,12,13]]).clone()
-            #x[:,[3,4,5,7]] = torch.softmax(x[:,[3,4,5,7]],dim=1).clone()
-            x = torch.sigmoid(x).clone()
-            #x[:, [8,9,10]] = torch.softmax(x[:, [8,9,10]], dim=1).clone()
-            #x[:,[0,2,8,9,10,11,12]] = torch.mul(x[:,[0,2,8,9,10,11,12]].clone(),x[:,13].clone()[:,None])
-            x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
-            x[:, [3, 4, 5, 7]] = torch.mul(x[:, [3, 4, 5, 7]].clone(), x[:, 2].clone()[:, None])
-            x[:, 6] = torch.mul(x[:, 5].clone(), x[:, 6].clone())
-
-            x[:, 13] = 1 - x[:, 13].clone()  # lets the model predict sick instead of no finding
         return x
 
 

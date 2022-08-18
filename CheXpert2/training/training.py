@@ -104,10 +104,19 @@ def validation_loop(model, loader, criterion, device):
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
+        # outputs[:,[0,1,2,6,8,9,10,11,12,13]] = torch.sigmoid(outputs[:,[0,1,2,6,8,9,10,11,12,13]]).clone()
+        # outputs[:,[3,4,5,7]] = torch.softmaoutputs(outputs[:,[3,4,5,7]],dim=1).clone()
+        outputs = torch.sigmoid(outputs)
+        # outputs[:, [8,9,10]] = torch.softmaoutputs(outputs[:, [8,9,10]], dim=1).clone()
+        # outputs[:,[0,2,8,9,10,11,12]] = torch.mul(outputs[:,[0,2,8,9,10,11,12]].clone(),outputs[:,13].clone()[:,None])
+        outputs[:, 1] = torch.mul(outputs[:, 1], outputs[:, 0])
+        outputs[:, [3, 4, 5, 7]] = torch.mul(outputs[:, [3, 4, 5, 7]], outputs[:, 2][:, None])
+        outputs[:, 6] = torch.mul(outputs[:, 5], outputs[:, 6])
 
+        #outputs[:, 13] = 1 - outputs[:, 13]  # lets the model predict sick instead of no finding
         if loader.dataset.pretrain :
             results[1] = torch.cat(
-                (torch.sigmoid(results[1]), outputs.detach().cpu()), dim=0
+                (torch.sigmoid(results[1]), outputs), dim=0
             )
         else :
             results[1] = torch.cat(
@@ -134,7 +143,7 @@ def training(
     device="cpu",
     metrics=None,
     minibatch_accumulate=1,
-    experiment=None,
+    eoutputsperiment=None,
 
     clip_norm = 100,
     autocast=True
@@ -149,7 +158,7 @@ def training(
     position = device + 1 if type(device) == int else 1
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
 
-    while experiment.keep_training:  # loop over the dataset multiple times
+    while eoutputsperiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
@@ -167,7 +176,7 @@ def training(
             scheduler,
             autocast
         )
-        if experiment.rank == 0:
+        if eoutputsperiment.rank == 0:
             val_loss, results = validation_loop(
                 model, validation_loader, criterion, device
             )
@@ -179,16 +188,16 @@ def training(
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
 
-                experiment.log_metrics(metrics_results, epoch=epoch)
-                experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
-                experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
+                eoutputsperiment.log_metrics(metrics_results, epoch=epoch)
+                eoutputsperiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
+                eoutputsperiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
-            experiment.next_epoch(val_loss.cpu() / m, model)
+            eoutputsperiment.neoutputst_epoch(val_loss.cpu() / m, model)
 
-        experiment.epoch += 1
-        if experiment.epoch == experiment.epoch_max:
-            experiment.keep_training = False
+        eoutputsperiment.epoch += 1
+        if eoutputsperiment.epoch == eoutputsperiment.epoch_maoutputs:
+            eoutputsperiment.keep_training = False
 
     print("Finished Training")
 

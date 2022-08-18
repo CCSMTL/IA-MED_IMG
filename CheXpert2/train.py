@@ -114,7 +114,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
     train_dataset = CXRLoader(
         dataset="Train",
-        img_dir=img_dir,
+        img_dir="",
         img_size=config["img_size"],
         prob=prob,
         intensity=config["augment_intensity"],
@@ -129,7 +129,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
     )
     val_dataset = CXRLoader(
         dataset="Valid",
-        img_dir=img_dir,
+        img_dir="",
         img_size=config["img_size"],
         cache=False,
         num_worker=config["num_worker"],
@@ -224,15 +224,12 @@ if __name__ == "__main__":
     #setting up for the training
 
     model = model.to(device,dtype=torch.float)
- 
-    model.pretrain = False
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
     # training
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCELoss(), device, prob, sampler, metrics,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler, metrics,
                    pretrain=False)
     experiment.end(results)
