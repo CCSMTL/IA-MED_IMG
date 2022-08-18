@@ -16,7 +16,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 from CheXpert2 import custom_Transforms
-from MongoDB import MongoDB
+from CheXpert2.dataloaders.MongoDB import MongoDB
 
 
 # classes = [

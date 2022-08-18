@@ -17,7 +17,7 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
-
+from CheXpert2.custom_utils import set_parameter_requires_grad
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -223,11 +223,13 @@ if __name__ == "__main__":
 
     #setting up for the training
 
-    model = model.to(device,dtype=torch.float)
+
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
+
+    set_parameter_requires_grad(model.features)
     # training
 
     results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler, metrics,

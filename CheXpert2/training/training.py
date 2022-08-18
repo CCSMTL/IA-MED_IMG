@@ -143,7 +143,7 @@ def training(
     device="cpu",
     metrics=None,
     minibatch_accumulate=1,
-    eoutputsperiment=None,
+    experiment=None,
 
     clip_norm = 100,
     autocast=True
@@ -158,7 +158,7 @@ def training(
     position = device + 1 if type(device) == int else 1
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
 
-    while eoutputsperiment.keep_training:  # loop over the dataset multiple times
+    while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
@@ -176,7 +176,7 @@ def training(
             scheduler,
             autocast
         )
-        if eoutputsperiment.rank == 0:
+        if experiment.rank == 0:
             val_loss, results = validation_loop(
                 model, validation_loader, criterion, device
             )
@@ -188,16 +188,16 @@ def training(
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
 
-                eoutputsperiment.log_metrics(metrics_results, epoch=epoch)
-                eoutputsperiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
-                eoutputsperiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
+                experiment.log_metrics(metrics_results, epoch=epoch)
+                experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
+                experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
-            eoutputsperiment.neoutputst_epoch(val_loss.cpu() / m, model)
+            experiment.neoutputst_epoch(val_loss.cpu() / m, model)
 
-        eoutputsperiment.epoch += 1
-        if eoutputsperiment.epoch == eoutputsperiment.epoch_maoutputs:
-            eoutputsperiment.keep_training = False
+        experiment.epoch += 1
+        if experiment.epoch == experiment.epoch_maoutputs:
+            experiment.keep_training = False
 
     print("Finished Training")
 
