@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # -----setting up training-------------------------------------
     dist.barrier()
-    set_parameter_requires_grad(model.module.features)
+    set_parameter_requires_grad(model.module.backbone.features)
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()

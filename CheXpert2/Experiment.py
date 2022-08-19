@@ -53,7 +53,7 @@ class Experiment:
             print("patience has been reduced by 1")
             print(val_loss)
         self.pbar.update(1)
-        experiment.epoch += 1
+        self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
         print(self.summary)
