@@ -25,7 +25,7 @@ def cleanup():
 
 if __name__ == "__main__":
     dist.init_process_group("nccl")
-    config, img_dir, experiment, device, prob, sampler, names = initialize_config()
+    config, img_dir, experiment, device, prob, names = initialize_config()
 
     optimizer = torch.optim.Adam
     rank = dist.get_rank()
