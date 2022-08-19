@@ -106,7 +106,7 @@ def validation_loop(model, loader, criterion, device):
         running_loss += loss.detach()
         # outputs[:,[0,1,2,6,8,9,10,11,12,13]] = torch.sigmoid(outputs[:,[0,1,2,6,8,9,10,11,12,13]]).clone()
         # outputs[:,[3,4,5,7]] = torch.softmaoutputs(outputs[:,[3,4,5,7]],dim=1).clone()
-        outputs = torch.sigmoid(outputs)
+        outputs = torch.sigmoid(outputs).detach().cpu()
         # outputs[:, [8,9,10]] = torch.softmaoutputs(outputs[:, [8,9,10]], dim=1).clone()
         # outputs[:,[0,2,8,9,10,11,12]] = torch.mul(outputs[:,[0,2,8,9,10,11,12]].clone(),outputs[:,13].clone()[:,None])
         outputs[:, 1] = torch.mul(outputs[:, 1], outputs[:, 0])
@@ -114,15 +114,9 @@ def validation_loop(model, loader, criterion, device):
         outputs[:, 6] = torch.mul(outputs[:, 5], outputs[:, 6])
 
         #outputs[:, 13] = 1 - outputs[:, 13]  # lets the model predict sick instead of no finding
-        if loader.dataset.pretrain :
-            results[1] = torch.cat(
-                (torch.sigmoid(results[1]), outputs), dim=0
-            )
-        else :
-            results[1] = torch.cat(
-                (results[1], outputs.detach().cpu()), dim=0
-            )
-        results[0] = torch.cat((results[0], labels.cpu()), dim=0)
+
+        results[1] = torch.cat((results[1], outputs), dim=0)
+        results[0] = torch.cat((results[0], labels.cpu().round(0)), dim=0) #round to 0 or 1 in case of label smoothing
 
         del (
             inputs,
@@ -193,7 +187,7 @@ def training(
                 experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
-            experiment.neoutputst_epoch(val_loss.cpu() / m, model)
+            experiment.next_epoch(val_loss.cpu() / m, model)
 
         experiment.epoch += 1
         if experiment.epoch == experiment.epoch_maoutputs:

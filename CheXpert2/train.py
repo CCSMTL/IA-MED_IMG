@@ -114,7 +114,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
     train_dataset = CXRLoader(
         dataset="Train",
-        img_dir="",
+        img_dir="data/",
         img_size=config["img_size"],
         prob=prob,
         intensity=config["augment_intensity"],
@@ -129,7 +129,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
     )
     val_dataset = CXRLoader(
         dataset="Valid",
-        img_dir="",
+        img_dir="data/",
         img_size=config["img_size"],
         cache=False,
         num_worker=config["num_worker"],
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 4, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
     model = model.to(device, dtype=torch.float)
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
 
-    set_parameter_requires_grad(model.features)
+    set_parameter_requires_grad(model.backbone.features)
     # training
 
     results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler, metrics,

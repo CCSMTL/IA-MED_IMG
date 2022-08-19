@@ -8,13 +8,14 @@ Created on 2022-06-30$
 
 import cv2 as cv
 import numpy as np
+import pandas as pd
 import torch
 import tqdm
 import yaml
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
-
+import warnings
 from CheXpert2 import custom_Transforms
 from CheXpert2.dataloaders.MongoDB import MongoDB
 
@@ -81,7 +82,21 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = ["Lung Opacity", "Enlarged Cardiomediastinum", "Pneumonia"] if pretrain else []
         # ,"ChexNet","ChexXRay"
-        self.files = MongoDB("localhost", 27017, ["ChexPert"]).dataset(dataset,classnames=classnames)
+        try :
+            100/0
+            self.files = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset(dataset,classnames=classnames)
+            self.img_dir=""
+        except :
+            # TODO : remove in future version
+            self.files = pd.read_csv(f"{img_dir}{dataset.lower()}.csv") #backup for compatiility
+            warnings.warn("Using deprecated dataset ; will be removed in next version")
+
+            if dataset == "Train" and pretrain:
+                for classname in classnames :
+                    self.files = self.files[self.files[classname] == 1]
+
+
+
 
         if self.cache:
             with parallel_backend('threading', n_jobs=num_worker):
@@ -183,10 +198,11 @@ class CXRLoader(Dataset):
 
 if __name__ == "__main__" :
 
-    train = CXRLoader(dataset="Train",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
-    valid = CXRLoader(dataset="Valid",img_dir="", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
+    train = CXRLoader(dataset="Train",img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
+    valid = CXRLoader(dataset="Valid",img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
 
     for dataset in [train,valid] :
         for image,label in dataset :
             print(image.shape, label.shape)
             break
+
