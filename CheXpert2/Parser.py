@@ -146,7 +146,7 @@ def init_parser():
     )
     parser.add_argument(
         "--lr",
-        default=0.001,
+        default=0.0001,
         const="all",
         type=float,
         nargs="?",

@@ -116,7 +116,7 @@ def validation_loop(model, loader, criterion, device):
         #outputs[:, 13] = 1 - outputs[:, 13]  # lets the model predict sick instead of no finding
 
         results[1] = torch.cat((results[1], outputs), dim=0)
-        results[0] = torch.cat((results[0], labels.cpu().round(0)), dim=0) #round to 0 or 1 in case of label smoothing
+        results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)), dim=0) #round to 0 or 1 in case of label smoothing
 
         del (
             inputs,
@@ -150,8 +150,8 @@ def training(
     n, m = len(training_loader), len(validation_loader)
 
     position = device + 1 if type(device) == int else 1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
-
+    #scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
+    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -190,7 +190,7 @@ def training(
             experiment.next_epoch(val_loss.cpu() / m, model)
 
         experiment.epoch += 1
-        if experiment.epoch == experiment.epoch_maoutputs:
+        if experiment.epoch == experiment.epoch_max:
             experiment.keep_training = False
 
     print("Finished Training")
