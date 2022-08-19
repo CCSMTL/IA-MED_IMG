@@ -211,7 +211,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 if __name__ == "__main__":
     config, img_dir, experiment, device, prob, names = initialize_config()
 
-    optimizer = torch.optim.AdamW
+    optimizer = torch.optim.Adam
     # -----------model initialisation------------------------------
 
     model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
 
-    set_parameter_requires_grad(model.backbone.features)
+    set_parameter_requires_grad(model.backbone)
     # training
 
     results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, metrics,
