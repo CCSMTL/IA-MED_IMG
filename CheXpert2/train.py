@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import yaml
-
+from torch.utils.data.sampler import SequentialSampler
 import wandb
 from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
@@ -144,12 +144,17 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         pretrain=pretrain
     )
 
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights, num_samples=num_samples)
+    if dist.is_initialized() :
+        sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
+
+
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=config["batch_size"],
         num_workers=config["num_worker"],
         pin_memory=True,
-        sampler=torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,num_samples=num_samples),
+        sampler=sampler,
 
 
     )
