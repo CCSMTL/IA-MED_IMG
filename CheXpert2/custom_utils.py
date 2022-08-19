@@ -22,8 +22,11 @@ def convert(array1):
 # -----------------------------------------------------------------------------------
 def set_parameter_requires_grad(model):
     for child in list(model.children())[::-1] :
-        for param in child :
-            param.requires_grad = False
+        try :
+            for param in child :
+                param.requires_grad = False
+        except :
+            pass
 
 
 # -----------------------------------------------------------------------------------

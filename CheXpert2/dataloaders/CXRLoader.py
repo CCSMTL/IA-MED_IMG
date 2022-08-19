@@ -82,6 +82,7 @@ class CXRLoader(Dataset):
 
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = ["Lung Opacity", "Enlarged Cardiomediastinum", "Pneumonia"] if pretrain else []
+
         # ,"ChexNet","ChexXRay"
         try :
             100/0
@@ -92,11 +93,13 @@ class CXRLoader(Dataset):
             self.files = pd.read_csv(f"{img_dir}{dataset.lower()}.csv") #backup for compatiility
             warnings.warn("Using deprecated dataset ; will be removed in next version")
 
-            if dataset == "Train" and pretrain:
-                for classname in classnames :
-                    self.files = self.files[self.files[classname] == 1]
+            if pretrain and dataset == "Train" :
+                self.newfiles = pd.DataFrame([],columns=list(self.files.columns))
+                if dataset == "Train" and pretrain:
+                    for classname in classnames :
+                        self.newfiles = pd.merge(self.newfiles,self.files[self.files[classname] == 1],on=list(self.files.columns), how='outer')
 
-
+                self.files=self.newfiles
 
 
         if self.cache:
@@ -227,7 +230,8 @@ if __name__ == "__main__" :
 
     train = CXRLoader(dataset="Train",img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
     valid = CXRLoader(dataset="Valid",img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
-
+    print(len(train))
+    print(len(valid))
     for dataset in [train,valid] :
         for image,label in dataset :
             print(image.shape, label.shape)
