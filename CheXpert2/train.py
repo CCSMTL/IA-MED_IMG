@@ -103,14 +103,18 @@ def initialize_config():
     else:
         config = wandb.config
     print(config["augment_prob"])
-    from CheXpert2.Sampler import Sampler
-    Sampler = Sampler(f"{img_dir}/train.csv")
-    sampler = Sampler.sampler()
-    return config, img_dir, experiment, device, prob, sampler,names
+
+    return config, img_dir, experiment, device, prob,names
 
 
-def main(config, img_dir, model, experiment, optimizer, criterion, device, prob, sampler, metrics, pretrain=False):
+def main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics, pretrain=False):
     # -------data initialisation-------------------------------
+
+
+    if os.environ["DEBUG"] =="False" :
+        num_samples=300000
+    else :
+        num_samples=100
 
     train_dataset = CXRLoader(
         dataset="Train",
@@ -145,7 +149,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         batch_size=config["batch_size"],
         num_workers=config["num_worker"],
         pin_memory=True,
-        sampler=sampler,
+        sampler=torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,num_samples=num_samples),
 
 
     )
@@ -200,9 +204,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
 if __name__ == "__main__":
-    config, img_dir, experiment, device, prob, sampler, names = initialize_config()
-    sampler2 = copy.copy(sampler)
-    sampler2.weights = 1/sampler2.weights
+    config, img_dir, experiment, device, prob, names = initialize_config()
+
     optimizer = torch.optim.AdamW
     # -----------model initialisation------------------------------
 
@@ -218,7 +221,7 @@ if __name__ == "__main__":
         experiment2 = Experiment(
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,no_log=True
         )
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler2,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                        metrics=None, pretrain=True)
 
     #setting up for the training
@@ -232,6 +235,6 @@ if __name__ == "__main__":
     set_parameter_requires_grad(model.backbone.features)
     # training
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, sampler, metrics,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, metrics,
                    pretrain=False)
     experiment.end(results)

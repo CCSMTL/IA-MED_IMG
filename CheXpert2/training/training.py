@@ -4,7 +4,7 @@ import tqdm
 
 
 def training_loop(
-        model, loader, optimizer, criterion, device, minibatch_accumulate, scaler, clip_norm, scheduler,autocast
+        model, loader, optimizer, criterion, device, scaler, clip_norm,autocast
 ):
     """
 
@@ -58,7 +58,7 @@ def training_loop(
         else:
             optimizer.step()
         # optimizer.step()
-        scheduler.step(scheduler.last_epoch + 1 / n)
+
         optimizer.zero_grad(set_to_none=True)
         running_loss += loss.detach()
         # ending loop
@@ -69,6 +69,7 @@ def training_loop(
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
+
 
     return running_loss
 
@@ -164,10 +165,8 @@ def training(
             optimizer,
             criterion,
             device,
-            minibatch_accumulate,
             scaler,
             clip_norm,
-            scheduler,
             autocast
         )
         if experiment.rank == 0:
@@ -190,6 +189,7 @@ def training(
             experiment.next_epoch(val_loss.cpu() / m, model)
 
         experiment.epoch += 1
+        scheduler.step()
         if experiment.epoch == experiment.epoch_max:
             experiment.keep_training = False
 

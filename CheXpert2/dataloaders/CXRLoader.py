@@ -9,6 +9,7 @@ Created on 2022-06-30$
 import cv2 as cv
 import numpy as np
 import pandas as pd
+import copy
 import torch
 import tqdm
 import yaml
@@ -104,6 +105,12 @@ class CXRLoader(Dataset):
                     delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                     tqdm.tqdm(range(0, len(self.files))))
 
+
+        if dataset == "Train" and not pretrain :
+            self.weights = self.samples_weights()
+        else :
+            self.weights =torch.ones(len(self.files))
+
     def __len__(self):
         return len(self.files)
 
@@ -161,6 +168,26 @@ class CXRLoader(Dataset):
                 normalize,
             ]
         )
+
+
+
+    def samples_weights(self):
+
+        data = copy.copy(self.files)
+        data = data.replace(-1,1).fillna(0)
+        count = data[self.classes].sum().to_numpy()
+
+        weights = np.zeros((len(data)))
+        for i,line in data[self.classes].iterrows() :
+            vector = line.to_numpy()[5:19]
+            a=np.where(vector ==1)[0]
+            if len(a)>0 :
+                category = np.random.choice(a,1)
+            else :
+                category = len(self.classes)-1 #assumes last class is the empty class
+            weights[i] = 1 / (count[category])
+
+        return weights
 
     def read_img(self, file):
 
