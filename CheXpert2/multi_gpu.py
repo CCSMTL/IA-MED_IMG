@@ -26,14 +26,8 @@ def cleanup():
 if __name__ == "__main__":
     dist.init_process_group("nccl")
     config, img_dir, experiment, device, prob, sampler, names = initialize_config()
-    from CheXpert2.Sampler import Sampler
 
-    Sampler2 = Sampler(f"{img_dir}/train.csv")
-    sampler2= Sampler2.sampler()
-    sampler2.weights = 1 / sampler2.weights
-    sampler2 = torch.utils.data.DistributedSampler(SequentialSampler(sampler2))
-    sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
-    optimizer = torch.optim.AdamW
+    optimizer = torch.optim.Adam
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
     # -----------model initialisation------------------------------
@@ -53,7 +47,7 @@ if __name__ == "__main__":
         experiment2 = Experiment(
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
         )
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.MSELoss(), device, prob, sampler2,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.MSELoss(), device, prob,
                        metrics=None, pretrain=True)
 
     # -----setting up training-------------------------------------
@@ -66,7 +60,7 @@ if __name__ == "__main__":
     # -----training-------------------------------------------
 
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.MSELoss(), device, prob, sampler,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.MSELoss(), device, prob,
                    metrics=metrics, pretrain=False)
     experiment.end(results)
     cleanup()

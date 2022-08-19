@@ -173,7 +173,7 @@ def training(
             val_loss, results = validation_loop(
                 model, validation_loader, criterion, device
             )
-
+            val_loss = val_loss.cpu() / m
             if metrics:
                 for key in metrics:
                     pred = results[1].numpy()
@@ -186,9 +186,8 @@ def training(
                 experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
 
             # Finishing the loop
-            experiment.next_epoch(val_loss.cpu() / m, model)
 
-        experiment.epoch += 1
+        experiment.next_epoch(val_loss, model)
         scheduler.step()
         if experiment.epoch == experiment.epoch_max:
             experiment.keep_training = False

@@ -53,10 +53,11 @@ class Experiment:
             print("patience has been reduced by 1")
             print(val_loss)
         self.pbar.update(1)
-
+        experiment.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
         print(self.summary)
+
 
     def log_metric(self, metric_name, value, epoch=None):
         if self.rank == 0 and not self.no_log:
