@@ -10,7 +10,6 @@ import os
 import numpy as np
 import torch
 import torch.distributed as dist
-from torch.utils.data.sampler import SequentialSampler
 
 from CheXpert2.Experiment import Experiment
 from CheXpert2.custom_utils import set_parameter_requires_grad
@@ -52,7 +51,7 @@ if __name__ == "__main__":
 
     # -----setting up training-------------------------------------
     dist.barrier()
-    set_parameter_requires_grad(model.module.backbone.features)
+    set_parameter_requires_grad(model.backbone)
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
     metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
     metrics = metric.metrics()
