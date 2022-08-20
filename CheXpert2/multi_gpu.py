@@ -44,9 +44,9 @@ if __name__ == "__main__":
     # ---pretraining-------------------------------------
     if config["pretraining"] != 0:
         experiment2 = Experiment(
-            f"{config['model']}", names=names, tags=None, config=config, epoch_max=5, patience=5
+            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5
         )
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.MSELoss(), device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                        metrics=None, pretrain=True)
 
     # -----setting up training-------------------------------------
@@ -58,8 +58,7 @@ if __name__ == "__main__":
 
     # -----training-------------------------------------------
 
-
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.MSELoss(), device, prob,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                    metrics=metrics, pretrain=False)
     experiment.end(results)
     cleanup()
