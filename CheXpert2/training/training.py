@@ -152,7 +152,7 @@ def training(
 
     position = device + 1 if type(device) == int else 1
     #scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=5)
-    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer)
+    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -183,7 +183,7 @@ def training(
 
                 experiment.log_metrics(metrics_results, epoch=epoch)
                 experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
-                experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
+                experiment.log_metric("validation_loss", val_loss, epoch=epoch)
 
             # Finishing the loop
 
