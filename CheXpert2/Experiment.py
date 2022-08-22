@@ -41,17 +41,17 @@ class Experiment:
 
         self.no_log = no_log
     def next_epoch(self, val_loss, model):
-
-        if val_loss < self.best_loss or self.epoch == 0:
-            self.best_loss = val_loss
-            self.log_metric("best_loss", self.best_loss, epoch=self.epoch)
-            self.patience = self.max_patience
-            self.summarize()
-            self.save_weights(model)
-        else:
-            self.patience -= 1
-            print("patience has been reduced by 1")
-            print(val_loss)
+        if self.rank == 0 :
+            if val_loss < self.best_loss or self.epoch == 0:
+                self.best_loss = val_loss
+                self.log_metric("best_loss", self.best_loss, epoch=self.epoch)
+                self.patience = self.max_patience
+                self.summarize()
+                self.save_weights(model)
+            else:
+                self.patience -= 1
+                print("patience has been reduced by 1")
+                print(val_loss)
         self.pbar.update(1)
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:

@@ -144,7 +144,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         pretrain=pretrain
     )
 
-    sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights, num_samples=num_samples)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights, num_samples=min(num_samples,len(train_dataset)))
+
     if dist.is_initialized() :
         sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
 

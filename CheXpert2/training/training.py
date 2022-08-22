@@ -1,7 +1,7 @@
 import torch
 import torch.distributed as dist
 import tqdm
-
+import numpy as np
 
 def training_loop(
         model, loader, optimizer, criterion, device, scaler, clip_norm,autocast
@@ -147,7 +147,7 @@ def training(
     results = None
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
-    val_loss = None
+    val_loss = np.inf
     n, m = len(training_loader), len(validation_loader)
 
     position = device + 1 if type(device) == int else 1
