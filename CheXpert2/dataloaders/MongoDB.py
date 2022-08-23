@@ -10,7 +10,9 @@ class MongoDB:
         self.db_public = self.client["Public_Images"]
         self.db_CIUSSS = self.client["CIUSSS"]
 
-        self.data = [self.client["CIUSSS"]["images"]]
+        # self.data = [self.client["CIUSSS"]["images"]]
+        self.data = []
+        # TODO : in good time add ciusss images
         for name in collectionnames:
             self.data.append(self.db_public[name])
         # self.data.append(self.db_CIUSSS[$put_name_here$])
