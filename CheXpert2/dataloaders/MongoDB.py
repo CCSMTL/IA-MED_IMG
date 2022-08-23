@@ -9,7 +9,8 @@ class MongoDB:
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
         self.db_CIUSSS = self.client["CIUSSS"]
-        self.data = []
+
+        self.data = [self.client["CIUSSS"]["images"]]
         for name in collectionnames:
             self.data.append(self.db_public[name])
         # self.data.append(self.db_CIUSSS[$put_name_here$])
@@ -35,10 +36,14 @@ class MongoDB:
         pass
 
 
+if __name__ == "__main__":
+    import yaml
 
-if __name__  == "__main__" :
-    db = MongoDB("localhost",27017,["ChexPert","ChexNet","ChexXRay"])
+    with open("data/data.yaml", "r") as stream:
+        names = yaml.safe_load(stream)["names"]
 
-    valid=db.dataset("Valid",[])
-    print(valid.head(100))
+    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
+    valid = db.dataset("Valid", [])
     valid.iloc[0:100].to_csv("valid.csv")
+    valid = valid[names]
+    print(valid.head(100))

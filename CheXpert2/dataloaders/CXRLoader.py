@@ -6,17 +6,18 @@ Created on 2022-06-30$
 @author: Jonathan Beaulieu-Emond
 """
 
+import copy
+
 import cv2 as cv
 import numpy as np
 import pandas as pd
-import copy
 import torch
 import tqdm
 import yaml
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
-import warnings
+
 from CheXpert2 import custom_Transforms
 from CheXpert2.dataloaders.MongoDB import MongoDB
 
@@ -81,23 +82,25 @@ class CXRLoader(Dataset):
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
-        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum", "Pneumonia"] if pretrain else []
+        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
         # ,"ChexNet","ChexXRay"
-        try :
-            100/0
-            self.files = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset(dataset,classnames=classnames)
-            self.img_dir=""
-        except :
-            # TODO : remove in future version
-            self.files = pd.read_csv(f"{img_dir}{dataset.lower()}.csv") #backup for compatiility
-            warnings.warn("Using deprecated dataset ; will be removed in next version")
+        try:
 
-            if pretrain and dataset == "Train" :
-                self.newfiles = pd.DataFrame([],columns=list(self.files.columns))
+            self.files = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset(dataset, classnames=classnames)
+            self.img_dir = ""
+        except Exception as e:
+
+            # TODO : remove in future version
+            self.files = pd.read_csv(f"{img_dir}{dataset.lower()}.csv")  # backup for compatiility
+            print(f"Following error : {e} , Using deprecated dataset ; will be removed in next version")
+
+            if pretrain and dataset == "Train":
+                self.newfiles = pd.DataFrame([], columns=list(self.files.columns))
                 if dataset == "Train" and pretrain:
-                    for classname in classnames :
-                        self.newfiles = pd.merge(self.newfiles,self.files[self.files[classname] == 1],on=list(self.files.columns), how='outer')
+                    for classname in classnames:
+                        self.newfiles = pd.merge(self.newfiles, self.files[self.files[classname] == 1],
+                                                 on=list(self.files.columns), how='outer')
 
                 self.files=self.newfiles
 
@@ -123,7 +126,7 @@ class CXRLoader(Dataset):
             [
                 transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
-            #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
+                transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
             ]
         )
 
@@ -172,22 +175,21 @@ class CXRLoader(Dataset):
             ]
         )
 
-
-
     def samples_weights(self):
 
-        data = copy.copy(self.files)
-        data = data.replace(-1,1).fillna(0)
-        count = data[self.classes].sum().to_numpy()
-
+        data = copy.copy(self.files[self.classes]).fillna(0)
+        data = data.astype(int)
+        data = data.replace(-1, 1)
+        count = data.sum().to_numpy()
+        print(count)
         weights = np.zeros((len(data)))
-        for i,line in data[self.classes].iterrows() :
+        for i, line in data[self.classes].iterrows():
             vector = line.to_numpy()[5:19]
-            a=np.where(vector ==1)[0]
-            if len(a)>0 :
-                category = np.random.choice(a,1)
-            else :
-                category = len(self.classes)-1 #assumes last class is the empty class
+            a = np.where(vector == 1)[0]
+            if len(a) > 0:
+                category = np.random.choice(a, 1)
+            else:
+                category = len(self.classes) - 1  # assumes last class is the empty class
             weights[i] = 1 / (count[category])
 
         return weights
