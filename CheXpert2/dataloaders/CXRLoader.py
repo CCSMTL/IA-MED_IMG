@@ -84,10 +84,11 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        # ,"ChexNet","ChexXRay"
+
         try:
 
-            self.files = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset(dataset, classnames=classnames)
+            self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"]).dataset(dataset,
+                                                                                                       classnames=classnames)
             self.img_dir = ""
         except Exception as e:
 
@@ -181,7 +182,7 @@ class CXRLoader(Dataset):
         data = data.astype(int)
         data = data.replace(-1, 1)
         count = data.sum().to_numpy()
-        print(count)
+
         weights = np.zeros((len(data)))
         for i, line in data[self.classes].iterrows():
             vector = line.to_numpy()[5:19]
@@ -230,12 +231,15 @@ class CXRLoader(Dataset):
 
 if __name__ == "__main__" :
 
-    train = CXRLoader(dataset="Train",img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=True)
-    valid = CXRLoader(dataset="Valid",img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0, cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
+    train = CXRLoader(dataset="Train", img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0,
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
+    valid = CXRLoader(dataset="Valid", img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0,
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
     print(len(train))
     print(len(valid))
-    for dataset in [train,valid] :
-        for image,label in dataset :
+    print(len(train.weights))
+    print(len(valid.weights))
+    for dataset in [train, valid]:
+        for image, label in dataset:
             print(image.shape, label.shape)
             break
-
