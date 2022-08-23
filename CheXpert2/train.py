@@ -1,5 +1,4 @@
 # ------python import------------------------------------
-import copy
 import os
 import urllib
 import warnings
@@ -9,15 +8,17 @@ import torch
 import torch.distributed as dist
 import yaml
 from torch.utils.data.sampler import SequentialSampler
+
 import wandb
 from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
 from CheXpert2.Parser import init_parser
+from CheXpert2.custom_utils import set_parameter_requires_grad
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
-from CheXpert2.custom_utils import set_parameter_requires_grad
+
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -215,7 +216,7 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
     model = model.to(device, dtype=torch.float)
@@ -235,7 +236,8 @@ if __name__ == "__main__":
 
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-    metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
+
+    metric = Metrics(num_classes=15, names=experiment.names, threshold=np.zeros((15)) + 0.5)
     metrics = metric.metrics()
 
     set_parameter_requires_grad(model.backbone)
