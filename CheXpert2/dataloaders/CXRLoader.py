@@ -86,8 +86,8 @@ class CXRLoader(Dataset):
 
 
         self.dataset = dataset
-        self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"]).dataset(dataset,
-                                                                                                   classnames=classnames)
+        self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet"]).dataset(dataset,
+                                                                                       classnames=classnames)
         self.files[self.classes] = self.files[self.classes].astype(int)
         self.img_dir = img_dir
 
