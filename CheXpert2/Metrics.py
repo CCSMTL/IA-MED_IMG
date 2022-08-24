@@ -32,7 +32,7 @@ class Metrics:
     def accuracy(self, true, pred):
         n, m = true.shape
         pred2 = self.convert(pred)
-        pred2 = np.where(pred2[:, i] > 0.5, 1, 0)
+        pred2 = np.where(pred2 > 0.5, 1, 0)
 
         accuracy = 0
         for x, y in zip(true, pred2):

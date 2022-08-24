@@ -44,7 +44,7 @@ def chord_chexpert():
 
 
     np.fill_diagonal(conn,0)
-    conn = conn / np.sum(conn)
+    #conn = conn / np.sum(conn)
     fig, axes = plot_connectivity_circle(conn, data.columns)
     fig.savefig("chords_mongodb")
     plt.title("Correlation map between diseases in chexnet")
@@ -60,24 +60,21 @@ def histogram_chexpert():
     counts[0, :] = np.sum(np.where(data == -1, 1, 0), axis=0)
     counts[1, :] = np.sum(np.where(data == 0, 1, 0), axis=0)
     counts[2, :] = np.sum(np.where(data == 1, 1, 0), axis=0)
-    print(counts)
+
 
     # plt.xticks(rotation=45, fontsize=6)
-
+    import plotly.express as px
     labels = ["-1", "1"]
     data = {"-1": counts[0, :], "1": counts[2, :]}
     df = pd.DataFrame(data, columns=labels, index=names)
-    fig,ax=plt.subplots()
-    df.plot.barh(ax=ax)
-    plt.xlabel("Classes")  # , fontsize = 60)
-    plt.ylabel("Count")  # , fontsize = 60)
-    plt.legend()  # prop={'size':45})
-    plt.title("Count of each class")
-    fig.savefig("histogram_mongodb")
+    #fig,ax=plt.subplots()
+    fig = px.bar(df, x=names, y=labels)
     fig.show()
+    fig.write_image("histogram_mongodb.png")
+
 
 
 if __name__ == "__main__":
 
-    #histogram_chexpert()
-    chord_chexpert()
+    histogram_chexpert()
+    #chord_chexpert()
