@@ -85,25 +85,12 @@ class CXRLoader(Dataset):
         classnames = ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
 
-        try:
 
-            self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"]).dataset(dataset,
-                                                                                                       classnames=classnames)
-            self.img_dir = ""
-        except Exception as e:
 
-            # TODO : remove in future version
-            self.files = pd.read_csv(f"{img_dir}{dataset.lower()}.csv")  # backup for compatiility
-            print(f"Following error : {e} , Using deprecated dataset ; will be removed in next version")
+        self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"]).dataset(dataset,classnames=classnames)
 
-            if pretrain and dataset == "Train":
-                self.newfiles = pd.DataFrame([], columns=list(self.files.columns))
-                if dataset == "Train" and pretrain:
-                    for classname in classnames:
-                        self.newfiles = pd.merge(self.newfiles, self.files[self.files[classname] == 1],
-                                                 on=list(self.files.columns), how='outer')
+        self.img_dir = img_dir
 
-                self.files=self.newfiles
 
 
         if self.cache:
@@ -127,7 +114,7 @@ class CXRLoader(Dataset):
             [
                 transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
-                transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
+            #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
             ]
         )
 

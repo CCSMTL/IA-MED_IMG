@@ -1,5 +1,5 @@
 from functools import reduce
-
+import os
 import pandas as pd
 import pymongo
 
@@ -13,6 +13,9 @@ class MongoDB:
         # self.data = [self.client["CIUSSS"]["images"]]
         self.data = []
         #TODO : in good time add ciusss images
+
+        if os.environ["DEBUG"] == "True" :
+            collectionnames = ["ChexPert"]
         for name in collectionnames:
             self.data.append(self.db_public[name])
         # self.data.append(self.db_CIUSSS[$put_name_here$])
