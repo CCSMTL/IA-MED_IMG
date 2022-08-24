@@ -99,7 +99,7 @@ def validation_loop(model, loader, criterion, device):
             inputs.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.dataset.preprocess(inputs)
+        inputs = loader.iterable.dataset.preprocess(inputs)
         # forward + backward + optimize
 
         outputs = model(inputs)
@@ -175,7 +175,7 @@ def training(
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
-                model, validation_loader, criterion, device
+                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion, device
             )
             val_loss = val_loss.cpu() / m
             if metrics:
