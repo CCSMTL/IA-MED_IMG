@@ -86,7 +86,7 @@ class CXRLoader(Dataset):
 
 
 
-
+        self.dataset = dataset
         self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"]).dataset(dataset,classnames=classnames)
 
         self.img_dir = img_dir
@@ -142,7 +142,11 @@ class CXRLoader(Dataset):
         labels = np.zeros((len(vector),))
         labels[vector == 1] = 1 - label_smoothing
         labels[vector == 0] = label_smoothing
-        labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+
+        if self.dataset == "Train" :
+            labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+        else :
+            labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
 
         return torch.from_numpy(labels)
 
