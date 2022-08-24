@@ -3,9 +3,11 @@ import torch
 import torch.distributed as dist
 import tqdm
 
+from CheXpert2.custom_utils import set_parameter_requires_grad
+
 
 def training_loop(
-        model, loader, optimizer, criterion, device, scaler, clip_norm,autocast
+        model, loader, optimizer, criterion, device, scaler, clip_norm, autocast
 ):
     """
 
@@ -193,6 +195,8 @@ def training(
 
         experiment.next_epoch(val_loss, model)
         scheduler.step()
+        if not dist.is_initialized() and experiment.epoch % 2 == 0:
+            set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
         if experiment.epoch == experiment.epoch_max:
             experiment.keep_training = False
 
