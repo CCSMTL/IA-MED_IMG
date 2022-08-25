@@ -116,7 +116,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
     if os.environ["DEBUG"] =="False" :
-        num_samples=300000
+        num_samples = 80000
     else :
         num_samples=100
 
@@ -215,11 +215,11 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 if __name__ == "__main__":
     config, img_dir, experiment, device, prob, names = initialize_config()
-
-    optimizer = torch.optim.Adam
+    num_classes = len(names)
+    optimizer = torch.optim.AdamW
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    model = CNN(config["model"], num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
     model = model.to(device, dtype=torch.float)
@@ -240,7 +240,7 @@ if __name__ == "__main__":
 
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
-    metric = Metrics(num_classes=15, names=experiment.names, threshold=np.zeros((15)) + 0.5)
+    metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
     metrics = metric.metrics()
 
     set_parameter_requires_grad(model.backbone)

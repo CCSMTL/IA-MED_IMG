@@ -109,18 +109,6 @@ def validation_loop(model, loader, criterion, device):
 
         running_loss += loss.detach()
         outputs = outputs.detach().cpu()
-        outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13, 14]] = torch.sigmoid(
-            outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13, 14]])  # .clone()
-        outputs[:, [3, 4, 5, 7]] = torch.softmax(outputs[:, [3, 4, 5, 7]], dim=1).clone()
-        # outputs = torch.sigmoid(outputs).detach().cpu()
-        # outputs[:, [8,9,10]] = torch.softmax(outputs[:, [8,9,10]], dim=1).clone()
-        # outputs[:,[0,2,8,9,10,11,12]] = torch.mul(outputs[:,[0,2,8,9,10,11,12]].clone(),outputs[:,13].clone()[:,None])
-        outputs[:, 1] = torch.mul(outputs[:, 1], outputs[:, 0])
-        outputs[:, [3, 4, 5, 7]] = torch.mul(outputs[:, [3, 4, 5, 7]], outputs[:, 2][:, None])
-        outputs[:, 6] = torch.mul(outputs[:, 5], outputs[:, 6])
-
-        # outputs[:, 13] = 1 - outputs[:, 13]  # lets the model predict sick instead of no finding
-
         results[1] = torch.cat((results[1], outputs), dim=0)
         results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),
                                dim=0)  # round to 0 or 1 in case of label smoothing

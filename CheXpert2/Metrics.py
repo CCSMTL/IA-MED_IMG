@@ -4,20 +4,10 @@ from sklearn.metrics import roc_curve, auc
 
 
 class Metrics:
-    def __init__(self, num_classes, names, threshold=0.5):
+    def __init__(self, num_classes, names, threshold):
         self.num_classes = num_classes
         self.thresholds = threshold
         self.names = names
-
-    def set_thresholds(self, true, pred):
-
-        best_threshold = np.zeros((self.num_classes))
-        for i in range(self.num_classes):
-            fpr,tpr,thresholds = roc_curve(true[:,i],pred[:,i])
-            best_threshold[i]=   thresholds[np.argmax(tpr-fpr)]
-
-        self.thresholds = best_threshold
-
 
     def convert(self,pred):
 
@@ -41,8 +31,6 @@ class Metrics:
         return accuracy / n
 
     def f1(self, true, pred):
-
-        self.set_thresholds(true, pred)
         _, m = true.shape
         pred2 = self.convert(pred)
 
@@ -61,7 +49,6 @@ class Metrics:
     def recall(self, true, pred):
         _, m = true.shape
         pred2 = self.convert(pred)
-
         pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.recall_score(true, pred2, average="macro", zero_division=0)
 
@@ -72,26 +59,20 @@ class Metrics:
         outAUROC = dict()
         classCount = pred.shape[1]  # TODO : add auc no finding
         for i in range(classCount):
-            try:
-                fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
 
-                outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
-            except:
-                outAUROC[self.names[i]] = 0
+            fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i])
+            self.thresholds[i] = thresholds[np.argmax(tpr[i] - fpr[i])]
+            outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
 
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        score = -np.max(pred, axis=1) + 1
-
-        # fpr, tpr, _ = roc_curve(-np.max(true, axis=1) + 1, score)
-        # outAUROC["No Finding"] = auc(fpr, tpr)
         return outAUROC
 
     def metrics(self):
         dict = {
-            "f1": self.f1,
             "auc": self.computeAUROC,
+            "f1": self.f1,
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,
