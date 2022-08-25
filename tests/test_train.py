@@ -19,6 +19,7 @@ def test_train():
     torch.cuda.is_available = lambda: False
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
     os.environ["DEBUG"] = "True"
+    os.environ["img_dir"] = ""
     os.environ["WANDB_MODE"] = "offline"
 
     config = {
