@@ -24,9 +24,9 @@ def test_train():
     os.environ["WANDB_MODE"] = "offline"
 
     config = {
-        "model": "densenet201",
-        "batch_size": 2,
-        "img_size": 320,
+        "model": "densenet121",
+        "batch_size": 100,
+        "img_size": 223,
         "num_worker": 0,
         "augment_intensity": 0,
         "cache": False,

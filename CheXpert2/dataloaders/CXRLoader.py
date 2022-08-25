@@ -99,11 +99,13 @@ class CXRLoader(Dataset):
                     delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                     tqdm.tqdm(range(0, len(self.files))))
 
-
-        if dataset == "Train" and not pretrain :
+        if dataset == "Train" and not pretrain:
             self.weights = self.samples_weights()
-        else :
-            self.weights =torch.ones(len(self.files))
+        else:
+            self.weights = torch.ones(len(self.files))
+
+        if dataset == "Valid" and os.environ["DEBUG"] == "True":
+            self.files = self.files.iloc[0:400]
 
     def __len__(self):
         return len(self.files)
