@@ -22,6 +22,7 @@ def convert(array1):
 # -----------------------------------------------------------------------------------
 def set_parameter_requires_grad(model, range=None):
     if range:
+        range = min(len(list(model.children())), range)
         for child in list(model.children())[::-range]:
             try:  # TODO : remove try-except
                 for param in child:

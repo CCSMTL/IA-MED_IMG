@@ -95,7 +95,8 @@ def initialize_config():
 
     # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=5,no_log=False
+        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=10,
+        no_log=False
     )
 
     if dist.is_initialized():

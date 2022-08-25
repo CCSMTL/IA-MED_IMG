@@ -230,7 +230,9 @@ if __name__ == "__main__" :
     print(len(valid))
     print(len(train.weights))
     print(len(valid.weights))
+    i = 0
     for dataset in [train, valid]:
         for image, label in dataset:
-            print(image.shape, label.shape)
-            break
+            i += 1
+            if i == 100:
+                break
