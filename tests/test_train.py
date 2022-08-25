@@ -42,9 +42,6 @@ def test_train():
         "channels": 1,
         "autocast" : False,
     }
-
-    img_dir = "tests/data_test"
-    os.environ["img_dir"] = img_dir
     names = pd.read_csv("tests/data_test/valid.csv").columns[5:19]
 
     experiment = Experiment(
@@ -56,7 +53,7 @@ def test_train():
     prob = [0, ] * 5
     model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"],pretraining=False)
-    main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
+    main(config, "", model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
     assert experiment.best_loss != 0
 
 

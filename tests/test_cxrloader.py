@@ -34,7 +34,7 @@ def test_dataloader_transform():
     os.environ["DEBUG"] = "True"
     transform = CXRLoader.get_transform([0.2, ] * 5, 0.1)
     # testing outputs
-    x = torch.randint(0, 255, (224, 224, 3), dtype=torch.uint8)
+    x = torch.randint(0, 255, (10, 3, 224, 224), dtype=torch.uint8)
 
     for i in range(5):
         img2 = transform(x)
