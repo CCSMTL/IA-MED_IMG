@@ -109,8 +109,8 @@ def validation_loop(model, loader, criterion, device):
 
         running_loss += loss.detach()
         outputs = outputs.detach().cpu()
-        outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13]] = torch.sigmoid(
-            outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13]])  # .clone()
+        outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13, 14]] = torch.sigmoid(
+            outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13, 14]])  # .clone()
         outputs[:, [3, 4, 5, 7]] = torch.softmax(outputs[:, [3, 4, 5, 7]], dim=1).clone()
         # outputs = torch.sigmoid(outputs).detach().cpu()
         # outputs[:, [8,9,10]] = torch.softmax(outputs[:, [8,9,10]], dim=1).clone()
