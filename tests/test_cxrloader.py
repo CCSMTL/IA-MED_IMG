@@ -24,10 +24,10 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 
 def test_dataloader_get_item():
     os.environ["DEBUG"] = "True"
-    train = CXRLoader("Train", img_dir="")
+    train = CXRLoader("Train", img_dir="", img_size=224)
     image, label = train[4]
-    assert image.shape == (3, int(224 * 1.14), int(224 * 1.14))
-    assert label.shape == (14,)
+    assert image.shape == (1, int(224 * 1.14), int(224 * 1.14))
+    assert label.shape == (15,)
 
 
 def test_dataloader_transform():

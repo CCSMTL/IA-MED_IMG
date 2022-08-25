@@ -51,8 +51,8 @@ def test_train():
     criterion = torch.nn.BCEWithLogitsLoss()
     device = "cpu"
     prob = [0, ] * 5
-    model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                pretrained=config["pretrained"], channels=config["channels"],pretraining=False)
+    model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
     main(config, "", model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
     assert experiment.best_loss != 0
 
