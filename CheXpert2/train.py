@@ -229,10 +229,13 @@ if __name__ == "__main__":
 
     if config["pretraining"] !=0 :
         experiment2 = Experiment(
-            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,no_log=True
+            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
+            no_log=True
         )
         results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                        metrics=None, pretrain=True)
+
+        set_parameter_requires_grad(model.backbone)
 
     #setting up for the training
 
@@ -243,7 +246,6 @@ if __name__ == "__main__":
     metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
     metrics = metric.metrics()
 
-    set_parameter_requires_grad(model.backbone)
     # training
 
     results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, metrics,
