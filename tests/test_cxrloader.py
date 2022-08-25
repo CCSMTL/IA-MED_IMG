@@ -4,7 +4,6 @@ import torch
 
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 
-
 # -------- proxy config ---------------------------
 
 # proxy = urllib.request.ProxyHandler(
@@ -21,7 +20,10 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # urllib.request.install_opener(opener)
 
 
-
+try:
+    os.environ["img_dir"] = os.environ["img_dir"]
+except:
+    os.environ["img_dir"] = ""
 
 def test_dataloader_get_item():
     os.environ["DEBUG"] = "True"

@@ -19,7 +19,6 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
 
-
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
 # torch.autograd.set_detect_anomaly(True)
@@ -27,7 +26,10 @@ from CheXpert2.training.training import training
 # torch.autograd.profiler.emit_nvtx(False)
 # torch.backends.cudnn.benchmark = True
 
-
+try:
+    os.environ["img_dir"] = os.environ["img_dir"]
+except:
+    os.environ["img_dir"] = ""
 def initialize_config():
     # -------- proxy config ---------------------------
 
