@@ -7,8 +7,8 @@ Created on 2022-07-28$
 """
 import os
 
-import pandas as pd
 import torch
+import yaml
 
 from CheXpert2.Experiment import Experiment
 from CheXpert2.models.CNN import CNN
@@ -19,7 +19,8 @@ def test_train():
     torch.cuda.is_available = lambda: False
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
     os.environ["DEBUG"] = "True"
-    os.environ["img_dir"] = ""
+
+    img_dir = ""
     os.environ["WANDB_MODE"] = "offline"
 
     config = {
@@ -39,21 +40,23 @@ def test_train():
         "weight_decay": 0.01,
         "freeze": False,
         "pretrained": False,
+        "pretraining": 0,
         "channels": 1,
-        "autocast" : False,
+        "autocast": True,
     }
-    names = pd.read_csv("tests/data_test/valid.csv").columns[5:19]
+    with open("data/data.yaml", "r") as stream:
+        names = yaml.safe_load(stream)["names"]
 
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )
     optimizer = torch.optim.AdamW
     criterion = torch.nn.BCEWithLogitsLoss()
-    device = "cpu"
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     prob = [0, ] * 5
     model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
-    main(config, "", model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
+    main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
     assert experiment.best_loss != 0
 
 
