@@ -1,10 +1,13 @@
+import numpy as np
 import torch
 import torch.distributed as dist
 import tqdm
 
+from CheXpert2.custom_utils import set_parameter_requires_grad
+
 
 def training_loop(
-    model, loader, optimizer, criterion, device, minibatch_accumulate, scaler,clip_norm
+        model, loader, optimizer, criterion, device, scaler, clip_norm, autocast
 ):
     """
 
@@ -19,8 +22,8 @@ def training_loop(
     running_loss = 0
 
     model.train()
-    i = 1
-
+    i = 0
+    n = len(loader)
     for inputs, labels in loader:
 
         # get the inputs; data is a list of [inputs, labels]
@@ -36,25 +39,31 @@ def training_loop(
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 
-        with torch.cuda.amp.autocast():
+        with torch.cuda.amp.autocast(enabled=autocast):
             outputs = model(inputs)
             loss = criterion(outputs, labels)
-        scaler.scale(loss).backward()
+        # outputs = torch.nan_to_num(outputs,0)
 
-        running_loss += loss.detach()
-
-        # Unscales the gradients of optimizer's assigned params in-place
-        scaler.unscale_(optimizer)
+        if autocast:
+            scaler.scale(loss).backward()
+            # Unscales the gradients of optimizer's assigned params in-place
+            scaler.unscale_(optimizer)
+        else:
+            loss.backward()
 
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), clip_norm
         )
-
-        scaler.step(optimizer)
-        scaler.update()
+        if autocast:
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            optimizer.step()
+        # optimizer.step()
 
         optimizer.zero_grad(set_to_none=True)
+        running_loss += loss.detach()
         # ending loop
         del (
             outputs,
@@ -63,6 +72,8 @@ def training_loop(
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
+
+
     return running_loss
 
 
@@ -90,19 +101,29 @@ def validation_loop(model, loader, criterion, device):
             inputs.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.dataset.preprocess(inputs)
+        inputs = loader.iterable.dataset.preprocess(inputs)
         # forward + backward + optimize
 
         outputs = model(inputs)
-        loss = criterion(outputs, labels)
+        loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
+        outputs = outputs.detach().cpu()
+        outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13, 14]] = torch.sigmoid(
+            outputs[:, [0, 1, 2, 6, 8, 9, 10, 11, 12, 13, 14]])  # .clone()
+        outputs[:, [3, 4, 5, 7]] = torch.softmax(outputs[:, [3, 4, 5, 7]], dim=1).clone()
+        # outputs = torch.sigmoid(outputs).detach().cpu()
+        # outputs[:, [8,9,10]] = torch.softmax(outputs[:, [8,9,10]], dim=1).clone()
+        # outputs[:,[0,2,8,9,10,11,12]] = torch.mul(outputs[:,[0,2,8,9,10,11,12]].clone(),outputs[:,13].clone()[:,None])
+        outputs[:, 1] = torch.mul(outputs[:, 1], outputs[:, 0])
+        outputs[:, [3, 4, 5, 7]] = torch.mul(outputs[:, [3, 4, 5, 7]], outputs[:, 2][:, None])
+        outputs[:, 6] = torch.mul(outputs[:, 5], outputs[:, 6])
 
-        if inputs.shape != labels.shape:  # prevent storing images if training unets
-            results[1] = torch.cat(
-                (results[1], torch.sigmoid(outputs).detach().cpu()), dim=0
-            )
-            results[0] = torch.cat((results[0], labels.cpu()), dim=0)
+        # outputs[:, 13] = 1 - outputs[:, 13]  # lets the model predict sick instead of no finding
+
+        results[1] = torch.cat((results[1], outputs), dim=0)
+        results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),
+                               dim=0)  # round to 0 or 1 in case of label smoothing
 
         del (
             inputs,
@@ -125,21 +146,24 @@ def training(
     minibatch_accumulate=1,
     experiment=None,
 
-    clip_norm = 100
+    clip_norm = 100,
+    autocast=True
 ):
     epoch = 0
-
+    results = None
     # Creates a GradScaler once at the beginning of training.
     scaler = torch.cuda.amp.GradScaler()
-    val_loss = None
+    val_loss = np.inf
     n, m = len(training_loader), len(validation_loader)
 
     position = device + 1 if type(device) == int else 1
-
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=2,T_mult=5)
+    #scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
             training_loader.sampler.set_epoch(epoch)
+
         train_loss = training_loop(
             model,
             tqdm.tqdm(training_loader, leave=False, position=position),
@@ -147,29 +171,34 @@ def training(
             optimizer,
             criterion,
             device,
-            minibatch_accumulate,
             scaler,
-            clip_norm
+            clip_norm,
+            autocast
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
-                model, validation_loader, criterion, device
+                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion, device
             )
-
+            val_loss = val_loss.cpu() / m
             if metrics:
                 for key in metrics:
                     pred = results[1].numpy()
-                    true = results[0].numpy()
+                    true = results[0].numpy().round(0)
                     metric_result = metrics[key](true, pred)
                     metrics_results[key] = metric_result
 
-
-            experiment.log_metrics(metrics_results, epoch=epoch)
-            experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
-            experiment.log_metric("validation_loss", val_loss.cpu() / m, epoch=epoch)
+                experiment.log_metrics(metrics_results, epoch=epoch)
+                experiment.log_metric("training_loss", train_loss.cpu() / n, epoch=epoch)
+                experiment.log_metric("validation_loss", val_loss, epoch=epoch)
 
             # Finishing the loop
-            experiment.next_epoch(val_loss, model)
+
+        experiment.next_epoch(val_loss, model)
+        scheduler.step()
+        if not dist.is_initialized() and experiment.epoch % 5 == 0:
+            set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
+        if experiment.epoch == experiment.epoch_max:
+            experiment.keep_training = False
 
     print("Finished Training")
 

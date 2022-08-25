@@ -4,9 +4,10 @@ test/*
 log/*
 venv*
 wandb/*
-CheXpert2/log/*
+CheXpert2/log
 CheXpert2/data/*
 CheXpert2/wandb/*
+IA-MED_IMG/wandb/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

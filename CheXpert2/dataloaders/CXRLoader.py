@@ -6,44 +6,58 @@ Created on 2022-06-30$
 @author: Jonathan Beaulieu-Emond
 """
 
+import copy
+import os
+
 import cv2 as cv
 import numpy as np
-import pandas as pd
 import torch
 import tqdm
+import yaml
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 
 from CheXpert2 import custom_Transforms
+from CheXpert2.dataloaders.MongoDB import MongoDB
 
 
-class Chexpertloader(Dataset):
+# classes = [
+#     "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
+#     "Lung Lesion"",Pleural Effusion","Pleural Other","Fracture",
+#     "Consolidation","Hernia","Infiltration","Mass","Nodule","Atelectasis",
+#     "Pneumothorax","Pleural_Thickening","Fibrosis","Edema","Enlarged Cardiomediastinum",
+#     "Opacity","Lesion","Normal"
+
+
+class CXRLoader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
     """
 
     def __init__(
             self,
-            img_file,
-            img_dir="",
+            dataset="Train",
+            img_dir = "data",
             img_size=240,
             prob=None,
             intensity=0,
             label_smoothing=0,
             cache=False,
             num_worker=0,
-            channels=3,
+            channels=1,
             unet=False,
             N=0,
             M=0,
-            pretrain=True
+            pretrain=False,
     ):
         # ----- Variable definition ------------------------------------------------------
-        self.img_file = img_file
-        self.img_dir = img_dir
-        self.length = 0
 
+        with open("data/data.yaml", "r") as stream:
+            self.classes = yaml.safe_load(stream)["names"]
+
+        self.length = 0
+        self.img_dir = img_dir
         self.annotation_files = {}
 
         self.label_smoothing = label_smoothing
@@ -57,7 +71,7 @@ class Chexpertloader(Dataset):
 
         self.cache = cache
         self.channels = channels
-        self.labels = []
+
         self.unet = unet
 
         # ----- Transform definition ------------------------------------------------------
@@ -68,8 +82,17 @@ class Chexpertloader(Dataset):
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
+        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        self.files = pd.read_csv(img_file).fillna(0)
+
+
+        self.dataset = dataset
+        self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet"]).dataset(dataset,
+                                                                                       classnames=classnames)
+        self.files[self.classes] = self.files[self.classes].astype(int)
+        self.img_dir = img_dir
+
+
 
         if self.cache:
             with parallel_backend('threading', n_jobs=num_worker):
@@ -77,7 +100,14 @@ class Chexpertloader(Dataset):
                     delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                     tqdm.tqdm(range(0, len(self.files))))
 
-        self.pretrain = pretrain
+        if dataset == "Train" and not pretrain:
+            self.weights = self.samples_weights()
+        else:
+            self.weights = torch.ones(len(self.files))
+
+        if dataset == "Valid" and os.environ["DEBUG"] == "True":
+            self.files = self.files.iloc[0:400]
+
     def __len__(self):
         return len(self.files)
 
@@ -87,7 +117,7 @@ class Chexpertloader(Dataset):
             [
                 transforms.RandomErasing(prob[3], (intensity, intensity)),
                 transforms.RandomHorizontalFlip(p=prob[4]),
-                transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
+            #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
             ]
         )
 
@@ -108,32 +138,19 @@ class Chexpertloader(Dataset):
         the chexpert dataset, with 0,1,-1 corresponding to negative, positive, and uncertain, respectively.
         """
 
-        convert = {
-            "Male": 0,
-            "Female": 1,
-            "Frontal": 0,
-            "Lateral": 1,
-            "AP": 1,
-            "PA": 0,
-            0: 0.5,
-            "LL": 0.5,
-            "Unknown": 0.5,
-            "RL": 0.5,
+        vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
 
-        }
-        if not self.pretrain:
-            vector, label_smoothing = self.files.iloc[idx, 5:19].to_numpy(), self.label_smoothing
+        # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
+        # source : https://arxiv.org/pdf/1911.06475.pdf
+        labels = np.zeros((len(vector),))
+        labels[vector == 1] = 1 - label_smoothing
+        labels[vector == 0] = label_smoothing
 
-            # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
-            # source : https://arxiv.org/pdf/1911.06475.pdf
-            labels = np.zeros((len(vector),))
-            labels[vector == 1] = 1 - label_smoothing
-            labels[vector == 0] = label_smoothing
+        if self.dataset == "Train" :
             labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+        else :
+            labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
 
-        else:
-            data = self.files.iloc[idx, 1:5].iloc
-            labels = np.array([convert[data[0]], int(data[1]) / 100, convert[data[2]], convert[data[3]]])
         return torch.from_numpy(labels)
 
     @staticmethod
@@ -141,7 +158,6 @@ class Chexpertloader(Dataset):
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.456], std=[0.224])
         else:
-
             normalize = transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             )
@@ -153,6 +169,25 @@ class Chexpertloader(Dataset):
                 normalize,
             ]
         )
+
+    def samples_weights(self):
+
+        data = copy.copy(self.files[self.classes]).fillna(0)
+        data = data.astype(int)
+        data = data.replace(-1, 1)
+        count = data.sum().to_numpy()
+
+        weights = np.zeros((len(data)))
+        for i, line in data[self.classes].iterrows():
+            vector = line.to_numpy()[5:19]
+            a = np.where(vector == 1)[0]
+            if len(a) > 0:
+                category = np.random.choice(a, 1)
+            else:
+                category = len(self.classes) - 1  # assumes last class is the empty class
+            weights[i] = 1 / (count[category])
+
+        return weights
 
     def read_img(self, file):
 
@@ -181,23 +216,26 @@ class Chexpertloader(Dataset):
         if self.cache:
             image = self.images[idx]
         else:
-            image = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
+            image = self.read_img(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
         label = self.get_label(idx)
-        # image = self.transform(image)
 
-        # if sum(self.prob) > 0:
-        #     idx = torch.randint(0, len(self), (1,)).item()
-        #     image2 = self.read_img(f"{self.img_dir}/{self.files.iloc[idx]['Path']}")
-        #     label2 = self.get_label(self.files.iloc[idx, 6:19].to_numpy(), self.label_smoothing)
-        #     image2 = self.transform(image2)
-        #
-        #     samples = (image, image2, label, label2)
-        #
-        #     image, image2, label, label2 = self.advanced_transform(samples)
-        #     del samples, image2, label2
-
-        # image = self.preprocess(image)
-
-        if self.unet:
-            return image, image
         return image, label.float()
+
+
+
+if __name__ == "__main__" :
+
+    train = CXRLoader(dataset="Train", img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0,
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
+    valid = CXRLoader(dataset="Valid", img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0,
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
+    print(len(train))
+    print(len(valid))
+    print(len(train.weights))
+    print(len(valid.weights))
+    i = 0
+    for dataset in [train, valid]:
+        for image, label in dataset:
+            i += 1
+            if i == 100:
+                break

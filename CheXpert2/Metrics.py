@@ -13,24 +13,26 @@ class Metrics:
 
         best_threshold = np.zeros((self.num_classes))
         for i in range(self.num_classes):
-            max_score = 0
-            for threshold in np.arange(0.1, 1, 0.1):
-                pred2 = np.where(np.copy(pred[:, i]) > threshold, 1, 0)
-                score = metrics.f1_score(
-                    true[:, i], pred2, average="macro", zero_division=0
-                )  # weighted??
-                if score > max_score:
-                    max_score = score
-                    best_threshold[i] = threshold
+            fpr,tpr,thresholds = roc_curve(true[:,i],pred[:,i])
+            best_threshold[i]=   thresholds[np.argmax(tpr-fpr)]
 
         self.thresholds = best_threshold
-        print(self.thresholds)
+
+
+    def convert(self,pred):
+
+        for i in range(self.num_classes) :
+            pred[:,i] = np.where(
+                pred[:,i]<=self.thresholds[i],
+                pred[:,i]/2/self.thresholds[i],               #if true
+                1 - (1-pred[:,i])/2/(1-self.thresholds[i])    #if false
+            )
+        return pred
 
     def accuracy(self, true, pred):
         n, m = true.shape
-        pred2 = np.copy(pred)
-        for i in range(0, m):
-            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+        pred2 = self.convert(pred)
+        pred2 = np.where(pred2 > 0.5, 1, 0)
 
         accuracy = 0
         for x, y in zip(true, pred2):
@@ -42,9 +44,9 @@ class Metrics:
 
         self.set_thresholds(true, pred)
         _, m = true.shape
-        pred2 = np.copy(pred)
-        for i in range(0, m):
-            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+        pred2 = self.convert(pred)
+
+        pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.f1_score(
             true, pred2, average="macro", zero_division=0
         )  # weighted??
@@ -52,15 +54,15 @@ class Metrics:
     def precision(self, true, pred):
         _, m = true.shape
         pred2 = np.copy(pred)
-        for i in range(0, m):
-            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+
+        pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.precision_score(true, pred2, average="macro", zero_division=0)
 
     def recall(self, true, pred):
         _, m = true.shape
-        pred2 = np.copy(pred)
-        for i in range(0, m):
-            pred2[:, i] = np.where(pred[:, i] > self.thresholds[i], 1, 0)
+        pred2 = self.convert(pred)
+
+        pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.recall_score(true, pred2, average="macro", zero_division=0)
 
     def computeAUROC(self, true, pred):
@@ -78,7 +80,12 @@ class Metrics:
                 outAUROC[self.names[i]] = 0
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
+
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
+        score = -np.max(pred, axis=1) + 1
+
+        # fpr, tpr, _ = roc_curve(-np.max(true, axis=1) + 1, score)
+        # outAUROC["No Finding"] = auc(fpr, tpr)
         return outAUROC
 
     def metrics(self):
