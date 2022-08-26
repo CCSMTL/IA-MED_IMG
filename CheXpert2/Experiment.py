@@ -51,7 +51,7 @@ class Experiment:
             else:
                 self.patience -= 1
                 print("patience has been reduced by 1")
-                print(val_loss)
+                print(self.metrics["training_loss"],val_loss)
         self.pbar.update(1)
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:

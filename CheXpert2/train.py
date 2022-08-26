@@ -183,12 +183,6 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
     # initialize metrics loggers
 
-    optimizer = optimizer(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
 
     if not pretrain :
         training_loader.dataset.pretrain = False
@@ -232,10 +226,17 @@ if __name__ == "__main__":
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
             no_log=True
         )
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
-                       metrics=None, pretrain=True)
+        optimizer = optimizer(
+            model.parameters(),
+            lr=config["lr"],
+            betas=(config["beta1"], config["beta2"]),
+            weight_decay=config["weight_decay"],
+        )
 
-        set_parameter_requires_grad(model.backbone)
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCELoss(), device, prob,
+                       metrics=None, pretrain=False)
+
+        #set_parameter_requires_grad(model.backbone)
 
     #setting up for the training
 
@@ -248,6 +249,6 @@ if __name__ == "__main__":
 
     # training
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob, metrics,
+    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCELoss(), device, prob, metrics,
                    pretrain=False)
     experiment.end(results)

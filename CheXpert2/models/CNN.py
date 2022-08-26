@@ -1,4 +1,3 @@
-import functools
 from functools import reduce
 
 import torch
@@ -130,15 +129,15 @@ class CNN(torch.nn.Module):
 
         x = self.backbone(x).float()
         x = self.classifier(x).float()
-        x[:, [0, 1, 2, ]] = torch.sigmoid(x[:, [0, 1, 2]].clone())
-        x[:, 7::] = torch.sigmoid(x[:, 7::]).clone()
-        x[:, [3, 4, 5, 6]] = torch.softmax(x[:, [3, 4, 5, 6]], dim=1, dtype=torch.float).clone()
-
+        #x[:, [0, 1, 2, ]] = torch.sigmoid(x[:, [0, 1, 2]].clone())
+        #x[:, 7::] = torch.sigmoid(x[:, 7::]).clone()
+        #x[:, [3, 4, 5, 6]] = torch.softmax(x[:, [3, 4, 5, 6]], dim=1, dtype=torch.float).clone()
+        x = torch.sigmoid(x).clone()
         x[:, -1] = 1 - x[:, -1]  # lets the model predict sick instead of no finding
         # x = torch.sigmoid(x).detach().cpu()
         # x[:, [8,9,10]] = torch.softmax(x[:, [8,9,10]], dim=1).clone()
-        x[:, [0, 2, 8, 9, 10, 11, 12, 13, 14]] = torch.mul(x[:, [0, 2, 8, 9, 10, 11, 12, 13, 14]].clone(),
-                                                           x[:, -1].clone()[:, None])
+        #x[:, [0, 2, 8, 9, 10, 11, 12, 13, 14]] = torch.mul(x[:, [0, 2, 8, 9, 10, 11, 12, 13, 14]].clone(),
+        #                                                   x[:, -1].clone()[:, None])
         x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
         x[:, [3, 4, 5, 6]] = torch.mul(x[:, [3, 4, 5, 6]].clone(), x[:, 2][:, None].clone())
 
