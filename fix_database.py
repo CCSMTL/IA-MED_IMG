@@ -5,33 +5,54 @@ Created on 2022-08-23$
 
 @author: Jonathan Beaulieu-Emond
 """
+import pandas as pd
 import pymongo
 
 
 def main():
     client = pymongo.MongoClient("mongodb://10.128.107.212:27017/")
     db = client["Public_Images"]
-    coll = db["ChexNet"]
-    results = coll.find({"Path": {"$regex": "data\\\\"}})
+    coll = db["ChexPert"]
+    # results = coll.find({"Path": {"$regex": "data\\\\"}})
+    results = coll.find({})
+
+    train = pd.read_csv("data/public_data/ChexPert/train.csv").fillna(0)
+
+    keys = [
+        "No Finding",
+        "Enlarged Cardiomediastinum",
+        "Cardiomegaly",
+        "Lung Opacity",
+        "Lung Lesion",
+        "Edema",
+        "Consolidation",
+        "Pneumonia",
+        "Atelectasis",
+        "Pneumothorax",
+        "Pleural Effusion",
+        "Pleural Other",
+        "Fracture",
+        "Support Devices",
+    ]
 
     for item in results:
-        path = item["Path"].split("\\")
-        path2 = ""
-        for i in range(1, len(path)):
-            path2 = path2 + "/" + path[i]
+        csv_item = train[train["Path"] == item["Path"][27::]]
+        for key in keys:
+            if int(csv_item[key]) == -1:
+                print(item["Path"][27::], key)
 
-        print(path2)
+                if key == "No Finding":
+                    key = "Normal"
+                coll.update_one(
+                    {
+                        "_id": item["_id"],
 
-        coll.update_one(
-            {
-                "_id": item["_id"],
+                    },
+                    {
+                        "$set": {key: -1}
+                    }
 
-            },
-            {
-                "$set": {"Path": path2}
-            }
-
-        )
+                )
 
 
 if __name__ == "__main__":

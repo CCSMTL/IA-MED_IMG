@@ -210,7 +210,7 @@ def init_parser():
 
     parser.add_argument(
         "--channels",
-        default=3,
+        default=1,
         nargs="?",
         const="all",
         type=int,

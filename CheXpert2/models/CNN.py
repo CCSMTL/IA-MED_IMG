@@ -1,3 +1,4 @@
+import functools
 from functools import reduce
 
 import torch
@@ -19,12 +20,12 @@ def channels321(backbone):
 
         name = name[:-7]  # removed the .weight of first conv
 
-        first_layer = reduce(getattr, [backbone] + name.split("."))
+        first_layer = functools.reduce(getattr, [backbone] + name.split("."))
 
-        try:
-            first_layer = first_layer[0]
-        except:
-            pass
+        # try:
+        #     first_layer = first_layer[0]
+        # except:
+        #     pass
         bias = True if first_layer.bias is not None else False
         new_first_layer = torch.nn.Conv2d(
             1,
@@ -33,6 +34,7 @@ def channels321(backbone):
             stride=first_layer.stride,
             padding=first_layer.padding,
             bias=bias,
+            device=backbone.device
         ).requires_grad_()
 
         new_first_layer.weight[:, :, :, :].data[...].fill_(0)
@@ -42,7 +44,7 @@ def channels321(backbone):
         # change first layer attribute
         name = name.split(".")
         last_item = name.pop()
-        item = reduce(getattr, [backbone] + name)  # item is a pointer!
+        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
         setattr(item, last_item, new_first_layer)
 
     except:  # transformers
@@ -86,16 +88,25 @@ class CNN(torch.nn.Module):
         #     backbone = torch.hub.load(repo, backbone_name, weights=weights)
         #     backbone = backbone.features
         # else:
-        try:
-            import timm
-            backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
-                                         num_classes=num_classes)
-            backbone.forward_head = Identity()
-        except:
-            raise NotImplementedError("This model has not been found within the available repos.")
 
+        if "yolo" in backbone_name:
+            backbone = torch.hub.load('ultralytics/yolov5', "_create",
+                                      f'{backbone_name}-cls.pt')  # ,classes=num_classes,channels=channels)
+            classifier = list(backbone.named_modules())[-1]
+            # setattr(backbone,classifier[0],torch.nn.Linear(classifier[1].in_features,num_classes,bias=True))
+            channels321(backbone)
+            self.classifier = torch.nn.Linear(classifier[1].out_features, num_classes, bias=True)
+        else:
+            try:
+                import timm
+                backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
+                                             num_classes=num_classes)
+                backbone.forward_head = Identity()
+                self.classifier = Identity()
+            except:
+                raise NotImplementedError("This model has not been found within the available repos.")
 
-        self.num_classes=num_classes
+        self.num_classes = num_classes
         # -------------------------------------------------------------
 
         # finds the size of the last layer of the model, and name of the first
@@ -118,6 +129,7 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x).float()
+        x = self.classifier(x).float()
         x[:, [0, 1, 2, ]] = torch.sigmoid(x[:, [0, 1, 2]].clone())
         x[:, 7::] = torch.sigmoid(x[:, 7::]).clone()
         x[:, [3, 4, 5, 6]] = torch.softmax(x[:, [3, 4, 5, 6]], dim=1, dtype=torch.float).clone()
