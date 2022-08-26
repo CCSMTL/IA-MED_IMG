@@ -1,4 +1,4 @@
-from functools import reduce
+import functools
 
 import torch
 from torch.autograd import Variable
@@ -65,7 +65,7 @@ def channels321(backbone):
         )
         name = name.split(".")
         last_item = name.pop()
-        item = reduce(getattr, [backbone] + name)  # item is a pointer!
+        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
         setattr(item, last_item, new_first_layer)
 
 
