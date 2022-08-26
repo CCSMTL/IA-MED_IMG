@@ -42,6 +42,9 @@ def training_loop(
         with torch.cuda.amp.autocast(enabled=autocast):
             outputs = model(inputs)
             loss = criterion(outputs, labels)
+
+
+        assert not torch.isnan(outputs).any()
         # outputs = torch.nan_to_num(outputs,0)
 
         if autocast:
