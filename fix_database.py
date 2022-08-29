@@ -7,52 +7,43 @@ Created on 2022-08-23$
 """
 import pandas as pd
 import pymongo
-
+import numpy as np
 
 def main():
     client = pymongo.MongoClient("mongodb://10.128.107.212:27017/")
     db = client["Public_Images"]
-    coll = db["ChexPert"]
-    # results = coll.find({"Path": {"$regex": "data\\\\"}})
-    results = coll.find({})
+    results=[]
 
-    train = pd.read_csv("data/public_data/ChexPert/train.csv").fillna(0)
+    for collection in ["ChexNet","ChexPert","ChexXRay"] :
+        coll = db[collection]
+        results = list(coll.find({}))
+        columns = results[0].keys()
+        data = pd.DataFrame(results,columns=columns)
+        ids=data.groupby("Patient ID")["_id"].apply(list).tolist()
 
-    keys = [
-        "No Finding",
-        "Enlarged Cardiomediastinum",
-        "Cardiomegaly",
-        "Lung Opacity",
-        "Lung Lesion",
-        "Edema",
-        "Consolidation",
-        "Pneumonia",
-        "Atelectasis",
-        "Pneumothorax",
-        "Pleural Effusion",
-        "Pleural Other",
-        "Fracture",
-        "Support Devices",
-    ]
+        n=len(ids)
 
-    for item in results:
-        csv_item = train[train["Path"] == item["Path"][27::]]
-        for key in keys:
-            if int(csv_item[key]) == -1:
-                print(item["Path"][27::], key)
+        idx=np.random.permutation(n)
+        train = np.zeros((n))
+        train[idx[0:int(0.85*n)]]=1
 
-                if key == "No Finding":
-                    key = "Normal"
-                coll.update_one(
-                    {
-                        "_id": item["_id"],
 
-                    },
-                    {
-                        "$set": {key: -1}
+        for id,train_label in zip(ids,train):
+            valid_label = 1 - train_label
+            print(train_label,valid_label)
+            coll.update_one(
+                {
+                    "_id": item["_id"],
+
+                },
+                {
+                    "$set": {
+                        "train" : int(train),
+                        "valid" : int(valid)
                     }
+                }
 
-                )
+            )
 
 
 if __name__ == "__main__":
