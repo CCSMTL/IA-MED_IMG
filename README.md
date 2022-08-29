@@ -46,8 +46,6 @@ for development, also run
 ```
 pip install -r requirements_dev.txt
 python -m pip install -e .
-pre-commit install -c pre-commit-config.yaml
-pre-commit install -c pre-merge-config.yaml -t pre-merge-commit
 
 ```
 If you are using a proxy
@@ -117,11 +115,7 @@ source venv/bin/activate
 ## Install the dependencies
 pip install --proxy {proxy} -r requirements.txt
 
-## Setting up git hooks
 
-This will execute test before commiting to main
-``
-git config core.hooksPath .githooks
 ``
 ## Download the data
 A data manager has been provided to both download the data and extract it .
@@ -148,6 +142,23 @@ The test can be found in test.py.
 Run them by executing
 
 pytest -v test.py
+
+## Commits
+
+To be able to commit on master, you will need to
+do pull requests. Those pull requests will then need to be reviewed by 2 users (can include yourself)
+Here is how to proceed 
+
+1) Create a new branch 
+git checkout -b new_branch
+2) commit some changes
+git commit ... -m "commit message"
+3) push those to the origin
+git push -u origin
+4) Create pull request
+In azure Devops, go to the repos and select pull request. Your changes should be available there
+in order to finalize the pull request. Please take notes that all the tests run by pytest need to work before 
+the pull request is allowed to move forward.
 # Contribute
 TODO: Explain how other users and developers can contribute to make your code better.
 

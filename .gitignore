@@ -1,10 +1,13 @@
 #data folder is too big
 data/*
 test/*
-
-CheXpert2/log/*
+log/*
+venv*
+wandb/*
+CheXpert2/log
 CheXpert2/data/*
 CheXpert2/wandb/*
+IA-MED_IMG/wandb/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

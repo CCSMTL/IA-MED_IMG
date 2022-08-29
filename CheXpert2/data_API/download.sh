@@ -1,6 +1,17 @@
+while getopts d: flag
+do
+    case "${flag}" in
+        d) destination=${OPTARG};;
+    esac
+done
 
-cd ..
-sudo mkdir data
-cd data
-curl -x http://tcr06.proxy.mtl.rtss.qc.ca:8080 ... $(cat ../data_API/links.txt)
-ls ../data/*.gz |xargs -n1 tar -xzf
+
+#!/bin/bash
+input="links.txt"
+while IFS= read -r line
+do
+  echo  "$line"
+  wget $line
+done < "$input"
+
+ls $destination/*.gz |xargs -n1 tar -xzf

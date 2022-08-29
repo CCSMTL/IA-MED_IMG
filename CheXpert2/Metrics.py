@@ -1,60 +1,80 @@
 import numpy as np
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
-import warnings
-import yaml
-import sys
-
-with open("data/data.yaml", "r") as stream:  # TODO : remove hardcode
-    names = yaml.safe_load(stream)["names"]
-
-names += ["No Finding"]
 
 
 class Metrics:
-    def __init__(self, num_classes, threshold=0.5):
+    def __init__(self, num_classes, names, threshold):
         self.num_classes = num_classes
-        self.threshold = threshold
+        self.thresholds = threshold
+        self.names = names
+
+    def convert(self,pred):
+
+        for i in range(self.num_classes) :
+            pred[:,i] = np.where(
+                pred[:,i]<=self.thresholds[i],
+                pred[:,i]/2/self.thresholds[i],               #if true
+                1 - (1-pred[:,i])/2/(1-self.thresholds[i])    #if false
+            )
+        return pred
 
     def accuracy(self, true, pred):
-        pred = np.where(pred > self.threshold, 1, 0)
-        return np.mean(np.where(pred == true, 1, 0))
+        n, m = true.shape
+        pred2 = self.convert(pred)
+        pred2 = np.where(pred2 > 0.5, 1, 0)
+
+        accuracy = 0
+        for x, y in zip(true, pred2):
+            if (x == y).all():
+                accuracy += 1
+        return accuracy / n
 
     def f1(self, true, pred):
-        pred = np.where(pred > self.threshold, 1, 0)
+        _, m = true.shape
+        pred2 = self.convert(pred)
+
+        pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.f1_score(
-            true, pred, average="macro", zero_division=0
+            true, pred2, average="macro", zero_division=0
         )  # weighted??
 
     def precision(self, true, pred):
-        pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.precision_score(true, pred, average="macro", zero_division=0)
+        _, m = true.shape
+        pred2 = np.copy(pred)
+
+        pred2 = np.where(pred2 > 0.5, 1, 0)
+        return metrics.precision_score(true, pred2, average="macro", zero_division=0)
 
     def recall(self, true, pred):
-        pred = np.where(pred > self.threshold, 1, 0)
-        return metrics.recall_score(true, pred, average="macro", zero_division=0)
+        _, m = true.shape
+        pred2 = self.convert(pred)
+        pred2 = np.where(pred2 > 0.5, 1, 0)
+        return metrics.recall_score(true, pred2, average="macro", zero_division=0)
 
     def computeAUROC(self, true, pred):
-        try:
 
-            fpr = dict()
-            tpr = dict()
-            outAUROC = dict()
-            classCount = pred.shape[1]
-            for i in range(classCount):
-                fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
-                outAUROC[names[i]] = auc(fpr[i], tpr[i])
-            outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        except ValueError as e:
-            print(e, file=sys.stderr)
-            for i in names + ["mean"]:
-                outAUROC[i] = -1
+        fpr = dict()
+        tpr = dict()
+        outAUROC = dict()
+        classCount = pred.shape[1]  # TODO : add auc no finding
+        for i in range(classCount):
+
+            fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i])
+            self.thresholds[i] = thresholds[1::][np.argmax(tpr[i] - fpr[i])]
+            outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
+            if np.isnan(outAUROC[self.names[i]]):
+                outAUROC[self.names[i]] = 0
+
+        outAUROC["mean"] = np.mean(list(outAUROC.values()))
+        print(self.thresholds)
+        print(thresholds)
         return outAUROC
 
     def metrics(self):
         dict = {
-            "f1": self.f1,
             "auc": self.computeAUROC,
+            "f1": self.f1,
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,
