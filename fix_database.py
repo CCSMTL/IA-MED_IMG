@@ -33,13 +33,13 @@ def main():
             print(train_label,valid_label)
             coll.update_one(
                 {
-                    "_id": item["_id"],
+                    "_id": id,
 
                 },
                 {
                     "$set": {
-                        "train" : int(train),
-                        "valid" : int(valid)
+                        "train" : int(train_label),
+                        "valid" : int(valid_label)
                     }
                 }
 
