@@ -38,8 +38,8 @@ def main():
                 },
                 {
                     "$set": {
-                        "train" : int(train_label),
-                        "valid" : int(valid_label)
+                        "Train" : int(train_label),
+                        "Valid" : int(valid_label)
                     }
                 }
 
