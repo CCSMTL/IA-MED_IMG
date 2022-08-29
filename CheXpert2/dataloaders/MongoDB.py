@@ -23,10 +23,10 @@ class MongoDB:
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = []
-        query = {datasetname: {'$in': ["1", "-1"]}}
+        query = {datasetname: {'$in': ["1", 1]}}
 
         if len(classnames) > 0:
-            query["$or"] = [{classname: {"$in": ["1", "-1"]}} for classname in classnames]
+            query["$or"] = [{classname: {"$in": ["1", "-1",1,-1]}} for classname in classnames]
 
         for collection in self.data:
             results = list(collection.find(query))
