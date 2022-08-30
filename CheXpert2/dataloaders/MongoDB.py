@@ -23,7 +23,7 @@ class MongoDB:
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = []
-        query = {datasetname: {'$in': ["1", 1]}}
+        query = {datasetname: {'$in': ["1", 1]}} #TODO : in future version of dataset remove string
 
         if len(classnames) > 0:
             query["$or"] = [{classname: {"$in": ["1", "-1",1,-1]}} for classname in classnames]
@@ -38,9 +38,6 @@ class MongoDB:
         df = reduce(lambda left, right: pd.merge(left, right, on=list(columns), how='outer'), train_dataset)
         df.fillna(0, inplace=True)
         return df
-
-    def pretrain(self):
-        pass
 
 
 if __name__ == "__main__":

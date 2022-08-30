@@ -56,11 +56,70 @@ def dummy_context_mgr():
     yield None
 
 
-def Myloss(x,y) :
-    x = torch.sigmoid(x)
-    x2 = torch.zeros_like(x,device=x.device).requires_grad_(True)
-    x[:, 1] = torch.mul(x2[:, 1], x[:, 0])
-    x[:, [3, 4, 5, 7]] = torch.mul(x[:, [3, 4, 5, 7]], x2[:, 2][:, None])
-    x[:, 6] = torch.mul(x2[:, 2], torch.mul(x2[:, 5], x[:, 6]))
-    loss = torch.mean((x - y)**2)
-    return loss
+#----------------------------------------------------------------------------------
+def channels321(backbone):
+    try:
+        for name, weight1 in backbone.named_parameters():
+            break
+
+        name = name[:-7]  # removed the .weight of first conv
+
+        first_layer = functools.reduce(getattr, [backbone] + name.split("."))
+
+        # try:
+        #     first_layer = first_layer[0]
+        # except:
+        #     pass
+        bias = True if first_layer.bias is not None else False
+        new_first_layer = torch.nn.Conv2d(
+            1,
+            first_layer.out_channels,
+            kernel_size=first_layer.kernel_size,
+            stride=first_layer.stride,
+            padding=first_layer.padding,
+            bias=bias,
+            device=backbone.device
+        ).requires_grad_()
+
+        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
+        new_first_layer.weight[:, :, :, :].data[...] += Variable(
+            weight1[:, 1:2, :, :], requires_grad=True
+        )
+        # change first layer attribute
+        name = name.split(".")
+        last_item = name.pop()
+        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
+        setattr(item, last_item, new_first_layer)
+
+    except:  # transformers
+        name = "patch_embed.proj"
+        weight1 = backbone.patch_embed.proj.weight
+        first_layer = backbone.patch_embed.proj
+        bias = True if first_layer.bias is not None else False
+        new_first_layer = torch.nn.Conv2d(
+            1,
+            first_layer.out_channels,
+            kernel_size=first_layer.kernel_size,
+            stride=first_layer.stride,
+            padding=first_layer.padding,
+            bias=bias,
+        ).requires_grad_()
+        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
+        new_first_layer.weight[:, :, :, :].data[...] += Variable(
+            weight1[:, 1:2, :, :], requires_grad=True
+        )
+        name = name.split(".")
+        last_item = name.pop()
+        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
+        setattr(item, last_item, new_first_layer)
+
+
+
+#-------------------------------------------------------------------------------------------
+
+class Identity(torch.nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x):
+        return x

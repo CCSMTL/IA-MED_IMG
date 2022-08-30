@@ -12,7 +12,7 @@ import yaml
 
 from CheXpert2.Experiment import Experiment
 from CheXpert2.models.CNN import CNN
-from CheXpert2.train import main
+from CheXpert2.training.train import main
 
 
 def test_train():

@@ -47,8 +47,8 @@ def chord_chexpert():
     #conn = conn / np.sum(conn)
     fig, axes = plot_connectivity_circle(conn, data.columns)
     fig.savefig("chords_mongodb_valid")
-    plt.title("Correlation map between diseases in chexnet")
-    fig.show()
+    #plt.title("Correlation map between diseases in chexnet")
+    #fig.show()
 
 
 def histogram_chexpert():

@@ -14,7 +14,7 @@ import torch.distributed as dist
 from CheXpert2.Experiment import Experiment
 from CheXpert2.custom_utils import set_parameter_requires_grad
 from CheXpert2.models.CNN import CNN
-from CheXpert2.train import main, initialize_config
+from CheXpert2.training.train import main, initialize_config
 
 
 def cleanup():

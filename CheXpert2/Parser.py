@@ -231,7 +231,7 @@ def init_parser():
         "--freeze",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="do you wish  to freeze the backbone?",
+        help="do you wish  to freeze the backbone? This option has been disabled for now",
     )
     parser.add_argument(
         "--pretrained",
@@ -273,7 +273,27 @@ def init_parser():
         type=int,
 
         required=False,
-        help="The number of channels for the inputs",
+        help="Number of step to pretrain the model (in case you want to use diff. training config)",
+    )
+    parser.add_argument(
+        "--drop_rate",
+        default=0,
+        nargs="?",
+        const="all",
+        type=float,
+
+        required=False,
+        help="The dropout rate. Must be between 0 and 1",
+    )
+    parser.add_argument(
+        "--global_pool",
+        default="avg",
+        nargs="?",
+        const="all",
+        type=str,
+
+        required=False,
+        help="the type of pooling to effectuate before the classifier",
     )
 
     return parser

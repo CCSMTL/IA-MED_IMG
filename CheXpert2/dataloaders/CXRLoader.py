@@ -37,7 +37,7 @@ class CXRLoader(Dataset):
 
     def __init__(
             self,
-            dataset="Train",
+            split="Train",
             img_dir = "data",
             img_size=240,
             prob=None,
@@ -50,6 +50,7 @@ class CXRLoader(Dataset):
             N=0,
             M=0,
             pretrain=False,
+            datasets = ["ChexPert", "ChexNet"],
     ):
         # ----- Variable definition ------------------------------------------------------
 
@@ -86,27 +87,28 @@ class CXRLoader(Dataset):
 
 
 
-        self.dataset = dataset
-        self.files = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet"]).dataset(dataset,
-                                                                                       classnames=classnames)
+        self.split = split
+        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
         self.files[self.classes] = self.files[self.classes].astype(int)
         self.img_dir = img_dir
 
 
 
-        if self.cache:
+        if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
             with parallel_backend('threading', n_jobs=num_worker):
                 self.images = Parallel()(
-                    delayed(self.read_img)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                    delayed(self.read_img_from_disk)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
                     tqdm.tqdm(range(0, len(self.files))))
+            self.read_img = lambda idx : self.images[idx]
+        else :
+            self.read_img = lambda idx : self.read_img_from_disk(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
 
-        if dataset == "Train" and not pretrain:
+
+        if split == "Train" and not pretrain:
             self.weights = self.samples_weights()
         else:
-            self.weights = torch.ones(len(self.files))
+            self.weights = None
 
-        if dataset == "Valid" and os.environ["DEBUG"] == "True":
-            self.files = self.files.iloc[0:400]
 
     def __len__(self):
         return len(self.files)
@@ -146,7 +148,7 @@ class CXRLoader(Dataset):
         labels[vector == 1] = 1 - label_smoothing
         labels[vector == 0] = label_smoothing
 
-        if self.dataset == "Train" :
+        if self.split == "Train" :
             labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
         else :
             labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
@@ -155,6 +157,9 @@ class CXRLoader(Dataset):
 
     @staticmethod
     def get_preprocess(channels, img_size):
+        """
+        Pre-processing for the model . This WILL be applied before inference
+        """
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.456], std=[0.224])
         else:
@@ -171,7 +176,10 @@ class CXRLoader(Dataset):
         )
 
     def samples_weights(self):
-
+        """
+        This function returns weights 1/class_count for each image in the dataset such that each class
+        is seen in similar amount
+        """
         data = copy.copy(self.files[self.classes]).fillna(0)
         data = data.astype(int)
         data = data.replace(-1, 1)
@@ -189,13 +197,12 @@ class CXRLoader(Dataset):
 
         return weights
 
-    def read_img(self, file):
+    def read_img_from_disk(self, file):
 
         image = cv.imread(file, cv.IMREAD_GRAYSCALE)
+
         if image is None:
             raise Exception("Image not found by cv.imread: " + file)
-
-
 
         image = cv.resize(
             image,
@@ -203,7 +210,7 @@ class CXRLoader(Dataset):
         )
 
         image = torch.tensor(
-            image * 255,
+            image,
             dtype=torch.uint8,
         )[None, :, :]
 
@@ -212,11 +219,9 @@ class CXRLoader(Dataset):
 
         return image
 
-    def __getitem__(self, idx):
-        if self.cache:
-            image = self.images[idx]
-        else:
-            image = self.read_img(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
+    def __getitem__(self, idx) :
+
+        image = self.read_img(idx)
         label = self.get_label(idx)
 
         return image, label.float()
@@ -224,11 +229,12 @@ class CXRLoader(Dataset):
 
 
 if __name__ == "__main__" :
-
-    train = CXRLoader(dataset="Train", img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
-    valid = CXRLoader(dataset="Valid", img_dir="data/", img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False)
+    os.environ["DEBUG"] = "False"
+    img_dir = os.environ["img_dir"]
+    train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False, datasets = ["ChexPert"])
+    valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False, datasets = ["ChexPert"])
     print(len(train))
     print(len(valid))
     print(len(train.weights))
