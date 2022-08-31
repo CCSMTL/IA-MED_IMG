@@ -72,22 +72,15 @@ def initialize_config():
         warnings.warn("No gpu is available for the computation")
 
     # ----------- hyperparameters-------------------------------------<
-    # config = {
-    #     # loss and optimizer
-    #     "optimizer": "AdamW",
-    #     "criterion": "BCEWithLogitsLoss",
-    #
-    # }
 
     config = vars(args)
-
-
     torch.set_num_threads(config["num_worker"])
 
     # ----------- load classes ----------------------------------------
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
 
+    #--------- set up augment_prob ---------------------------------
     if len(config["augment_prob"]) == 1:
         prob = [0, ] * 5
         for i in range(5):
@@ -114,7 +107,7 @@ def initialize_config():
 def main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics, pretrain=False):
     # -------data initialisation-------------------------------
 
-    # subsample if debug==True
+
     if os.environ["DEBUG"] =="False" :
         num_samples = 80000
     else :
@@ -177,20 +170,15 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
     print("The data has now been loaded successfully into memory")
 
     # ------------- Metrics & Trackers -----------------------------------------------------------
-
     experiment.watch(model)
-
-
-
     # ------------training--------------------------------------------
     print("Starting training now")
 
     # initialize metrics loggers
 
-
-    if not pretrain :
-        training_loader.dataset.pretrain = False
-        validation_loader.dataset.pretrain = False
+    #TODO : remove pretrain boolean?
+    training_loader.dataset.pretrain = pretrain
+    validation_loader.dataset.pretrain = pretrain
 
     results = training(
         model,
@@ -237,7 +225,7 @@ if __name__ == "__main__":
             weight_decay=config["weight_decay"],
         )
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCELoss(), device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                        metrics=None, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)
@@ -253,6 +241,6 @@ if __name__ == "__main__":
 
     # training
 
-    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCELoss(), device, prob, metrics,
+    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss(), device, prob, metrics,
                    pretrain=False)
     experiment.end(results)

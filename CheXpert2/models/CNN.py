@@ -42,7 +42,7 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)#.float()
-        x[:, -1] = 1 - x[:, -1]  # lets the model predict sick instead of no finding
+        #x[:, -1] = 1 - x[:, -1].clone()  # lets the model predict sick instead of no finding
         # x = torch.sigmoid(x).clone()
         # x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
         # x[:, [3, 4, 5, 6]] = torch.mul(x[:, [3, 4, 5, 6]].clone(), x[:, 2][:, None].clone())

@@ -26,15 +26,13 @@ def training_loop(
     n = len(loader)
     for inputs, labels in loader:
 
-        # get the inputs; data is a list of [inputs, labels]
-
-        # forward + backward + optimize
-        # loss = training_core(model, inputs, scaler, criterion,device)
-
+        #send to GPU
         inputs, labels = (
             inputs.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
+
+        #Apply transformation on GPU to avoid CPU bottleneck
         inputs = loader.iterable.dataset.transform(inputs)
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)

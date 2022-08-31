@@ -1,4 +1,5 @@
 import numpy as np
+import timm.utils.metrics
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 
@@ -20,15 +21,41 @@ class Metrics:
         return pred
 
     def accuracy(self, true, pred):
-        n, m = true.shape
-        pred2 = self.convert(pred)
-        pred2 = np.where(pred2 > 0.5, 1, 0)
+        # n, m = true.shape
+        # pred2 = self.convert(pred)
+        # pred2 = np.where(pred2 > 0.5, 1, 0)
+        #
+        # accuracy = 0
+        # for x, y in zip(true, pred2):
+        #     if (x == y).all():
+        #         accuracy += 1
+        # accuracy /=n
+        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
+        return accuracy
 
-        accuracy = 0
-        for x, y in zip(true, pred2):
-            if (x == y).all():
-                accuracy += 1
-        return accuracy / n
+    def accuracy3(self, true, pred):
+        # n, m = true.shape
+        # pred2 = self.convert(pred)
+        # pred2 = np.where(pred2 > 0.5, 1, 0)
+        #
+        # accuracy = 0
+        # for x, y in zip(true, pred2):
+        #     if (x == y).all():
+        #         accuracy += 1
+        # accuracy /=n
+        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(3,))
+        return accuracy
+    def accuracy(self, true, pred):
+        # n, m = true.shape
+        # pred2 = self.convert(pred)
+        # pred2 = np.where(pred2 > 0.5, 1, 0)
+        #
+        # accuracy = 0
+        # for x, y in zip(true, pred2):
+        #     if (x == y).all():
+        #         accuracy += 1
+        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
+        return accuracy
 
     def f1(self, true, pred):
         _, m = true.shape
@@ -78,5 +105,6 @@ class Metrics:
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,
+            "accuracy-3" : self.accuracy3
         }
         return dict
