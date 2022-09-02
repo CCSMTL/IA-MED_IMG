@@ -10,8 +10,8 @@ class MongoDB:
         self.db_public = self.client["Public_Images"]
         self.db_CIUSSS = self.client["CIUSSS"]
 
-        # self.data = [self.client["CIUSSS"]["images"]]
-        self.data = []
+        self.data = [self.db_CIUSSS["images"]]
+
         #TODO : in good time add ciusss images
 
         if os.environ["DEBUG"] == "True" :
@@ -35,7 +35,12 @@ class MongoDB:
                 columns = results[0].keys()
                 train_dataset.append(pd.DataFrame(results, columns=columns))
 
-        df = reduce(lambda left, right: pd.merge(left, right, on=list(columns), how='outer'), train_dataset)
+        if len(train_dataset) > 1:
+            df = reduce(lambda left, right: pd.merge(left, right, on=list(columns), how='outer'), train_dataset)
+        elif len(train_dataset) == 1:
+            df = train_dataset[0]
+        else :
+            raise Exception("No data found")
         df.fillna(0, inplace=True)
         return df
 
@@ -46,7 +51,8 @@ if __name__ == "__main__":
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
+    #db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
+    db = MongoDB("10.128.107.212", 27017, [])
     train = db.dataset("Train", ["Lung Opacity", "Enlarged Cardiomediastinum"])
     valid = db.dataset("Valid", [])
     valid.iloc[0:100].to_csv("valid.csv")
