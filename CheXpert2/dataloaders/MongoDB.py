@@ -1,7 +1,9 @@
+import numpy as np
 from functools import reduce
 import os
 import pandas as pd
 import pymongo
+import yaml
 
 
 class MongoDB:
@@ -12,9 +14,16 @@ class MongoDB:
 
         self.data = [self.db_CIUSSS["images"]]
 
-        #TODO : in good time add ciusss images
+        with open("data/data.yaml", "r") as stream:
+            columns = yaml.safe_load(stream)["names"]
 
-        if os.environ["DEBUG"] == "True" :
+        # columns.remove("Age")# TODO : Fix this
+        columns.remove("Lung Opacity")
+        columns.remove("Pleural Other")
+        # columns.remove("Enlarged Cardiomediastinum")
+        columns.remove("Pleural Thickening")
+        self.names = columns
+        if os.environ["DEBUG"] == "True":
             collectionnames = ["ChexPert"]
         for name in collectionnames:
             self.data.append(self.db_public[name])
@@ -23,23 +32,31 @@ class MongoDB:
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = []
-        query = {datasetname: {'$in': ["1", 1]}} #TODO : in future version of dataset remove string
+        query = {datasetname: 1}
 
         if len(classnames) > 0:
-            query["$or"] = [{classname: {"$in": ["1", "-1",1,-1]}} for classname in classnames]
+            query["$or"] = [{classname: {"$in" : [1,-1]}} for classname in classnames]
 
         for collection in self.data:
             results = list(collection.find(query))
+            print(f"Collected query for dataset {collection}")
 
             if len(results) > 0:
                 columns = results[0].keys()
-                train_dataset.append(pd.DataFrame(results, columns=columns))
+                data=pd.DataFrame(results, columns=columns)
+                data = data[self.names + ["Path"]]
+                data[self.names] = data[self.names].astype(np.uint8)
+                train_dataset.append(data)
 
         if len(train_dataset) > 1:
-            df = reduce(lambda left, right: pd.merge(left, right, on=list(columns), how='outer'), train_dataset)
+            columns = self.names + ["Path"]
+            # columns = list(columns)
+            # columns.remove("AP/PA")
+
+            df = reduce(lambda left, right: pd.merge(left, right, on=columns, how='outer'), train_dataset)
         elif len(train_dataset) == 1:
             df = train_dataset[0]
-        else :
+        else:
             raise Exception("No data found")
         df.fillna(0, inplace=True)
         return df
@@ -48,13 +65,18 @@ class MongoDB:
 if __name__ == "__main__":
     import yaml
 
+    os.environ["DEBUG"] = "False"
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
 
-    #db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
-    db = MongoDB("10.128.107.212", 27017, [])
-    train = db.dataset("Train", ["Lung Opacity", "Enlarged Cardiomediastinum"])
+    # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
+
+    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet"])
+    print("database initialized")
+    train = db.dataset("Train", [])
+    print("training dataset loaded")
     valid = db.dataset("Valid", [])
+    print("validation dataset loaded")
     valid.iloc[0:100].to_csv("valid.csv")
-    valid = valid[names]
+    # valid = valid[names]
     print(valid.head(100))
