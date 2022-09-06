@@ -11,6 +11,7 @@ import os
 
 import cv2 as cv
 import numpy as np
+import pandas as pd
 import torch
 import tqdm
 import yaml
@@ -57,7 +58,6 @@ class CXRLoader(Dataset):
         with open("data/data.yaml", "r") as stream:
             self.classes = yaml.safe_load(stream)["names"]
 
-        self.length = 0
         self.img_dir = img_dir
         self.annotation_files = {}
 
@@ -69,16 +69,13 @@ class CXRLoader(Dataset):
 
         self.intensity = intensity
         self.img_size = img_size
-
         self.cache = cache
         self.channels = channels
-
         self.unet = unet
-
+        self.split = split
         # ----- Transform definition ------------------------------------------------------
 
         self.preprocess = self.get_preprocess(channels, img_size)
-
         self.transform = self.get_transform(self.prob, intensity)
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
@@ -87,8 +84,12 @@ class CXRLoader(Dataset):
 
 
 
-        self.split = split
-        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
+
+        if os.environ["DEBUG"] == "True" :
+            #read local csv instead of contacting the database
+            self.files = pd.read_csv(f"{img_dir}/data/ChexPert.csv").loc[0:10]
+        else :
+            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
         self.files[self.classes] = self.files[self.classes].astype(int)
         self.img_dir = img_dir
 
@@ -131,11 +132,13 @@ class CXRLoader(Dataset):
                 # transforms.RandomRotation(degrees=90),
                 # transforms.RandomAffine(degrees=45,translate=(0.2,0.2),shear=(-15,15,-15,15)),
 
-                A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=45,shear=15,cval=0,keep_ratio=True,p=0.5),
+                A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=25,shear=15,cval=0,keep_ratio=True,p=0.5),
                 A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True),
                 A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
                 A.augmentations.transforms.VerticalFlip(),
                 A.augmentations.transforms.GridDistortion(),
+                A.augmentations.Superpixels(),
+                A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
 
 
             ]
@@ -226,13 +229,7 @@ class CXRLoader(Dataset):
             (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_AREA ,  # 256/224 ratio
         )
 
-        image = torch.tensor(
-            image,
-            dtype=torch.uint8,
-        )[None, :, :]
 
-        if self.channels == 3:
-            image = image.repeat((3, 1, 1))
 
         return image
 
@@ -240,7 +237,14 @@ class CXRLoader(Dataset):
 
         image = self.read_img(idx)
         label = self.get_label(idx)
+        image = self.transform(image=image)["image"]
+        image = torch.tensor(
+            image,
+            dtype=torch.uint8,
+        )[None, :, :]
 
+        if self.channels == 3:
+            image = image.repeat((3, 1, 1))
         return image, label.float()
 
 

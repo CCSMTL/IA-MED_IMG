@@ -33,7 +33,7 @@ def training_loop(
         )
 
         #Apply transformation on GPU to avoid CPU bottleneck
-        inputs = loader.iterable.dataset.transform(inputs)
+        #inputs = loader.iterable.dataset.transform(inputs)
         inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
         inputs = loader.iterable.dataset.preprocess(inputs)
 

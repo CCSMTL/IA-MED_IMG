@@ -4,10 +4,12 @@ import os
 import pandas as pd
 import pymongo
 import yaml
-
+import urllib
 
 class MongoDB:
     def __init__(self, address, port, collectionnames):
+        assert urllib.request.urlopen(f"{address}:{port}").getcode() == 200 #make sure connection is up
+
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
         self.db_CIUSSS = self.client["CIUSSS"]
@@ -23,16 +25,22 @@ class MongoDB:
         # columns.remove("Enlarged Cardiomediastinum")
         #columns.remove("Pleural Thickening")
         self.names = columns
-        if os.environ["DEBUG"] == "True":
-            collectionnames = ["ChexPert"]
+
         for name in collectionnames:
             self.data.append(self.db_public[name])
-        # self.data.append(self.db_CIUSSS[$put_name_here$])
+
+        if os.environ["DEBUG"] == "True":
+            self.data =  [self.db_public["ChexPert"]]
+
 
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = []
-        query = {datasetname: 1}
+
+        if os.environ["DEBUG"] == "True" :
+            query =  {'Path':{'$regex':datasetname.lower()}}
+        else :
+            query = {datasetname: 1}
 
         if len(classnames) > 0:
             query["$or"] = [{classname: {"$in" : [1,-1]}} for classname in classnames]

@@ -9,29 +9,32 @@ import os
 
 import pandas as pd
 import plotly.graph_objects as go
-
+import numpy as np
 import wandb
 
 
 def plot_polar_chart(summary):
 
-    df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
+    df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0).T
     df.fillna(0, inplace=True)
+    values = np.array(list(summary["auc"].values())).squeeze()
+    columns =np.array(list(summary["auc"].keys())).squeeze()
 
-    #df["ours"] = summary["auc"].values()
-    ours = pd.DataFrame(summary["auc"].values(),columns=list(summary["auc"].keys()))
-    df=pd.concat(df.T,ours.T,join="outer").T
+    ours = pd.DataFrame(values[None,:],columns=columns,index=["ours"])
+
+
+    df=pd.concat([df,ours],join="outer").T
     df.fillna(0,inplace=True)
-
-
+    print(df)
+    columns=list(df.index)
     fig = go.Figure(
         data=[
             go.Scatterpolar(r=(df["chexnet"] * 100).round(0), fill='toself', name='chexnet',
-                            theta=list(summary["auc"].keys())),
-            go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself', theta=list(summary["auc"].keys()),
+                            theta=columns),
+            go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself', theta=columns,
                             name='Chexpert'),
             go.Scatterpolar(r=(df["ours"] * 100).round(0), fill='toself', name='ours',
-                            theta=list(summary["auc"].keys()))
+                            theta=columns)
         ],
         layout=go.Layout(
             title=go.layout.Title(text='Class AUC'),
@@ -41,8 +44,8 @@ def plot_polar_chart(summary):
         )
     )
 
-    if os.environ["DEBUG"] == "False":
-        fig.write_image("polar.png")
+
+    fig.write_image("polar.png")
 
     wandb.log({"polar_chart": fig})
 

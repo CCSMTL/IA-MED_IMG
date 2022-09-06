@@ -1,17 +1,17 @@
-﻿Classes          ,chexnet,Chexpert
+﻿Classes,chexnet,Chexpert
 Enlarged Cardiom.,0      ,0.616
-Cardiomegaly     ,0.9248 ,0.854
-Lung Opacity     ,0      ,0.92
-Lung Lesion      ,0      ,0.88
-Edema            ,0.8878 ,0.939
-Consolidation    ,0.7901 ,0.865
-Pneumonia        ,0.768  ,0.746
-Atelectasis      ,0.8094 ,0.845
-Pneumothorax     ,0.8887 ,0.956
-Pleural Effusion ,0.8638 ,0.938
-Pleural Other    ,0.8062 ,0.965
-Fracture         ,0      ,0
-Support Device   ,0      ,0.942
-No Finding       ,0      ,0.889
-mean             ,0.84235,0.811071429
+Cardiomegaly,0.9248 ,0.854
+Lung Opacity,0      ,0.92
+Lung Lesion,0      ,0.88
+Edema,0.8878 ,0.939
+Consolidation,0.7901 ,0.865
+Pneumonia,0.768  ,0.746
+Atelectasis,0.8094 ,0.845
+Pneumothorax,0.8887 ,0.956
+Pleural Effusion,0.8638 ,0.938
+Pleural Other,0.8062 ,0.965
+Fracture,0      ,0
+Support Device,0      ,0.942
+No Finding,0      ,0.889
+mean,0.84235,0.811071429
 
