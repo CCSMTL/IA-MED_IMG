@@ -184,8 +184,8 @@ def training(
 
         experiment.next_epoch(val_loss, model)
         scheduler.step()
-        if not dist.is_initialized() and experiment.epoch % 5 == 0:
-            set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
+        # if not dist.is_initialized() and experiment.epoch % 5 == 0:
+        #     set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
         if experiment.epoch == experiment.epoch_max:
             experiment.keep_training = False
 

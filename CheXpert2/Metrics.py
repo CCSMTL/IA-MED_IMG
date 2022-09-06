@@ -46,15 +46,15 @@ class Metrics:
         accuracy = timm.utils.metrics.accuracy(pred,true, topk=(3,))
         return accuracy
     def accuracy(self, true, pred):
-        # n, m = true.shape
-        # pred2 = self.convert(pred)
-        # pred2 = np.where(pred2 > 0.5, 1, 0)
-        #
-        # accuracy = 0
-        # for x, y in zip(true, pred2):
-        #     if (x == y).all():
-        #         accuracy += 1
-        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
+        n, m = true.shape
+        pred2 = self.convert(pred)
+        pred2 = np.where(pred2 > 0.5, 1, 0)
+
+        accuracy = 0
+        for x, y in zip(true, pred2):
+            if (x == y).all():
+                accuracy += 1
+        #accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
         return accuracy
 
     def f1(self, true, pred):
@@ -105,6 +105,6 @@ class Metrics:
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,
-            "accuracy-3" : self.accuracy3
+        #    "accuracy-3" : self.accuracy3
         }
         return dict

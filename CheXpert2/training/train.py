@@ -212,7 +212,10 @@ if __name__ == "__main__":
 
     print("The model has now been successfully loaded into memory")
     # pre-training
+    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
+    metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
+    metrics = metric.metrics()
     if config["pretraining"] !=0 :
         experiment2 = Experiment(
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
@@ -226,7 +229,7 @@ if __name__ == "__main__":
         )
 
         results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
-                       metrics=None, pretrain=False)
+                       metrics=metrics, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)
 
@@ -234,10 +237,7 @@ if __name__ == "__main__":
 
 
 
-    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
-    metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
-    metrics = metric.metrics()
 
     # training
 

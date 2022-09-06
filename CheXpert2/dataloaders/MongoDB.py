@@ -18,10 +18,10 @@ class MongoDB:
             columns = yaml.safe_load(stream)["names"]
 
         # columns.remove("Age")# TODO : Fix this
-        columns.remove("Lung Opacity")
-        columns.remove("Pleural Other")
+        #columns.remove("Lung Opacity")
+        #columns.remove("Pleural Other")
         # columns.remove("Enlarged Cardiomediastinum")
-        columns.remove("Pleural Thickening")
+        #columns.remove("Pleural Thickening")
         self.names = columns
         if os.environ["DEBUG"] == "True":
             collectionnames = ["ChexPert"]
