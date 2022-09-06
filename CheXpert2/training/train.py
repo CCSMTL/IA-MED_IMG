@@ -219,7 +219,7 @@ if __name__ == "__main__":
     if config["pretraining"] !=0 :
         experiment2 = Experiment(
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
-            no_log=True
+            no_log=False
         )
         optimizer = optimizer(
             model.parameters(),
@@ -228,7 +228,7 @@ if __name__ == "__main__":
             weight_decay=config["weight_decay"],
         )
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*2), device, prob,
                        metrics=metrics, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)
@@ -241,6 +241,6 @@ if __name__ == "__main__":
 
     # training
 
-    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss(), device, prob, metrics,
+    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*2), device, prob, metrics,
                    pretrain=False)
     experiment.end(results)

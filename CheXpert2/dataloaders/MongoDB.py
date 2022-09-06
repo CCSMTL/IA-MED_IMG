@@ -8,7 +8,7 @@ import urllib
 
 class MongoDB:
     def __init__(self, address, port, collectionnames):
-        assert urllib.request.urlopen(f"{address}:{port}").getcode() == 200 #make sure connection is up
+        #assert urllib.request.urlopen(f"{address}:{port}").getcode() == 200 #make sure connection is up
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]

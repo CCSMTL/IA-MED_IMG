@@ -31,6 +31,9 @@ from CheXpert2.dataloaders.MongoDB import MongoDB
 #     "Opacity","Lesion","Normal"
 
 
+cv.setNumThreads(0)
+cv.ocl.setUseOpenCL(False)
+
 class CXRLoader(Dataset):
     """
     This is the dataloader for our classification models. It returns the image and the corresponding class
@@ -73,6 +76,7 @@ class CXRLoader(Dataset):
         self.channels = channels
         self.unet = unet
         self.split = split
+
         # ----- Transform definition ------------------------------------------------------
 
         self.preprocess = self.get_preprocess(channels, img_size)
@@ -137,7 +141,7 @@ class CXRLoader(Dataset):
                 A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
                 A.augmentations.transforms.VerticalFlip(),
                 A.augmentations.transforms.GridDistortion(),
-                A.augmentations.Superpixels(),
+                #A.augmentations.Superpixels(),
                 A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
 
 
@@ -237,7 +241,10 @@ class CXRLoader(Dataset):
 
         image = self.read_img(idx)
         label = self.get_label(idx)
-        image = self.transform(image=image)["image"]
+
+        if self.split == "Train" :
+            image = self.transform(image=image)["image"]
+
         image = torch.tensor(
             image,
             dtype=torch.uint8,
