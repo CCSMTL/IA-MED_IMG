@@ -18,8 +18,10 @@ def plot_polar_chart(summary):
     df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
     df.fillna(0, inplace=True)
 
-    df["ours"] = summary["auc"].values()
-
+    #df["ours"] = summary["auc"].values()
+    ours = pd.DataFrame(summary["auc"].values(),columns=list(summary["auc"].keys()))
+    df=pd.concat(df.T,ours.T,join="outer").T
+    df.fillna(0,inplace=True)
 
 
     fig = go.Figure(

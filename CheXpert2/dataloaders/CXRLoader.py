@@ -17,7 +17,7 @@ import yaml
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
-
+import albumentations as A
 from CheXpert2 import custom_Transforms
 from CheXpert2.dataloaders.MongoDB import MongoDB
 
@@ -113,23 +113,40 @@ class CXRLoader(Dataset):
     def __len__(self):
         return len(self.files)
 
-    @staticmethod
-    def get_transform(prob, intensity):  # for transform that would require pil images
-        return transforms.Compose(
+    # @staticmethod
+    # def get_transform(prob, intensity):  # for transform that would require pil images
+    #     return transforms.Compose(
+    #         [
+    #             transforms.RandomErasing(prob[3], (intensity, intensity)),
+    #             transforms.RandomHorizontalFlip(p=prob[4]),
+    #         #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
+    #         ]
+    #     )
+    def get_transform(self, prob, intensity):  # for transform that would require pil images
+        return A.Compose(
             [
-                transforms.RandomErasing(prob[3], (intensity, intensity)),
-                transforms.RandomHorizontalFlip(p=prob[4]),
-            #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
+                #    transforms.RandomErasing(prob[3], (intensity, intensity)),
+                # transforms.RandomHorizontalFlip(p=0.5),
+                # transforms.RandomVerticalFlip(p=0.5),
+                # transforms.RandomRotation(degrees=90),
+                # transforms.RandomAffine(degrees=45,translate=(0.2,0.2),shear=(-15,15,-15,15)),
+
+                A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=45,shear=15,cval=0,keep_ratio=True,p=0.5),
+                A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True),
+                A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
+                A.augmentations.transforms.VerticalFlip(),
+                A.augmentations.transforms.GridDistortion(),
+
+
             ]
         )
-
     @staticmethod
     def get_advanced_transform(prob, intensity, N, M):
         return transforms.Compose(
             [  # advanced/custom
-                custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                custom_Transforms.Mixing(prob[1], intensity),
-                custom_Transforms.CutMix(prob[2], intensity),
+            #    custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
+                 custom_Transforms.Mixing(prob[1], intensity),
+            #    custom_Transforms.CutMix(prob[2], intensity),
 
             ]
         )
