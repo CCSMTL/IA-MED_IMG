@@ -109,7 +109,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
     if os.environ["DEBUG"] =="False" :
-        num_samples = 80000
+        num_samples = 200000
     else :
         num_samples=100
 
@@ -202,14 +202,20 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 if __name__ == "__main__":
     config, img_dir, experiment, device, prob, names = initialize_config()
     num_classes = len(names)
-    optimizer = torch.optim.AdamW
+
+
     # -----------model initialisation------------------------------
 
     model = CNN(config["model"], num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"],drop_rate=config["drop_rate"],global_pool=config["global_pool"])
     # send model to gpu
     model = model.to(device, dtype=torch.float)
-
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
     print("The model has now been successfully loaded into memory")
     # pre-training
     from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
@@ -221,12 +227,7 @@ if __name__ == "__main__":
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
             no_log=False
         )
-        optimizer = optimizer(
-            model.parameters(),
-            lr=config["lr"],
-            betas=(config["beta1"], config["beta2"]),
-            weight_decay=config["weight_decay"],
-        )
+
 
         results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*2), device, prob,
                        metrics=metrics, pretrain=False)

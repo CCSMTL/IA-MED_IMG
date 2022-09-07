@@ -53,7 +53,7 @@ class MongoDB:
                 columns = results[0].keys()
                 data=pd.DataFrame(results, columns=columns)
                 data = data[self.names + ["Path"]]
-                data[self.names] = data[self.names].astype(np.uint8)
+                data[self.names] = data[self.names].astype(np.int32)
                 train_dataset.append(data)
 
         if len(train_dataset) > 1:

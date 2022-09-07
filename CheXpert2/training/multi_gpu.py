@@ -25,16 +25,21 @@ def cleanup():
 if __name__ == "__main__":
     dist.init_process_group("nccl")
     config, img_dir, experiment, device, prob, names = initialize_config()
-
-    optimizer = torch.optim.Adam
+    num_classes = len(names)
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], 14, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    model = CNN(config["model"], num_classes=num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
     # send model to gpu
     model = model.to(device)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=config["lr"],
+        betas=(config["beta1"], config["beta2"]),
+        weight_decay=config["weight_decay"],
+    )
     print("The model has now been successfully loaded into memory")
 
     local_rank = int(os.environ['LOCAL_RANK'])
@@ -42,19 +47,23 @@ if __name__ == "__main__":
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     # ---pretraining-------------------------------------
+
+    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+
+    metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
+    metrics = metric.metrics()
+
     if config["pretraining"] != 0:
         experiment2 = Experiment(
             f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5
         )
         results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
-                       metrics=None, pretrain=True)
+                       metrics=metrics, pretrain=True)
 
     # -----setting up training-------------------------------------
     dist.barrier()
-    set_parameter_requires_grad(model.module.backbone)
-    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-    metric = Metrics(num_classes=14, names=experiment.names, threshold=np.zeros((14)) + 0.5)
-    metrics = metric.metrics()
+    #set_parameter_requires_grad(model.module.backbone)
+
 
     # -----training-------------------------------------------
 
