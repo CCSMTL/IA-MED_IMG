@@ -53,21 +53,9 @@ if __name__ == "__main__":
     metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
     metrics = metric.metrics()
 
-    if config["pretraining"] != 0:
-        experiment2 = Experiment(
-            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5
-        )
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
-                       metrics=metrics, pretrain=True)
-
-    # -----setting up training-------------------------------------
-    dist.barrier()
-    #set_parameter_requires_grad(model.module.backbone)
-
-
     # -----training-------------------------------------------
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones((num_classes,))*4), device, prob,
                    metrics=metrics, pretrain=False)
     experiment.end(results)
     cleanup()
