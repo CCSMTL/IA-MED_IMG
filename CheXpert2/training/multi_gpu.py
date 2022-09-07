@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     # -----training-------------------------------------------
 
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones((num_classes,))*4), device, prob,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones((num_classes,)).to(device)*4), device, prob,
                    metrics=metrics, pretrain=False)
     experiment.end(results)
     cleanup()
