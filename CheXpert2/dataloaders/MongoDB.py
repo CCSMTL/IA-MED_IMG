@@ -40,7 +40,7 @@ class MongoDB:
         if os.environ["DEBUG"] == "True" :
             query =  {'Path':{'$regex':datasetname.lower()}}
         else :
-            query = {datasetname: 1}
+            query = {datasetname: 1,"Frontal/Lateral": "F"}
 
         if len(classnames) > 0:
             query["$or"] = [{classname: {"$in" : [1,-1]}} for classname in classnames]

@@ -54,7 +54,7 @@ class CXRLoader(Dataset):
             N=0,
             M=0,
             pretrain=False,
-            datasets = ["ChexPert", "ChexNet"],
+            datasets = ["ChexPert"],
     ):
         # ----- Variable definition ------------------------------------------------------
 

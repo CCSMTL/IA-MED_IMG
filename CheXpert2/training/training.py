@@ -42,7 +42,7 @@ def training_loop(
             loss = criterion(outputs, labels)
 
 
-        assert not torch.isnan(outputs).any()
+        #assert not torch.isnan(outputs).any()
         # outputs = torch.nan_to_num(outputs,0)
 
         if autocast:
