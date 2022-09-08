@@ -32,7 +32,7 @@ class Experiment:
         self.max_patience = patience
         self.patience = patience
         self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
-
+        self.names = names
         # create directory if doesnt existe
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
