@@ -153,9 +153,9 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
     if experiment.rank == 0:
         import plotly.express as px
 
-        fig = px.bar(y=train_dataset.count,x=names)
+        fig = px.bar(y=train_dataset.count,x=experiment.names)
         wandb.log({"Train histogram": fig})
-        fig = px.bar(y=val_dataset.count, x=names)
+        fig = px.bar(y=val_dataset.count, x=experiment.names)
         wandb.log({"Valid histogram": fig})
 
 
