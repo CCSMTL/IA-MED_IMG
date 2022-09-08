@@ -150,6 +150,14 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
     if dist.is_initialized() :
         sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
 
+    if experiment.rank == 0:
+        import plotly.express as px
+
+        fig = px.bar(y=train_dataset.count,x=names)
+        wandb.log({"Train histogram": fig})
+        fig = px.bar(y=val_dataset.count, x=names)
+        wandb.log({"Valid histogram": fig})
+
 
     training_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -229,7 +237,7 @@ if __name__ == "__main__":
         )
 
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*2), device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*config["pos_weight"]), device, prob,
                        metrics=metrics, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)

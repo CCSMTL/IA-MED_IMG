@@ -91,7 +91,7 @@ class CXRLoader(Dataset):
 
         if os.environ["DEBUG"] == "True" :
             #read local csv instead of contacting the database
-            self.files = pd.read_csv(f"{img_dir}/data/ChexPert.csv").loc[0:10]
+            self.files = pd.read_csv(f"{img_dir}/data/ChexPert.csv").loc[0:100]
         else :
             self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
         self.files[self.classes] = self.files[self.classes].astype(int)
@@ -108,9 +108,9 @@ class CXRLoader(Dataset):
         else :
             self.read_img = lambda idx : self.read_img_from_disk(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
 
-
+        weights=self.samples_weights()
         if split == "Train" and not pretrain:
-            self.weights = self.samples_weights()
+            self.weights = weights
         else:
             self.weights = None
 
@@ -208,7 +208,7 @@ class CXRLoader(Dataset):
         data = data.astype(int)
         data = data.replace(-1, 1)
         count = data.sum().to_numpy()
-
+        self.count = count
         weights = np.zeros((len(data)))
         for i, line in data[self.classes].iterrows():
             vector = line.to_numpy()[5:19]
@@ -219,6 +219,7 @@ class CXRLoader(Dataset):
                 category = len(self.classes) - 1  # assumes last class is the empty class
             weights[i] = 1 / (count[category])
 
+        weights = np.nan_to_num(weights,nan=0,posinf=0,neginf=0)
         return weights
 
     def read_img_from_disk(self, file):
