@@ -138,7 +138,7 @@ class CXRLoader(Dataset):
                 # transforms.RandomAffine(degrees=45,translate=(0.2,0.2),shear=(-15,15,-15,15)),
 
                 A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=25,shear=15,cval=0,keep_ratio=True,p=prob[0]),
-                A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True,prob=prob[2]),
+                A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True,p=prob[2]),
                 #A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
                 A.augmentations.transforms.VerticalFlip(p=prob[3]),
                 A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[4]),
