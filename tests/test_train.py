@@ -46,6 +46,7 @@ def test_train():
         "pretraining": 0,
         "channels": 1,
         "autocast": True,
+        "pos_weight": 1,
     }
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
@@ -54,7 +55,7 @@ def test_train():
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )
     optimizer = torch.optim.AdamW
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.BCEWithLogitsLoss
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     prob = [0, ] * 5
     model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
