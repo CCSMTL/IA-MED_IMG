@@ -91,7 +91,7 @@ class CXRLoader(Dataset):
 
         if os.environ["DEBUG"] == "True" :
             #read local csv instead of contacting the database
-            self.files = pd.read_csv(f"{img_dir}/data/ChexPert.csv").loc[0:100]
+            self.files = pd.read_csv(f"{img_dir}/data/public_data/ChexPert/ChexPert.csv").loc[0:100]
         else :
             self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
         self.files[self.classes] = self.files[self.classes].astype(int)
