@@ -143,7 +143,8 @@ class CXRLoader(Dataset):
                 A.augmentations.transforms.VerticalFlip(),
                 A.augmentations.transforms.GridDistortion(),
                 #A.augmentations.Superpixels(),
-                A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
+                A.augmentations.transform.RandomBrightnessContrast(),
+                #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
 
 
             ]
