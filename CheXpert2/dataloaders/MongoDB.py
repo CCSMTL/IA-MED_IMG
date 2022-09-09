@@ -12,6 +12,8 @@ class MongoDB:
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
+        for collectionname in collectionnames:
+            assert collectionname in self.db_public.list_collection_names()
         self.db_CIUSSS = self.client["CIUSSS"]
 
         self.data = [self.db_CIUSSS["images"]]
@@ -79,7 +81,7 @@ if __name__ == "__main__":
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet"])
+    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet","ChexPad"])
     print("database initialized")
     train = db.dataset("Train", [])
     print("training dataset loaded")
