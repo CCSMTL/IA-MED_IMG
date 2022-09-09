@@ -94,7 +94,7 @@ class Metrics:
         classCount = pred.shape[1]  # TODO : add auc no finding
         for i in range(classCount):
 
-            fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i])
+            fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
 
             threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
             print(f"threshold {self.names[i]} : ",threshold)

@@ -86,7 +86,8 @@ class Experiment:
             wandb.watch(model)
 
     def end(self, results):
-        wandb.summary.update(self.summary)
+        for key,value in self.summary.items():
+            wandb.run.summary[key] = value
         if self.rank == 0 and not self.no_log:
             # 1) confusion matrix
 
