@@ -46,38 +46,45 @@ class Metrics:
         accuracy = timm.utils.metrics.accuracy(pred,true, topk=(3,))
         return accuracy
     def accuracy(self, true, pred):
-        n, m = true.shape
-        pred2 = self.convert(pred)
-        pred2 = np.where(pred2 > 0.5, 1, 0)
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
 
         accuracy = 0
-        for x, y in zip(true, pred2):
+        for x, y in zip(true, pred):
             if (x == y).all():
                 accuracy += 1
         #accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
         return accuracy
 
     def f1(self, true, pred):
-        _, m = true.shape
+
         pred2 = self.convert(pred)
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.f1_score(
-            true, pred2, average="macro", zero_division=0
+            true, pred2, average="weighted", zero_division=0
         )  # weighted??
 
     def precision(self, true, pred):
-        _, m = true.shape
-        pred2 = np.copy(pred)
 
-        pred2 = np.where(pred2 > 0.5, 1, 0)
-        return metrics.precision_score(true, pred2, average="macro", zero_division=0)
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        results = metrics.precision_score(true, pred, average=None, zero_division=0)
+
+        results_dict = {}
+        for item, name in zip(results, self.names):
+            results_dict[name] = item
+        return results_dict
 
     def recall(self, true, pred):
-        _, m = true.shape
-        pred2 = self.convert(pred)
-        pred2 = np.where(pred2 > 0.5, 1, 0)
-        return metrics.recall_score(true, pred2, average="macro", zero_division=0)
+
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        results=metrics.recall_score(true, pred, average=None, zero_division=0)
+        results_dict={}
+        for item,name in zip(results,self.names) :
+            results_dict[name] = item
+        return results_dict
 
     def computeAUROC(self, true, pred):
         print(true.shape,pred.shape)

@@ -1,7 +1,7 @@
 import os
 
 import torch
-
+import numpy as np
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 
 
@@ -20,11 +20,17 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # # install the openen on the module-level
 # urllib.request.install_opener(opener)
 
-
+try :
+    img_dir = os.environ["img_dir"]
+except :
+    img_dir = ""
 
 def test_dataloader_get_item():
     os.environ["DEBUG"] = "True"
-    train = CXRLoader("Train", img_dir="", img_size=224)
+    train = CXRLoader(
+            split="Train",
+            img_dir = img_dir,
+            img_size=224)
     image, label = train[4]
     assert image.shape == (1, int(224 * 1.14), int(224 * 1.14))
     assert label.shape == (15,)
@@ -34,10 +40,10 @@ def test_dataloader_transform():
     os.environ["DEBUG"] = "True"
     transform = CXRLoader.get_transform([0.2, ] * 5, 0.1)
     # testing outputs
-    x = torch.randint(0, 255, (10, 3, 224, 224), dtype=torch.uint8)
+    x = np.random.randint(0, 255, (10, 3, 224, 224), dtype=np.uint8)
 
     for i in range(5):
-        img2 = transform(x)
+        img2 = transform(image=x)["image"]
 
         assert x.shape == img2.shape
 

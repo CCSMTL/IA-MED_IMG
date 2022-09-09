@@ -16,11 +16,14 @@ from CheXpert2.training.train import main
 
 
 def test_train():
+    try:
+        img_dir = os.environ["img_dir"]
+    except:
+        img_dir = ""
+
     torch.cuda.is_available = lambda: False
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
     os.environ["DEBUG"] = "True"
-
-    img_dir = ""
     os.environ["WANDB_MODE"] = "offline"
 
     config = {

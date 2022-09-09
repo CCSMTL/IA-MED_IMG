@@ -199,6 +199,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         experiment=experiment,
         metrics=metrics,
         clip_norm=config["clip_norm"],
+        pos_weight=config["pos_weight"],
         autocast=config["autocast"]
     )
 
@@ -237,7 +238,7 @@ if __name__ == "__main__":
         )
 
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*config["pos_weight"]), device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss, device, prob,
                        metrics=metrics, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)
@@ -250,6 +251,6 @@ if __name__ == "__main__":
 
     # training
 
-    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss(pos_weight=torch.ones(num_classes,).to(device)*2), device, prob, metrics,
+    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss, device, prob, metrics,
                    pretrain=False)
     experiment.end(results)

@@ -134,7 +134,7 @@ def training(
     metrics=None,
     minibatch_accumulate=1,
     experiment=None,
-
+    pos_weight = 1,
     clip_norm = 100,
     autocast=True
 ):
@@ -144,6 +144,8 @@ def training(
     scaler = torch.cuda.amp.GradScaler()
     val_loss = np.inf
     n, m = len(training_loader), len(validation_loader)
+    criterion_val = criterion()
+    criterion = criterion(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
     scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=2,T_mult=5)
@@ -166,7 +168,7 @@ def training(
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
-                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion, device
+                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion_val, device
             )
             val_loss = val_loss.cpu() / m
             if metrics:
