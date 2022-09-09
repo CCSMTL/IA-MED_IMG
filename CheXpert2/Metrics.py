@@ -80,7 +80,7 @@ class Metrics:
         return metrics.recall_score(true, pred2, average="macro", zero_division=0)
 
     def computeAUROC(self, true, pred):
-
+        print(true.shape,pred.shape)
         fpr = dict()
         tpr = dict()
         outAUROC = dict()
@@ -88,14 +88,18 @@ class Metrics:
         for i in range(classCount):
 
             fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i])
-            self.thresholds[i] = thresholds[1::][np.argmax(tpr[i] - fpr[i])]
+
+            threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
+            print(f"threshold {self.names[i]} : ",threshold)
+            self.thresholds[i] =threshold
+
             outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
 
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        print(self.thresholds)
-        print(thresholds)
+
+
         return outAUROC
 
     def metrics(self):
