@@ -28,8 +28,8 @@ def test_train():
 
     config = {
         "model": "densenet121",
-        "batch_size": 100,
-        "img_size": 223,
+        "batch_size": 2,
+        "img_size": 224,
         "num_worker": 0,
         "augment_intensity": 0,
         "cache": False,
@@ -54,13 +54,13 @@ def test_train():
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )
-    optimizer = torch.optim.AdamW
-    criterion = torch.nn.BCEWithLogitsLoss
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     prob = [0, ] * 5
     model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
-    main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
+    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(), lr=config["lr"]),
+                   torch.nn.BCEWithLogitsLoss, device, prob, None,pretrain=False)
+
     assert experiment.best_loss != 0
 
 
