@@ -16,17 +16,20 @@ from CheXpert2.training.train import main
 
 
 def test_train():
+    try:
+        img_dir = os.environ["img_dir"]
+    except:
+        img_dir = ""
+
     torch.cuda.is_available = lambda: False
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
     os.environ["DEBUG"] = "True"
-
-    img_dir = ""
     os.environ["WANDB_MODE"] = "offline"
 
     config = {
         "model": "densenet121",
-        "batch_size": 100,
-        "img_size": 223,
+        "batch_size": 2,
+        "img_size": 224,
         "num_worker": 0,
         "augment_intensity": 0,
         "cache": False,
@@ -43,6 +46,7 @@ def test_train():
         "pretraining": 0,
         "channels": 1,
         "autocast": True,
+        "pos_weight": 1,
     }
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
@@ -50,13 +54,13 @@ def test_train():
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )
-    optimizer = torch.optim.AdamW
-    criterion = torch.nn.BCEWithLogitsLoss()
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     prob = [0, ] * 5
     model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
-    main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics=None, pretrain=False)
+    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(), lr=config["lr"]),
+                   torch.nn.BCEWithLogitsLoss, device, prob, None,pretrain=False)
+
     assert experiment.best_loss != 0
 
 

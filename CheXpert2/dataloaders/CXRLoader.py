@@ -84,7 +84,7 @@ class CXRLoader(Dataset):
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
-        classnames = ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
+        classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
 
 
@@ -127,7 +127,8 @@ class CXRLoader(Dataset):
     #         #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
     #         ]
     #     )
-    def get_transform(self, prob, intensity):  # for transform that would require pil images
+    @staticmethod
+    def get_transform(prob, intensity):  # for transform that would require pil images
         return A.Compose(
             [
                 #    transforms.RandomErasing(prob[3], (intensity, intensity)),
@@ -138,7 +139,7 @@ class CXRLoader(Dataset):
 
                 A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=25,shear=15,cval=0,keep_ratio=True,p=0.5),
                 A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True),
-                A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
+                #A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
                 A.augmentations.transforms.VerticalFlip(),
                 A.augmentations.transforms.GridDistortion(),
                 #A.augmentations.Superpixels(),
@@ -177,7 +178,9 @@ class CXRLoader(Dataset):
         else :
             labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
 
-        return torch.from_numpy(labels)
+        labels = torch.from_numpy(labels)
+        labels[-1] = 1 - labels[-1] #lets predict the presence of a disease instead of the absence
+        return labels
 
     @staticmethod
     def get_preprocess(channels, img_size):

@@ -50,7 +50,7 @@ class Experiment:
                 self.save_weights(model)
             else:
                 self.patience -= 1
-                print("patience has been reduced by 1")
+                print(f"patience has been reduced by 1, now at {self.patience}")
                 print(self.metrics["training_loss"],val_loss)
         self.pbar.update(1)
         self.epoch += 1
@@ -86,7 +86,7 @@ class Experiment:
             wandb.watch(model)
 
     def end(self, results):
-
+        wandb.summary.update(self.summary)
         if self.rank == 0 and not self.no_log:
             # 1) confusion matrix
 

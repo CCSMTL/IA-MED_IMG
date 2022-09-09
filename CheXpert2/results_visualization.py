@@ -16,11 +16,7 @@ import wandb
 def plot_polar_chart(summary):
 
     df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0).T
-    df.fillna(0, inplace=True)
-    values = np.array(list(summary["auc"].values())).squeeze()
-    columns =np.array(list(summary["auc"].keys())).squeeze()
-
-    ours = pd.DataFrame(values[None,:],columns=columns,index=["ours"])
+    ours = pd.DataFrame(summary["auc"],index=["ours"])
 
 
     df=pd.concat([df,ours],join="outer").T
@@ -37,7 +33,7 @@ def plot_polar_chart(summary):
                             theta=columns)
         ],
         layout=go.Layout(
-            title=go.layout.Title(text='Class AUC'),
+            #title=go.layout.Title(text='Class AUC'),
             polar={'radialaxis': {'visible': True}},
             showlegend=True,
             template="plotly_dark"
