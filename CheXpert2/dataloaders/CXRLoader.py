@@ -177,7 +177,9 @@ class CXRLoader(Dataset):
         else :
             labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
 
-        return torch.from_numpy(labels)
+        labels = torch.from_numpy(labels)
+        labels[-1] = 1 - labels[-1] #lets predict the presence of a disease instead of the absence
+        return labels
 
     @staticmethod
     def get_preprocess(channels, img_size):
