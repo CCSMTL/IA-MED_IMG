@@ -109,7 +109,7 @@ def validation_loop(model, loader, criterion, device):
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
-        outputs = outputs.detach().cpu()
+        outputs = torch.sigmoid(outputs.detach().cpu())
         results[1] = torch.cat((results[1], outputs), dim=0)
         results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),
                                dim=0)  # round to 0 or 1 in case of label smoothing
@@ -148,7 +148,7 @@ def training(
     criterion = criterion(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=2,T_mult=5)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=2)
     #scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
