@@ -235,7 +235,7 @@ class CXRLoader(Dataset):
 
         image = cv.resize(
             image,
-            (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_AREA ,  # 256/224 ratio
+            (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_CUBIC ,  # 256/224 ratio
         )
 
 
