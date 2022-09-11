@@ -45,23 +45,17 @@ def training_loop(
         #assert not torch.isnan(outputs).any()
         # outputs = torch.nan_to_num(outputs,0)
 
-        if autocast:
-            scaler.scale(loss).backward()
-            # Unscales the gradients of optimizer's assigned params in-place
-            scaler.unscale_(optimizer)
-        else:
-            loss.backward()
 
+        scaler.scale(loss).backward()
+        # Unscales the gradients of optimizer's assigned params in-place
+        scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), clip_norm
         )
-        if autocast:
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            optimizer.step()
-        # optimizer.step()
+
+        scaler.step(optimizer)
+        scaler.update()
         scheduler.step(epoch + i / iters)
         optimizer.zero_grad(set_to_none=True)
         running_loss += loss.detach()
