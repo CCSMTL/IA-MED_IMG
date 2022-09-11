@@ -66,7 +66,7 @@ class CXRLoader(Dataset):
 
         self.label_smoothing = label_smoothing
 
-        self.prob = prob if prob else [0, ] * 5
+        self.prob = prob if prob else [0, ] * 6
         if len(self.prob) == 1:
             self.prob = self.prob * 5
 
