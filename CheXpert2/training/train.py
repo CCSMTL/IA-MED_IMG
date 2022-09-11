@@ -99,7 +99,7 @@ def initialize_config():
         torch.cuda.device(device)
     else:
         config = wandb.config
-    print(config["augment_prob"])
+
 
     return config, img_dir, experiment, device, prob,names
 
@@ -109,7 +109,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
     if os.environ["DEBUG"] =="False" :
-        num_samples = 200000
+        num_samples = 50000
     else :
         num_samples=100
 

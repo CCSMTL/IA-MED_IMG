@@ -66,10 +66,8 @@ class CXRLoader(Dataset):
 
         self.label_smoothing = label_smoothing
 
-        self.prob = prob if prob else [0, ] * 5
-        if len(self.prob) == 1:
-            self.prob = self.prob * 5
-
+        self.prob = prob if prob else [0, ] * 6
+        print(self.prob)
         self.intensity = intensity
         self.img_size = img_size
         self.cache = cache
