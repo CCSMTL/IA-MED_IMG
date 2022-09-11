@@ -82,8 +82,8 @@ def initialize_config():
 
     #--------- set up augment_prob ---------------------------------
     if len(config["augment_prob"]) == 1:
-        prob = [0, ] * 5
-        for i in range(5):
+        prob = [0, ] * 6
+        for i in range(6):
             prob[i] = config[f"augment_prob_{i}"]
     else:
         prob = config["augment_prob"]
