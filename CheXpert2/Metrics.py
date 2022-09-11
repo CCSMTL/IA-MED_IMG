@@ -1,4 +1,5 @@
 import numpy as np
+import sklearn.metrics
 import timm.utils.metrics
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
@@ -99,8 +100,10 @@ class Metrics:
             threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
             print(f"threshold {self.names[i]} : ",threshold)
             self.thresholds[i] =threshold
-
-            outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
+            roc1 = sklearn.metrics.roc_auc_score(true[:, i], pred[:, i])
+            roc2 =  auc(fpr[i], tpr[i])
+            assert roc1.round(2) == roc2.round(2)
+            outAUROC[self.names[i]] = roc2
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
 

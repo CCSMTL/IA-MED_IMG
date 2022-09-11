@@ -7,7 +7,7 @@ from CheXpert2.custom_utils import set_parameter_requires_grad
 
 
 def training_loop(
-        model, loader, optimizer, criterion, device, scaler, clip_norm, autocast
+        model, loader, optimizer, criterion, device, scaler, clip_norm, autocast,scheduler,epoch
 ):
     """
 
@@ -22,8 +22,8 @@ def training_loop(
     running_loss = 0
 
     model.train()
-    i = 0
-    n = len(loader)
+    iters = len(loader)
+    i = 1
     for inputs, labels in loader:
 
         #send to GPU
@@ -45,24 +45,18 @@ def training_loop(
         #assert not torch.isnan(outputs).any()
         # outputs = torch.nan_to_num(outputs,0)
 
-        if autocast:
-            scaler.scale(loss).backward()
-            # Unscales the gradients of optimizer's assigned params in-place
-            scaler.unscale_(optimizer)
-        else:
-            loss.backward()
 
+        scaler.scale(loss).backward()
+        # Unscales the gradients of optimizer's assigned params in-place
+        scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), clip_norm
         )
-        if autocast:
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            optimizer.step()
-        # optimizer.step()
 
+        scaler.step(optimizer)
+        scaler.update()
+        scheduler.step(epoch + i / iters)
         optimizer.zero_grad(set_to_none=True)
         running_loss += loss.detach()
         # ending loop
@@ -148,7 +142,7 @@ def training(
     criterion = criterion(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=2)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=3,T_mult=2)
     #scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
@@ -164,7 +158,9 @@ def training(
             device,
             scaler,
             clip_norm,
-            autocast
+            autocast,
+            scheduler,
+            epoch=epoch
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
@@ -185,7 +181,7 @@ def training(
             # Finishing the loop
 
         experiment.next_epoch(val_loss, model)
-        scheduler.step()
+        epoch += 1
         # if not dist.is_initialized() and experiment.epoch % 5 == 0:
         #     set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
         if experiment.epoch == experiment.epoch_max:

@@ -38,7 +38,7 @@ def test_dataloader_get_item():
 
 def test_dataloader_transform():
     os.environ["DEBUG"] = "True"
-    transform = CXRLoader.get_transform([0.2, ] * 5, 0.1)
+    transform = CXRLoader.get_transform([0.2, ] * 6, 0.1)
     # testing outputs
     x = np.random.randint(0, 255, (224,224,1), dtype=np.uint8)
 

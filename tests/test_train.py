@@ -55,7 +55,7 @@ def test_train():
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    prob = [0, ] * 5
+    prob = [0, ] * 6
     model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
     results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(), lr=config["lr"]),
