@@ -67,7 +67,6 @@ class Metrics:
         )  # weighted??
 
     def precision(self, true, pred):
-
         pred = self.convert(pred)
         pred = np.where(pred > 0.5, 1, 0)
         results = metrics.precision_score(true, pred, average=None, zero_division=0)

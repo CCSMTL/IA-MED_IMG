@@ -40,6 +40,11 @@ if __name__ == "__main__":
         betas=(config["beta1"], config["beta2"]),
         weight_decay=config["weight_decay"],
     )
+    # optimizer = torch.optim.SGD(
+    #     model.parameters(),
+    #     lr=config["lr"],
+    #     momentum=0.9
+    # )
     print("The model has now been successfully loaded into memory")
 
     local_rank = int(os.environ['LOCAL_RANK'])
