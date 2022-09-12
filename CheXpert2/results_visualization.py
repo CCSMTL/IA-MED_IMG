@@ -9,38 +9,39 @@ import os
 
 import pandas as pd
 import plotly.graph_objects as go
-
+import numpy as np
 import wandb
 
 
 def plot_polar_chart(summary):
 
-    df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0)
-    df.fillna(0, inplace=True)
-
-    df["ours"] = summary["auc"].values()
+    df = pd.read_csv("data/chexnet_results.csv", index_col=0, na_values=0).T
+    ours = pd.DataFrame(summary["auc"],index=["ours"])
 
 
-
+    df=pd.concat([df,ours],join="outer").T
+    df.fillna(0,inplace=True)
+    print(df)
+    columns=list(df.index)
     fig = go.Figure(
         data=[
             go.Scatterpolar(r=(df["chexnet"] * 100).round(0), fill='toself', name='chexnet',
-                            theta=list(summary["auc"].keys())),
-            go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself', theta=list(summary["auc"].keys()),
+                            theta=columns),
+            go.Scatterpolar(r=(df["Chexpert"] * 100).round(0), fill='toself', theta=columns,
                             name='Chexpert'),
             go.Scatterpolar(r=(df["ours"] * 100).round(0), fill='toself', name='ours',
-                            theta=list(summary["auc"].keys()))
+                            theta=columns)
         ],
         layout=go.Layout(
-            title=go.layout.Title(text='Class AUC'),
+            #title=go.layout.Title(text='Class AUC'),
             polar={'radialaxis': {'visible': True}},
             showlegend=True,
             template="plotly_dark"
         )
     )
 
-    if os.environ["DEBUG"] == "False":
-        fig.write_image("polar.png")
+
+    fig.write_image("polar.png")
 
     wandb.log({"polar_chart": fig})
 

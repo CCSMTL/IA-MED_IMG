@@ -1,23 +1,15 @@
 import numpy as np
+import sklearn.metrics
+import timm.utils.metrics
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc
 
 
 class Metrics:
-    def __init__(self, num_classes, names, threshold=0.5):
+    def __init__(self, num_classes, names, threshold):
         self.num_classes = num_classes
         self.thresholds = threshold
         self.names = names
-
-    def set_thresholds(self, true, pred):
-
-        best_threshold = np.zeros((self.num_classes))
-        for i in range(self.num_classes):
-            fpr,tpr,thresholds = roc_curve(true[:,i],pred[:,i])
-            best_threshold[i]=   thresholds[np.argmax(tpr-fpr)]
-
-        self.thresholds = best_threshold
-
 
     def convert(self,pred):
 
@@ -30,70 +22,103 @@ class Metrics:
         return pred
 
     def accuracy(self, true, pred):
-        n, m = true.shape
-        pred2 = self.convert(pred)
-        pred2 = np.where(pred2 > 0.5, 1, 0)
+        # n, m = true.shape
+        # pred2 = self.convert(pred)
+        # pred2 = np.where(pred2 > 0.5, 1, 0)
+        #
+        # accuracy = 0
+        # for x, y in zip(true, pred2):
+        #     if (x == y).all():
+        #         accuracy += 1
+        # accuracy /=n
+        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
+        return accuracy
+
+    def accuracy3(self, true, pred):
+        # n, m = true.shape
+        # pred2 = self.convert(pred)
+        # pred2 = np.where(pred2 > 0.5, 1, 0)
+        #
+        # accuracy = 0
+        # for x, y in zip(true, pred2):
+        #     if (x == y).all():
+        #         accuracy += 1
+        # accuracy /=n
+        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(3,))
+        return accuracy
+    def accuracy(self, true, pred):
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
 
         accuracy = 0
-        for x, y in zip(true, pred2):
+        for x, y in zip(true, pred):
             if (x == y).all():
                 accuracy += 1
-        return accuracy / n
+        #accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
+        return accuracy
 
     def f1(self, true, pred):
 
-        self.set_thresholds(true, pred)
-        _, m = true.shape
         pred2 = self.convert(pred)
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.f1_score(
-            true, pred2, average="macro", zero_division=0
+            true, pred2, average="weighted", zero_division=0
         )  # weighted??
 
     def precision(self, true, pred):
-        _, m = true.shape
-        pred2 = np.copy(pred)
 
-        pred2 = np.where(pred2 > 0.5, 1, 0)
-        return metrics.precision_score(true, pred2, average="macro", zero_division=0)
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        results = metrics.precision_score(true, pred, average=None, zero_division=0)
+
+        results_dict = {}
+        for item, name in zip(results, self.names):
+            results_dict[name] = item
+        return results_dict
 
     def recall(self, true, pred):
-        _, m = true.shape
-        pred2 = self.convert(pred)
 
-        pred2 = np.where(pred2 > 0.5, 1, 0)
-        return metrics.recall_score(true, pred2, average="macro", zero_division=0)
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        results=metrics.recall_score(true, pred, average=None, zero_division=0)
+        results_dict={}
+        for item,name in zip(results,self.names) :
+            results_dict[name] = item
+        return results_dict
 
     def computeAUROC(self, true, pred):
-
+        print(true.shape,pred.shape)
         fpr = dict()
         tpr = dict()
         outAUROC = dict()
         classCount = pred.shape[1]  # TODO : add auc no finding
         for i in range(classCount):
-            try:
-                fpr[i], tpr[i], _ = roc_curve(true[:, i], pred[:, i])
 
-                outAUROC[self.names[i]] = auc(fpr[i], tpr[i])
-            except:
-                outAUROC[self.names[i]] = 0
+            fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
+
+            threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
+            print(f"threshold {self.names[i]} : ",threshold)
+            self.thresholds[i] =threshold
+            roc1 = sklearn.metrics.roc_auc_score(true[:, i], pred[:, i])
+            roc2 =  auc(fpr[i], tpr[i])
+            assert roc1.round(2) == roc2.round(2)
+            outAUROC[self.names[i]] = roc2
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
 
         outAUROC["mean"] = np.mean(list(outAUROC.values()))
-        score = -np.max(pred, axis=1) + 1
 
-        # fpr, tpr, _ = roc_curve(-np.max(true, axis=1) + 1, score)
-        # outAUROC["No Finding"] = auc(fpr, tpr)
+
         return outAUROC
 
     def metrics(self):
         dict = {
-            "f1": self.f1,
             "auc": self.computeAUROC,
+            "f1": self.f1,
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,
+        #    "accuracy-3" : self.accuracy3
         }
         return dict

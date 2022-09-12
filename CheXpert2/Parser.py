@@ -145,6 +145,15 @@ def init_parser():
         help="Norm for gradient clipping",
     )
     parser.add_argument(
+        "--pos_weight",
+        default=1,
+        const="all",
+        type=int,
+        nargs="?",
+        required=False,
+        help="A weight for the positive class.",
+    )
+    parser.add_argument(
         "--lr",
         default=0.0001,
         const="all",
@@ -210,7 +219,7 @@ def init_parser():
 
     parser.add_argument(
         "--channels",
-        default=3,
+        default=1,
         nargs="?",
         const="all",
         type=int,
@@ -231,7 +240,7 @@ def init_parser():
         "--freeze",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="do you wish  to freeze the backbone?",
+        help="do you wish  to freeze the backbone? This option has been disabled for now",
     )
     parser.add_argument(
         "--pretrained",
@@ -273,7 +282,27 @@ def init_parser():
         type=int,
 
         required=False,
-        help="The number of channels for the inputs",
+        help="Number of step to pretrain the model (in case you want to use diff. training config)",
+    )
+    parser.add_argument(
+        "--drop_rate",
+        default=0,
+        nargs="?",
+        const="all",
+        type=float,
+
+        required=False,
+        help="The dropout rate. Must be between 0 and 1",
+    )
+    parser.add_argument(
+        "--global_pool",
+        default="avg",
+        nargs="?",
+        const="all",
+        type=str,
+
+        required=False,
+        help="the type of pooling to effectuate before the classifier",
     )
 
     return parser

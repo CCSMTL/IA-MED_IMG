@@ -32,7 +32,7 @@ class Experiment:
         self.max_patience = patience
         self.patience = patience
         self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
-
+        self.names = names
         # create directory if doesnt existe
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
@@ -50,8 +50,8 @@ class Experiment:
                 self.save_weights(model)
             else:
                 self.patience -= 1
-                print("patience has been reduced by 1")
-                print(val_loss)
+                print(f"patience has been reduced by 1, now at {self.patience}")
+                print(self.metrics["training_loss"],val_loss)
         self.pbar.update(1)
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
@@ -86,7 +86,8 @@ class Experiment:
             wandb.watch(model)
 
     def end(self, results):
-
+        for key,value in self.summary.items():
+            wandb.run.summary[key] = value
         if self.rank == 0 and not self.no_log:
             # 1) confusion matrix
 
