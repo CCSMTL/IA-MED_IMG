@@ -41,13 +41,13 @@ class Metrics:
 
     def precision(self, true, pred):
         _, m = true.shape
-        pred2 = np.copy(pred)
+        pred2 = self.convert(pred)
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.precision_score(true, pred2, average="macro", zero_division=0)
 
     def recall(self, true, pred):
-        _, m = true.shape
+
         pred2 = self.convert(pred)
         pred2 = np.where(pred2 > 0.5, 1, 0)
         return metrics.recall_score(true, pred2, average="macro", zero_division=0)
