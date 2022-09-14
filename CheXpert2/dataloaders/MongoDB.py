@@ -31,18 +31,13 @@ class MongoDB:
         for name in collectionnames:
             self.data.append(self.db_public[name])
 
-        if os.environ["DEBUG"] == "True":
-            self.data =  [self.db_public["ChexPert"]]
-
 
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = []
 
-        if os.environ["DEBUG"] == "True" :
-            query =  {'Path':{'$regex':datasetname.lower()}}
-        else :
-            query = {datasetname: 1,"Frontal/Lateral": "F"}
+
+        query = {datasetname: 1,"Frontal/Lateral": "F"}
 
         if len(classnames) > 0:
             query["$or"] = [{classname: {"$in" : [1,-1]}} for classname in classnames]
@@ -54,22 +49,32 @@ class MongoDB:
             if len(results) > 0:
                 columns = results[0].keys()
                 data=pd.DataFrame(results, columns=columns)
-                data = data[self.names + ["Path"]]
-                data[self.names] = data[self.names].astype(np.int32)
+                print(data.columns)
+                #data = data[self.names + ["Path"]]
+                data["collection"] = collection.name
+                #data[self.names] = data[self.names].astype(np.int32)
                 train_dataset.append(data)
 
         if len(train_dataset) > 1:
-            columns = self.names + ["Path"]
+
             # columns = list(columns)
             # columns.remove("AP/PA")
 
-            df = reduce(lambda left, right: pd.merge(left, right, on=columns, how='outer'), train_dataset)
+            df = pd.concat(train_dataset, join='outer')
         elif len(train_dataset) == 1:
             df = train_dataset[0]
         else:
             raise Exception("No data found")
+
+
+        #set up parent class
+        print(df.columns)
+        df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion","Lung Opacity"]].replace(-1,1).max(axis=0)
+        df["Air"]     = df[["Emphysema","Pneumothorax","Pneumo other"]].replace(-1,1).max(axis=0)
+        df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=0)
+        columns = self.names + ["Path", "collection"]
         df.fillna(0, inplace=True)
-        return df
+        return df[columns]
 
 
 if __name__ == "__main__":

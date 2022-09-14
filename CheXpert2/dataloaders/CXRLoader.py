@@ -85,14 +85,12 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-
-
-
+        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
         if os.environ["DEBUG"] == "True" :
             #read local csv instead of contacting the database
-            self.files = pd.read_csv(f"{img_dir}/data/public_data/ChexPert/ChexPert.csv").loc[0:100]
-        else :
-            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
+            self.files = self.files[self.files["collection"]=="ChexPert"]
+
+
         self.files[self.classes] = self.files[self.classes].astype(int)
         self.img_dir = img_dir
 
@@ -167,6 +165,10 @@ class CXRLoader(Dataset):
 
         vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
 
+
+
+
+
         # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
         # source : https://arxiv.org/pdf/1911.06475.pdf
         labels = np.zeros((len(vector),))
@@ -180,6 +182,10 @@ class CXRLoader(Dataset):
 
         labels = torch.from_numpy(labels)
         labels[-1] = 1 - labels[-1] #lets predict the presence of a disease instead of the absence
+
+
+
+
         return labels
 
     @staticmethod
