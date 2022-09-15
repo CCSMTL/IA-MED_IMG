@@ -54,7 +54,7 @@ class CXRLoader(Dataset):
             N=0,
             M=0,
             pretrain=False,
-            datasets = ["ChexPert"],
+            datasets = ["ChexPert","ChexNet"],
     ):
         # ----- Variable definition ------------------------------------------------------
 
@@ -134,7 +134,7 @@ class CXRLoader(Dataset):
                 # transforms.RandomRotation(degrees=90),
                 # transforms.RandomAffine(degrees=45,translate=(0.2,0.2),shear=(-15,15,-15,15)),
 
-                A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=25,shear=15,cval=0,keep_ratio=True,p=prob[0]),
+                A.augmentations.geometric.transforms.Affine(translate_percent=5,rotate=10,shear=5,cval=0,keep_ratio=True,p=prob[0]),
                 A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True,p=prob[2]),
                 #A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
                 A.augmentations.transforms.VerticalFlip(p=prob[3]),
@@ -217,6 +217,11 @@ class CXRLoader(Dataset):
         data = data.astype(int)
         data = data.replace(-1, 1)
         count = data.sum().to_numpy()
+
+        for name,cat_count in zip(self.classes,count) :
+            if cat_count == 0:
+                print(f"Careful! The category {name} has 0 images!")
+        count[-1] /=2 #lets double the number of empty images we will give to the model
         self.count = count
         weights = np.zeros((len(data)))
         for i, line in data[self.classes].iterrows():
@@ -226,9 +231,11 @@ class CXRLoader(Dataset):
                 category = np.random.choice(a, 1)
             else:
                 category = len(self.classes) - 1  # assumes last class is the empty class
+
+
             weights[i] = 1 / (count[category])
 
-        weights = np.nan_to_num(weights,nan=0,posinf=0,neginf=0)
+
         return weights
 
     def read_img_from_disk(self, file):

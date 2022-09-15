@@ -26,7 +26,7 @@ class MongoDB:
         #columns.remove("Pleural Other")
         # columns.remove("Enlarged Cardiomediastinum")
         #columns.remove("Pleural Thickening")
-        self.names = columns
+        self.names = columns + ["Path","collection"]
 
         for name in collectionnames:
             self.data.append(self.db_public[name])
@@ -44,23 +44,29 @@ class MongoDB:
 
         for collection in self.data:
             results = list(collection.find(query))
+
             print(f"Collected query for dataset {collection}")
 
             if len(results) > 0:
-                columns = results[0].keys()
-                data=pd.DataFrame(results, columns=columns)
-                print(data.columns)
+
+                data=pd.DataFrame(results)
+
                 #data = data[self.names + ["Path"]]
                 data["collection"] = collection.name
                 #data[self.names] = data[self.names].astype(np.int32)
+                for column in self.names :
+                    if column not in data.columns :
+                        data[column] = 0
+                data["Patient ID"] = data["Patient ID"].astype(str)
+                data.set_index("Patient ID")
                 train_dataset.append(data)
 
         if len(train_dataset) > 1:
 
             # columns = list(columns)
             # columns.remove("AP/PA")
-
-            df = pd.concat(train_dataset, join='outer')
+            #columns = self.names[3::] + ["Path", "collection"]
+            df = reduce(lambda left, right: pd.merge(left, right,on=self.names, how='outer'), train_dataset)
         elif len(train_dataset) == 1:
             df = train_dataset[0]
         else:
@@ -68,13 +74,15 @@ class MongoDB:
 
 
         #set up parent class
-        print(df.columns)
-        df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion","Lung Opacity"]].replace(-1,1).max(axis=0)
-        df["Air"]     = df[["Emphysema","Pneumothorax","Pneumo other"]].replace(-1,1).max(axis=0)
-        df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=0)
-        columns = self.names + ["Path", "collection"]
         df.fillna(0, inplace=True)
-        return df[columns]
+
+        df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion","Lung Opacity"]].replace(-1,1).max(axis=1)
+        df["Air"]     = df[["Emphysema","Pneumothorax","Pneumo other"]].replace(-1,1).max(axis=1)
+        df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
+        df.fillna(0, inplace=True)
+        df[self.names[:-2]] = df[self.names[:-2]].astype(int)
+        df.to_csv("test.csv",sep=" ")
+        return df
 
 
 if __name__ == "__main__":

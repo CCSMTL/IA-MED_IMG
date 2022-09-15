@@ -88,7 +88,6 @@ class Metrics:
         return results_dict
 
     def computeAUROC(self, true, pred):
-        print(true.shape,pred.shape)
         fpr = dict()
         tpr = dict()
         outAUROC = dict()

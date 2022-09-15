@@ -48,15 +48,15 @@ def training_loop(
 
         scaler.scale(loss).backward()
         # Unscales the gradients of optimizer's assigned params in-place
-        scaler.unscale_(optimizer)
-        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), clip_norm
-        )
+        # scaler.unscale_(optimizer)
+        # # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+        # torch.nn.utils.clip_grad_norm_(
+        #     model.parameters(), clip_norm
+        # )
 
         scaler.step(optimizer)
         scaler.update()
-        scheduler.step(epoch + i / iters)
+        scheduler.step()
         optimizer.zero_grad(set_to_none=True)
         running_loss += loss.detach()
         # ending loop
@@ -142,8 +142,9 @@ def training(
     criterion = criterion(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
+    #scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
     #scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,max_lr=0.001,steps_per_epoch=len(training_loader),epochs=10)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():

@@ -109,7 +109,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
     if os.environ["DEBUG"] =="False" :
-        num_samples = 20000
+        num_samples = 100000
     else :
         num_samples=100
 
