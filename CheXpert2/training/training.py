@@ -48,16 +48,16 @@ def training_loop(
 
         scaler.scale(loss).backward()
         # Unscales the gradients of optimizer's assigned params in-place
-        # scaler.unscale_(optimizer)
-        # # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-        # torch.nn.utils.clip_grad_norm_(
-        #     model.parameters(), clip_norm
-        # )
+        scaler.unscale_(optimizer)
+        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+        torch.nn.utils.clip_grad_norm_(
+            model.parameters(), clip_norm
+        )
 
         scaler.step(optimizer)
         scaler.update()
-        scheduler.step()
         optimizer.zero_grad(set_to_none=True)
+        scheduler.step()
         running_loss += loss.detach()
         # ending loop
         del (
@@ -167,6 +167,7 @@ def training(
             val_loss, results = validation_loop(
                 model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion_val, device
             )
+            print("mean output : ",torch.mean(results[1]))
             val_loss = val_loss.cpu() / m
             if metrics:
                 for key in metrics:
