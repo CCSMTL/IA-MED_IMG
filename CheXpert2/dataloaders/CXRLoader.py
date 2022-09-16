@@ -85,7 +85,12 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
+        if split == "test_chexpert" :
+            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset("Train", classnames=classnames)
+            self.files = self.files.loc[self.files['Path'].str.contains("valid", case=False)]
+
+        else :
+            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
         if os.environ["DEBUG"] == "True" :
             #read local csv instead of contacting the database
             self.files = self.files[self.files["collection"]=="ChexPert"]
@@ -214,6 +219,7 @@ class CXRLoader(Dataset):
         is seen in similar amount
         """
         data = copy.copy(self.files[self.classes]).fillna(0)
+
         data = data.astype(int)
         data = data.replace(-1, 1)
         count = data.sum().to_numpy()
@@ -224,8 +230,9 @@ class CXRLoader(Dataset):
         count[-1] /=2 #lets double the number of empty images we will give to the model
         self.count = count
         weights = np.zeros((len(data)))
-        for i, line in data[self.classes].iterrows():
-            vector = line.to_numpy()[5:19]
+        ex=0
+        for i, line in data.iterrows():
+            vector = line.to_numpy()
             a = np.where(vector == 1)[0]
             if len(a) > 0:
                 category = np.random.choice(a, 1)
@@ -233,8 +240,8 @@ class CXRLoader(Dataset):
                 category = len(self.classes) - 1  # assumes last class is the empty class
 
 
-            weights[i] = 1 / (count[category])
-
+            weights[ex] = 1 / (count[category])
+            ex+=1
 
         return weights
 
