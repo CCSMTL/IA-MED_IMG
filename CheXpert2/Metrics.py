@@ -99,10 +99,11 @@ class Metrics:
             threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
             print(f"threshold {self.names[i]} : ",threshold)
             self.thresholds[i] =threshold
-            roc1 = sklearn.metrics.roc_auc_score(true[:, i], pred[:, i])
-            roc2 =  auc(fpr[i], tpr[i])
-            assert roc1.round(2) == roc2.round(2)
-            outAUROC[self.names[i]] = roc2
+            try :
+                auroc =  auc(fpr[i], tpr[i])
+            except :
+                auroc=0
+            outAUROC[self.names[i]] = auroc
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0
 
