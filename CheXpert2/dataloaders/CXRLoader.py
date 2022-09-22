@@ -54,7 +54,7 @@ class CXRLoader(Dataset):
             N=0,
             M=0,
             pretrain=False,
-            datasets = ["ChexPert"],
+            datasets = [],
     ):
         # ----- Variable definition ------------------------------------------------------
 
@@ -145,7 +145,8 @@ class CXRLoader(Dataset):
                 A.augmentations.transforms.VerticalFlip(p=prob[3]),
                 A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[4]),
                 #A.augmentations.Superpixels(),
-                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.2,contrast_limit=0.2,always_apply=False,p=prob[5]),
+                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[5]),
+                A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
 
 
@@ -207,7 +208,7 @@ class CXRLoader(Dataset):
         return transforms.Compose(
             [
 
-                transforms.CenterCrop(img_size),
+            #    transforms.CenterCrop(img_size),
                 transforms.ConvertImageDtype(torch.float32),
                 normalize,
             ]
@@ -254,7 +255,8 @@ class CXRLoader(Dataset):
 
         image = cv.resize(
             image,
-            (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_CUBIC ,  # 256/224 ratio
+        #    (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_CUBIC ,  # 256/224 ratio
+            (int(self.img_size ), int(self.img_size )), cv.INTER_CUBIC,  # removed center crop
         )
 
 

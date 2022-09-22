@@ -200,7 +200,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         metrics=metrics,
         clip_norm=config["clip_norm"],
         pos_weight=config["pos_weight"],
-        autocast=config["autocast"]
+        autocast=config["autocast"],
+        lr = config["lr"]
     )
 
     return results

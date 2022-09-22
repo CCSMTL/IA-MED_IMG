@@ -30,7 +30,7 @@ class CNN(torch.nn.Module):
                                              num_classes=num_classes,drop_rate=drop_rate,global_pool=global_pool)
 
                 #backbone.forward_head = Identity()
-                #self.classifier = Identity()
+                self.classifier = Identity()
             except:
                 raise NotImplementedError("This model has not been found within the available repos.")
 
@@ -42,6 +42,7 @@ class CNN(torch.nn.Module):
     def forward(self, x):
 
         x = self.backbone(x)#.float()
+        x = self.classifier(x)
         #x[:, -1] = 1 - x[:, -1].clone()  # lets the model predict sick instead of no finding
         # x = torch.sigmoid(x).clone()
         # x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
