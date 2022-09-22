@@ -40,7 +40,7 @@ class MongoDB:
         query = {datasetname: 1,"Frontal/Lateral": "F"}
 
         if len(classnames) > 0:
-            query["$or"] = [{classname: {"$in" : [1,-1]}} for classname in classnames]
+            query["$or"] = [{classname: 1} for classname in classnames]
 
         for collection in self.data:
             results = list(collection.find(query))

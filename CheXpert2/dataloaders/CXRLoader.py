@@ -54,7 +54,7 @@ class CXRLoader(Dataset):
             N=0,
             M=0,
             pretrain=False,
-            datasets = [],
+            datasets = ["ChexPert"],
     ):
         # ----- Variable definition ------------------------------------------------------
 
@@ -97,6 +97,8 @@ class CXRLoader(Dataset):
 
 
         self.files[self.classes] = self.files[self.classes].astype(int)
+        mask = self.files[self.classes].values.sum(axis=1)>0
+        self.files = self.files.loc[mask]
         self.img_dir = img_dir
 
 

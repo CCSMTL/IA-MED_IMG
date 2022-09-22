@@ -60,6 +60,7 @@ if __name__ == "__main__":
 
     # -----training-------------------------------------------
 
+
     results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss, device, prob,
                    metrics=metrics, pretrain=False)
     experiment.end(results)
