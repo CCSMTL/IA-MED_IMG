@@ -148,7 +148,7 @@ def main():
         model.load_state_dict(new_state_dict)
         #model = model.to(device)
         model.eval()
-    ensemble = Ensemble(models,14)
+    ensemble = Ensemble(models,20)
     ensemble.to(device)
 
     test_loader = torch.utils.data.DataLoader(
@@ -173,7 +173,7 @@ def main():
 
     with open("data/data.yaml", "r") as stream:
         names = yaml.safe_load(stream)["names"]
-    metric = Metrics(num_classes=14, names=names, threshold=np.zeros((14)) + 0.5)
+    metric = Metrics(num_classes=20, names=names, threshold=np.zeros((20)) + 0.5)
     metrics = metric.metrics()
     metrics_results = {}
     for key in metrics:
