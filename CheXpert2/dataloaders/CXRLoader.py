@@ -92,10 +92,6 @@ class CXRLoader(Dataset):
 
         else :
             self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
-        if os.environ["DEBUG"] == "True" :
-            #read local csv instead of contacting the database
-            self.files = self.files[self.files["collection"]=="ChexPert"]
-
 
         self.files[self.classes] = self.files[self.classes].astype(int)
         mask = self.files[self.classes].values.sum(axis=1)>0

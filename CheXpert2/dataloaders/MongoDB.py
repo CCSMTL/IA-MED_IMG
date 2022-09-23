@@ -63,13 +63,7 @@ class MongoDB:
                 train_dataset.append(data)
 
         if len(train_dataset) > 1:
-
-            # columns = list(columns)
-            # columns.remove("AP/PA")
-            #columns = self.names[3::] + ["Path", "collection"]
             df = reduce(lambda left, right: pd.merge(left, right,on=self.names, how='outer'), train_dataset)
-        elif len(train_dataset) == 1:
-            df = train_dataset[0]
         else:
             raise Exception("No data found")
 
