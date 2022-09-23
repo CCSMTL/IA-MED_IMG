@@ -12,20 +12,21 @@ class MongoDB:
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
+
+        self.data = []
+
+        if "CIUSSS" in collectionnames :
+            self.db_CIUSSS = self.client["CIUSSS"]
+            self.data.append(self.db_CIUSSS["images"])
+            collectionnames.remove("CIUSSS")
+
         for collectionname in collectionnames:
             assert collectionname in self.db_public.list_collection_names()
-        self.db_CIUSSS = self.client["CIUSSS"]
-
-        self.data = [self.db_CIUSSS["images"]]
 
         with open("data/data.yaml", "r") as stream:
             columns = yaml.safe_load(stream)["names"]
 
-        # columns.remove("Age")# TODO : Fix this
-        #columns.remove("Lung Opacity")
-        #columns.remove("Pleural Other")
-        # columns.remove("Enlarged Cardiomediastinum")
-        #columns.remove("Pleural Thickening")
+
         self.names = columns + ["Path","collection"]
 
         for name in collectionnames:
@@ -34,7 +35,7 @@ class MongoDB:
 
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
-        train_dataset = []
+        train_dataset = [pd.DataFrame([],columns=self.names)]
 
 
         query = {datasetname: 1,"Frontal/Lateral": "F"}
