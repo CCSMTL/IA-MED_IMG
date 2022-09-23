@@ -122,34 +122,23 @@ class CXRLoader(Dataset):
     def __len__(self):
         return len(self.files)
 
-    # @staticmethod
-    # def get_transform(prob, intensity):  # for transform that would require pil images
-    #     return transforms.Compose(
-    #         [
-    #             transforms.RandomErasing(prob[3], (intensity, intensity)),
-    #             transforms.RandomHorizontalFlip(p=prob[4]),
-    #         #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
-    #         ]
-    #     )
     @staticmethod
     def get_transform(prob, intensity):  # for transform that would require pil images
         return A.Compose(
             [
-                #    transforms.RandomErasing(prob[3], (intensity, intensity)),
-                # transforms.RandomHorizontalFlip(p=0.5),
-                # transforms.RandomVerticalFlip(p=0.5),
-                # transforms.RandomRotation(degrees=90),
-                # transforms.RandomAffine(degrees=45,translate=(0.2,0.2),shear=(-15,15,-15,15)),
 
-                A.augmentations.geometric.transforms.Affine(translate_percent=5,rotate=10,shear=5,cval=0,keep_ratio=True,p=prob[0]),
-                A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True,p=prob[2]),
-                #A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
-                A.augmentations.transforms.VerticalFlip(p=prob[3]),
-                A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[4]),
-                #A.augmentations.Superpixels(),
-                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[5]),
+
+
+                A.augmentations.geometric.transforms.Affine(translate_percent=15,rotate=45,shear=5,cval=0,keep_ratio=True,p=prob[1]),
+                A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2])
+
+                A.augmentations.transforms.HorizontalFlip(p=prob[3]),
+                A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
+
+                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[4]),
                 A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
+                #gaussian blur?
 
 
             ]
@@ -159,7 +148,7 @@ class CXRLoader(Dataset):
         return transforms.Compose(
             [  # advanced/custom
             #    custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                 custom_Transforms.Mixing(prob[1], intensity),
+                 custom_Transforms.Mixing(prob[0], intensity),
             #    custom_Transforms.CutMix(prob[2], intensity),
 
             ]
@@ -202,15 +191,15 @@ class CXRLoader(Dataset):
         Pre-processing for the model . This WILL be applied before inference
         """
         if channels == 1:
-            normalize = transforms.Normalize(mean=[0.456], std=[0.224])
-        else:
+            normalize = transforms.Normalize(mean=[0.449], std=[0.226])
+        else :
             normalize = transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             )
         return transforms.Compose(
             [
 
-            #    transforms.CenterCrop(img_size),
+            #   transforms.CenterCrop(img_size),
                 transforms.ConvertImageDtype(torch.float32),
                 normalize,
             ]
@@ -234,7 +223,7 @@ class CXRLoader(Dataset):
         self.count = count
         weights = np.zeros((len(data)))
         ex=0
-        for i, line in data.iterrows():
+        for i, line in data.iterrows() :
             vector = line.to_numpy()
             a = np.where(vector == 1)[0]
             if len(a) > 0:
@@ -257,7 +246,6 @@ class CXRLoader(Dataset):
 
         image = cv.resize(
             image,
-        #    (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_CUBIC ,  # 256/224 ratio
             (int(self.img_size ), int(self.img_size )), cv.INTER_CUBIC,  # removed center crop
         )
 
