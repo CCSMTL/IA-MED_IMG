@@ -56,6 +56,7 @@ class CXRLoader(Dataset):
             pretrain=False,
             datasets = ["ChexPert"],
     ):
+
         # ----- Variable definition ------------------------------------------------------
 
         with open("data/data.yaml", "r") as stream:
@@ -130,7 +131,7 @@ class CXRLoader(Dataset):
 
 
                 A.augmentations.geometric.transforms.Affine(translate_percent=15,rotate=45,shear=5,cval=0,keep_ratio=True,p=prob[1]),
-                A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2])
+                A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2]),
 
                 A.augmentations.transforms.HorizontalFlip(p=prob[3]),
                 A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
