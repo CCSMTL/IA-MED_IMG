@@ -126,7 +126,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=config["N"],
         M=config["M"],
-        pretrain=pretrain
+        pretrain=pretrain,
+        datasets=["CIUSSS","ChexPert"]
     )
     val_dataset = CXRLoader(
         split="Valid",
@@ -138,7 +139,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=0,
         M=0,
-        pretrain=pretrain
+        pretrain=pretrain,
+        datasets=["CIUSSS"]
     )
 
     if train_dataset.weights is not None :
