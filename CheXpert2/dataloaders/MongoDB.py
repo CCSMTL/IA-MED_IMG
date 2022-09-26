@@ -5,7 +5,7 @@ import pandas as pd
 import pymongo
 import yaml
 import urllib
-
+from CheXpert2 import names
 class MongoDB:
     def __init__(self, address, port, collectionnames):
         #assert urllib.request.urlopen(f"{address}:{port}").getcode() == 200 #make sure connection is up
@@ -23,8 +23,7 @@ class MongoDB:
         for collectionname in collectionnames:
             assert collectionname in self.db_public.list_collection_names()
 
-        with open("data/data.yaml", "r") as stream:
-            columns = yaml.safe_load(stream)["names"]
+        columns=names
 
 
         self.names = columns + ["Path","collection"]

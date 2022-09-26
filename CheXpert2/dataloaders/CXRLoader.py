@@ -14,14 +14,14 @@ import numpy as np
 import pandas as pd
 import torch
 import tqdm
-import yaml
+
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 import albumentations as A
 from CheXpert2 import custom_Transforms
 from CheXpert2.dataloaders.MongoDB import MongoDB
-
+from CheXpert2 import names
 
 # classes = [
 #     "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
@@ -59,8 +59,8 @@ class CXRLoader(Dataset):
 
         # ----- Variable definition ------------------------------------------------------
 
-        with open("data/data.yaml", "r") as stream:
-            self.classes = yaml.safe_load(stream)["names"]
+
+        self.classes = names
 
         self.img_dir = img_dir
         self.annotation_files = {}
@@ -127,8 +127,9 @@ class CXRLoader(Dataset):
                 A.augmentations.geometric.transforms.Affine(translate_percent=15,rotate=45,shear=5,cval=0,keep_ratio=True,p=prob[1]),
                 A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2]),
 
-                A.augmentations.transforms.HorizontalFlip(p=prob[3]),
-                A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
+                A.augmentations.HorizontalFlip(p=prob[3]),
+
+                A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
 
                 A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[4]),
                 A.augmentations.transforms.RandomGamma()
