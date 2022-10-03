@@ -3,7 +3,7 @@ import os
 import torch
 import numpy as np
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
-
+from CheXpert2 import names
 
 # -------- proxy config ---------------------------
 
@@ -30,10 +30,11 @@ def test_dataloader_get_item():
     train = CXRLoader(
             split="Train",
             img_dir = img_dir,
-            img_size=224)
-    image, label = train[4]
-    assert image.shape == (1, int(224 * 1.14), int(224 * 1.14))
-    assert label.shape == (15,)
+            img_size=224,
+            datasets=["ChexPert"])
+    frontal,lateral, label,idx = train[4]
+    assert frontal.shape == (1, int(224), int(224))
+    assert label.shape == (len(names),)
 
 
 def test_dataloader_transform():
@@ -63,7 +64,7 @@ def test_dataloader_advanced_transform():
 
 def test_dataloader_sampler():
     os.environ["DEBUG"] = "False"
-    train = CXRLoader("Train")
+    train = CXRLoader("Train",datasets=["ChexPert"])
     assert len(train.weights) == len(train)
 
 

@@ -11,16 +11,16 @@ class Metrics:
         self.thresholds = threshold
         self.names = names
 
-    # def convert(self,pred):
-    #
-    #     for i in range(self.num_classes) :
-    #         pred[:,i] = np.where(
-    #             pred[:,i]<=self.thresholds[i],
-    #             pred[:,i]/2/self.thresholds[i],               #if true
-    #             1 - (1-pred[:,i])/2/(1-self.thresholds[i])    #if false
-    #         )
-    #     return pred
-        self.convert = lambda x : x
+    def convert(self,pred):
+
+        for i in range(self.num_classes) :
+            pred[:,i] = np.where(
+                pred[:,i]<=self.thresholds[i],
+                pred[:,i]/2/self.thresholds[i],               #if true
+                1 - (1-pred[:,i])/2/(1-self.thresholds[i])    #if false
+            )
+        return pred
+        #self.convert = lambda x : x
 
     def accuracy(self, true, pred):
         # n, m = true.shape

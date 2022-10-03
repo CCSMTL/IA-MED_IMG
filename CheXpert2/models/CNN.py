@@ -3,7 +3,7 @@ import functools
 import torch
 from torch.autograd import Variable
 from CheXpert2.custom_utils import channels321,Identity
-
+import copy
 
 class CNN(torch.nn.Module):
     def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True,
@@ -28,9 +28,11 @@ class CNN(torch.nn.Module):
                 import timm
                 backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
                                              num_classes=num_classes,drop_rate=drop_rate,global_pool=global_pool)
+                self.frontal_feature=copy.copy(backbone.forward_features)
+                self.lateral_feature=copy.copy(backbone.forward_features)
 
                 #backbone.forward_head = Identity()
-                self.classifier = Identity()
+                self.classifier = backbone.forward_head
             except:
                 raise NotImplementedError("This model has not been found within the available repos.")
 
@@ -39,17 +41,15 @@ class CNN(torch.nn.Module):
         self.backbone = backbone
         self.pretrain = pretraining
 
-    def forward(self, x):
+    def forward(self,frontal=None,lateral=None):
+        x,y=0,0
+        assert frontal is not None or lateral is not None
+        if frontal is not None :
+            x = self.frontal_feature(frontal)
+        if lateral is not None :
+            y = self.lateral_feature(lateral)
 
-        x = self.backbone(x)#.float()
-        x = self.classifier(x)
-        #x[:, -1] = 1 - x[:, -1].clone()  # lets the model predict sick instead of no finding
-        # x = torch.sigmoid(x).clone()
-        # x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
-        # x[:, [3, 4, 5, 6]] = torch.mul(x[:, [3, 4, 5, 6]].clone(), x[:, 2][:, None].clone())
-
-        return x
-
+        return self.classifier(x+y)
 
 
 

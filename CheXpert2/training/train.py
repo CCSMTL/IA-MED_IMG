@@ -18,7 +18,7 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
-
+from CheXpert2 import names
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
 # torch.autograd.set_detect_anomaly(True)
@@ -77,8 +77,7 @@ def initialize_config():
     torch.set_num_threads(config["num_worker"])
 
     # ----------- load classes ----------------------------------------
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
+
 
     #--------- set up augment_prob ---------------------------------
     if len(config["augment_prob"]) == 1:
@@ -127,7 +126,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         N=config["N"],
         M=config["M"],
         pretrain=pretrain,
-        datasets=["CIUSSS","ChexPert"]
+        datasets=["ChexPert"] if os.environ["DEBUG"]=="True" else ["CIUSSS","ChexPert"]
     )
     val_dataset = CXRLoader(
         split="Valid",
@@ -140,7 +139,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         N=0,
         M=0,
         pretrain=pretrain,
-        datasets=["CIUSSS"]
+        datasets=["ChexPert"] if os.environ["DEBUG"]=="True" else ["CIUSSS"]
     )
 
     if train_dataset.weights is not None :
