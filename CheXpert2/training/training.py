@@ -23,6 +23,7 @@ def training_loop(
 
     model.train()
     iters = len(loader.iterable)
+    results = [torch.tensor([]), torch.tensor([])]
     i = 1
     for frontals,laterals, labels,idx in loader:
 
@@ -50,6 +51,8 @@ def training_loop(
         # outputs = torch.nan_to_num(outputs,0)
 
 
+
+
         scaler.scale(loss).backward()
         # Unscales the gradients of optimizer's assigned params in-place
         scaler.unscale_(optimizer)
@@ -61,9 +64,11 @@ def training_loop(
         scaler.step(optimizer)
         scaler.update()
         optimizer.zero_grad(set_to_none=True)
-        scheduler.step()
+        scheduler.step(i)
         running_loss += loss.detach()
         # ending loop
+
+        loader.iterable.dataset.step(idx.numpy(), outputs.detach().cpu().numpy())
         del (
             outputs,
             labels,

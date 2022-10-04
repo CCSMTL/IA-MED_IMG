@@ -248,6 +248,13 @@ class CXRLoader(Dataset):
 
         return weights
 
+
+    def step(self,idxs,pseudo_labels):#moving avg
+
+        labels=self.files[self.classes].to_numpy()[idxs]
+        new_labels = 0.9*labels+0.1*pseudo_labels
+        self.files[self.classes].iloc[idxs] = new_labels
+
     def read_img_from_disk(self, paths,views):
         views=np.array(views)
 
