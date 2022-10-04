@@ -6,14 +6,15 @@ import pymongo
 import yaml
 import urllib
 from CheXpert2 import names
+
 class MongoDB:
     def __init__(self, address, port, collectionnames):
-        #assert urllib.request.urlopen(f"{address}:{port}").getcode() == 200 #make sure connection is up
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
 
         self.data = []
+
 
         if "CIUSSS" in collectionnames :
             self.db_CIUSSS = self.client["CIUSSS"]

@@ -108,7 +108,7 @@ def validation_loop(model, loader, criterion, device):
         laterals = loader.iterable.dataset.preprocess(laterals)
         # forward + backward + optimize
 
-        outputs = model(frontals=frontals,lateral=laterals)
+        outputs = model(frontal=frontals,lateral=laterals)
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()

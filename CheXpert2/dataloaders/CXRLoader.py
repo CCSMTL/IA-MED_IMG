@@ -249,6 +249,7 @@ class CXRLoader(Dataset):
         lateral_views=np.where(views=="L")[0]
         if len(frontal_views)>0 :
             frontal_path=paths[np.random.permutation(frontal_views)[0]]
+
             frontal = cv.imread(f"{self.img_dir}{frontal_path}", cv.IMREAD_GRAYSCALE)
             frontal = cv.resize(
                 frontal,
