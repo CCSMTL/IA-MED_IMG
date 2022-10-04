@@ -14,14 +14,14 @@ import numpy as np
 import pandas as pd
 import torch
 import tqdm
-import yaml
+
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
 import albumentations as A
 from CheXpert2 import custom_Transforms
 from CheXpert2.dataloaders.MongoDB import MongoDB
-
+from CheXpert2 import names
 
 # classes = [
 #     "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
@@ -56,10 +56,11 @@ class CXRLoader(Dataset):
             pretrain=False,
             datasets = ["ChexPert"],
     ):
+
         # ----- Variable definition ------------------------------------------------------
 
-        with open("data/data.yaml", "r") as stream:
-            self.classes = yaml.safe_load(stream)["names"]
+
+        self.classes = names
 
         self.img_dir = img_dir
         self.annotation_files = {}
@@ -85,29 +86,40 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
+        if split == "test_chexpert" :
+            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset("Train", classnames=classnames)
+            self.files = self.files.loc[self.files['Path'].str.contains("valid", case=False)]
 
-
-
-        if os.environ["DEBUG"] == "True" :
-            #read local csv instead of contacting the database
-            self.files = pd.read_csv(f"{img_dir}/data/public_data/ChexPert/ChexPert.csv").loc[0:100]
         else :
-            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split,classnames=classnames)
+            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
+
         self.files[self.classes] = self.files[self.classes].astype(int)
+
+        #mask = self.files[self.classes].values.sum(axis=1)>0
+        #self.files = self.files.loc[mask]
         self.img_dir = img_dir
 
 
 
+
+        self.img_dir = img_dir
+        weights = self.samples_weights()
+        paths=self.files.groupby("Exam ID")["Path"].apply(list)
+        frontal_lateral = self.files.groupby("Exam ID")["Frontal/Lateral"].apply(list)
+        self.files=self.files[self.classes+["Exam ID"]].groupby("Exam ID").mean().round(0)
+        self.files["Path"]=paths
+        self.files["Frontal/Lateral"]=frontal_lateral
+
         if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
             with parallel_backend('threading', n_jobs=num_worker):
                 self.images = Parallel()(
-                    delayed(self.read_img_from_disk)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                    delayed(self.read_img_from_disk)(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral']) for idx in
                     tqdm.tqdm(range(0, len(self.files))))
             self.read_img = lambda idx : self.images[idx]
         else :
-            self.read_img = lambda idx : self.read_img_from_disk(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
+            self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
 
-        weights=self.samples_weights()
+
         if split == "Train" and not pretrain:
             self.weights = weights
         else:
@@ -117,33 +129,24 @@ class CXRLoader(Dataset):
     def __len__(self):
         return len(self.files)
 
-    # @staticmethod
-    # def get_transform(prob, intensity):  # for transform that would require pil images
-    #     return transforms.Compose(
-    #         [
-    #             transforms.RandomErasing(prob[3], (intensity, intensity)),
-    #             transforms.RandomHorizontalFlip(p=prob[4]),
-    #         #    transforms.GaussianBlur(3, sigma=(0.1, 2.0))  # hyperparam kernel size
-    #         ]
-    #     )
     @staticmethod
     def get_transform(prob, intensity):  # for transform that would require pil images
         return A.Compose(
             [
-                #    transforms.RandomErasing(prob[3], (intensity, intensity)),
-                # transforms.RandomHorizontalFlip(p=0.5),
-                # transforms.RandomVerticalFlip(p=0.5),
-                # transforms.RandomRotation(degrees=90),
-                # transforms.RandomAffine(degrees=45,translate=(0.2,0.2),shear=(-15,15,-15,15)),
 
-                A.augmentations.geometric.transforms.Affine(translate_percent=20,rotate=25,shear=15,cval=0,keep_ratio=True,p=prob[0]),
-                A.augmentations.geometric.transforms.ElasticTransform(alpha=1,sigma=50,approximate=True,p=prob[2]),
-                #A.augmentations.crops.transforms.RandomResizedCrop(self.img_size,self.img_size,p=1),
-                A.augmentations.transforms.VerticalFlip(p=prob[3]),
-                A.augmentations.transforms.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[4]),
-                #A.augmentations.Superpixels(),
-                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.2,contrast_limit=0.2,always_apply=False,p=prob[5]),
+
+
+                A.augmentations.geometric.transforms.Affine(translate_percent=15,rotate=45,shear=5,cval=0,keep_ratio=True,p=prob[1]),
+                A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2]),
+
+                A.augmentations.HorizontalFlip(p=prob[3]),
+
+                A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
+
+                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[4]),
+                A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
+                #gaussian blur?
 
 
             ]
@@ -153,7 +156,7 @@ class CXRLoader(Dataset):
         return transforms.Compose(
             [  # advanced/custom
             #    custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                 custom_Transforms.Mixing(prob[1], intensity),
+                 custom_Transforms.Mixing(prob[0], intensity),
             #    custom_Transforms.CutMix(prob[2], intensity),
 
             ]
@@ -166,6 +169,10 @@ class CXRLoader(Dataset):
         """
 
         vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
+
+
+
+
 
         # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
         # source : https://arxiv.org/pdf/1911.06475.pdf
@@ -180,6 +187,10 @@ class CXRLoader(Dataset):
 
         labels = torch.from_numpy(labels)
         labels[-1] = 1 - labels[-1] #lets predict the presence of a disease instead of the absence
+
+
+
+
         return labels
 
     @staticmethod
@@ -188,15 +199,16 @@ class CXRLoader(Dataset):
         Pre-processing for the model . This WILL be applied before inference
         """
         if channels == 1:
-            normalize = transforms.Normalize(mean=[0.456], std=[0.224])
-        else:
+            normalize = transforms.Normalize(mean=[0.449], std=[0.226])
+        else :
             normalize = transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
             )
         return transforms.Compose(
             [
 
-                transforms.CenterCrop(img_size),
+            #   transforms.CenterCrop(img_size),
+                transforms.Resize(img_size),
                 transforms.ConvertImageDtype(torch.float32),
                 normalize,
             ]
@@ -207,56 +219,95 @@ class CXRLoader(Dataset):
         This function returns weights 1/class_count for each image in the dataset such that each class
         is seen in similar amount
         """
-        data = copy.copy(self.files[self.classes]).fillna(0)
+        data = copy.copy(self.files).fillna(0)
+        data = data.replace(-1,0.75)
+        data=data.groupby("Exam ID").mean().round(0)
+        data = data[self.classes]
         data = data.astype(int)
-        data = data.replace(-1, 1)
+
         count = data.sum().to_numpy()
+
+        for name,cat_count in zip(self.classes,count) :
+            if cat_count == 0:
+                print(f"Careful! The category {name} has 0 images!")
+        count[-1] /=2 #lets double the number of empty images we will give to the model
         self.count = count
         weights = np.zeros((len(data)))
-        for i, line in data[self.classes].iterrows():
-            vector = line.to_numpy()[5:19]
+        ex=0
+        for i, line in data.iterrows() :
+            vector = line.to_numpy()
             a = np.where(vector == 1)[0]
             if len(a) > 0:
                 category = np.random.choice(a, 1)
             else:
                 category = len(self.classes) - 1  # assumes last class is the empty class
-            weights[i] = 1 / (count[category])
 
-        weights = np.nan_to_num(weights,nan=0,posinf=0,neginf=0)
+
+            weights[ex] = 1 / (count[category])
+            ex+=1
+
         return weights
 
-    def read_img_from_disk(self, file):
+    def read_img_from_disk(self, paths,views):
+        views=np.array(views)
 
-        image = cv.imread(file, cv.IMREAD_GRAYSCALE)
+        frontal_views=np.where(views=="F")[0]
+        lateral_views=np.where(views=="L")[0]
+        if len(frontal_views)>0 :
+            frontal_path=paths[np.random.permutation(frontal_views)[0]]
 
-        if image is None:
-            raise Exception("Image not found by cv.imread: " + file)
+            frontal = cv.imread(f"{self.img_dir}{frontal_path}", cv.IMREAD_GRAYSCALE)
+            frontal = cv.resize(
+                frontal,
+                (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
+            )
 
-        image = cv.resize(
-            image,
-            (int(self.img_size* 1.14), int(self.img_size* 1.14)),cv.INTER_CUBIC ,  # 256/224 ratio
-        )
+        else :
+            frontal=np.zeros((self.img_size,self.img_size))
+        if len(lateral_views) > 0:
+            lateral_path = paths[np.random.permutation(lateral_views)[0]]
+            lateral = cv.imread(f"{self.img_dir}{lateral_path}", cv.IMREAD_GRAYSCALE)
+            lateral = cv.resize(
+                lateral,
+                (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
+            )
+        else :
+            lateral=np.zeros((self.img_size,self.img_size))
+        assert len(lateral_views)+len(frontal_views)>0
 
 
 
-        return image
+
+
+
+
+        return frontal,lateral
 
     def __getitem__(self, idx) :
 
-        image = self.read_img(idx)
+        frontal,lateral= self.read_img(idx)
         label = self.get_label(idx)
 
         if self.split == "Train" :
-            image = self.transform(image=image)["image"]
+            images = self.transform(image=np.concatenate([frontal[None,:,:],lateral[None,:,:]],axis=0).astype(np.float32))["image"]
+            frontal,lateral=images[0],images[1]
 
-        image = torch.tensor(
-            image,
+
+
+
+        frontal = torch.tensor(
+            frontal,
+            dtype=torch.uint8,
+        )[None, :, :]
+        lateral = torch.tensor(
+            lateral,
             dtype=torch.uint8,
         )[None, :, :]
 
-        if self.channels == 3:
-            image = image.repeat((3, 1, 1))
-        return image, label.float()
+        # if self.channels == 3:
+        #     image = image.repeat((3, 1, 1))
+
+        return frontal,lateral, label.float(),idx
 
 
 

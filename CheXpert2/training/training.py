@@ -22,23 +22,27 @@ def training_loop(
     running_loss = 0
 
     model.train()
-    iters = len(loader)
+    iters = len(loader.iterable)
     i = 1
-    for inputs, labels in loader:
+    for frontals,laterals, labels,idx in loader:
 
         #send to GPU
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
+        frontals,laterals,labels = (
+            frontals.to(device, non_blocking=True),
+            laterals.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
 
         #Apply transformation on GPU to avoid CPU bottleneck
-        #inputs = loader.iterable.dataset.transform(inputs)
-        inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
-        inputs = loader.iterable.dataset.preprocess(inputs)
+
+
+        frontals, labels = loader.iterable.dataset.advanced_transform((frontals, labels))
+        laterals, labels = loader.iterable.dataset.advanced_transform((laterals, labels))
+        frontals = loader.iterable.dataset.preprocess(frontals)
+        laterals = loader.iterable.dataset.preprocess(laterals)
 
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs = model(inputs)
+            outputs = model(frontal=frontals,lateral=laterals)
             loss = criterion(outputs, labels)
 
 
@@ -56,14 +60,15 @@ def training_loop(
 
         scaler.step(optimizer)
         scaler.update()
-        scheduler.step(epoch + i / iters)
         optimizer.zero_grad(set_to_none=True)
+        scheduler.step()
         running_loss += loss.detach()
         # ending loop
         del (
             outputs,
             labels,
-            inputs,
+            frontals,
+            laterals,
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
@@ -89,17 +94,21 @@ def validation_loop(model, loader, criterion, device):
 
     results = [torch.tensor([]), torch.tensor([])]
 
-    for inputs, labels in loader:
+    for frontals,laterals, labels,idx in loader:
         # get the inputs; data is a list of [inputs, labels]
 
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
+        # send to GPU
+        frontals, laterals, labels = (
+            frontals.to(device, non_blocking=True),
+            laterals.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.iterable.dataset.preprocess(inputs)
+
+        frontals = loader.iterable.dataset.preprocess(frontals)
+        laterals = loader.iterable.dataset.preprocess(laterals)
         # forward + backward + optimize
 
-        outputs = model(inputs)
+        outputs = model(frontal=frontals,lateral=laterals)
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
@@ -109,7 +118,8 @@ def validation_loop(model, loader, criterion, device):
                                dim=0)  # round to 0 or 1 in case of label smoothing
 
         del (
-            inputs,
+            frontals,
+            laterals,
             labels,
             outputs,
             loss,
@@ -130,7 +140,8 @@ def training(
     experiment=None,
     pos_weight = 1,
     clip_norm = 100,
-    autocast=True
+    autocast=True,
+    lr=0.001
 ):
     epoch = 0
     results = None
@@ -142,8 +153,9 @@ def training(
     criterion = criterion(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=3,T_mult=2)
+    #scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
     #scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,max_lr=lr,steps_per_epoch=len(training_loader),epochs=experiment.epoch_max)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -166,6 +178,7 @@ def training(
             val_loss, results = validation_loop(
                 model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion_val, device
             )
+            print("mean output : ",torch.mean(results[1]))
             val_loss = val_loss.cpu() / m
             if metrics:
                 for key in metrics:

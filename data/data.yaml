@@ -1,5 +1,0 @@
-nc: 15
-
-#names: ["Cardiomegaly"    ,"Lung Lesion" ,"Lung Opacity","Edema"    ,"Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Pleural Other"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pleural Thickening", "No Finding" ]
-
-names: ["Cardiomegaly","Lung Lesion" ,"Lung Opacity"    ,"Edema"    ,"Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pleural Thickening", "No Finding" ]

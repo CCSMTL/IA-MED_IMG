@@ -13,7 +13,7 @@ import yaml
 from CheXpert2.Experiment import Experiment
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.train import main
-
+from CheXpert2 import names
 
 def test_train():
     try:
@@ -27,7 +27,7 @@ def test_train():
     os.environ["WANDB_MODE"] = "offline"
 
     config = {
-        "model": "densenet121",
+        "model": "convnext_tiny",
         "batch_size": 2,
         "img_size": 224,
         "num_worker": 0,
@@ -48,15 +48,13 @@ def test_train():
         "autocast": True,
         "pos_weight": 1,
     }
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
 
     experiment = Experiment(
         f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
     )
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     prob = [0, ] * 6
-    model = CNN(config["model"], 15, img_size=config["img_size"], freeze_backbone=config["freeze"],
+    model = CNN(config["model"], len(names), img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
     results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(), lr=config["lr"]),
                    torch.nn.BCEWithLogitsLoss, device, prob, None,pretrain=False)

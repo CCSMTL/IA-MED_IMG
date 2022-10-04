@@ -18,7 +18,7 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
-
+from CheXpert2 import names
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
 # torch.autograd.set_detect_anomaly(True)
@@ -32,19 +32,19 @@ except:
     os.environ["img_dir"] = ""
 def initialize_config():
     # -------- proxy config ---------------------------
-
-    proxy = urllib.request.ProxyHandler(
-        {
-            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
-        }
-    )
-    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
-    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
-    # construct a new opener using your proxy settings
-    opener = urllib.request.build_opener(proxy)
-    # install the openen on the module-level
-    urllib.request.install_opener(opener)
+    #
+    # proxy = urllib.request.ProxyHandler(
+    #     {
+    #         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+    #         "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+    #     }
+    # )
+    # os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # # construct a new opener using your proxy settings
+    # opener = urllib.request.build_opener(proxy)
+    # # install the openen on the module-level
+    # urllib.request.install_opener(opener)
 
     # ------------ parsing & Debug -------------------------------------
     parser = init_parser()
@@ -77,8 +77,7 @@ def initialize_config():
     torch.set_num_threads(config["num_worker"])
 
     # ----------- load classes ----------------------------------------
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
+
 
     #--------- set up augment_prob ---------------------------------
     if len(config["augment_prob"]) == 1:
@@ -109,7 +108,7 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
     if os.environ["DEBUG"] =="False" :
-        num_samples = 50000
+        num_samples = 100000
     else :
         num_samples=100
 
@@ -126,7 +125,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=config["N"],
         M=config["M"],
-        pretrain=pretrain
+        pretrain=pretrain,
+        datasets=["ChexPert"] if os.environ["DEBUG"]=="True" else ["CIUSSS","ChexPert"]
     )
     val_dataset = CXRLoader(
         split="Valid",
@@ -138,7 +138,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         channels=config["channels"],
         N=0,
         M=0,
-        pretrain=pretrain
+        pretrain=pretrain,
+        datasets=["ChexPert"] if os.environ["DEBUG"]=="True" else ["CIUSSS"]
     )
 
     if train_dataset.weights is not None :
@@ -200,7 +201,8 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
         metrics=metrics,
         clip_norm=config["clip_norm"],
         pos_weight=config["pos_weight"],
-        autocast=config["autocast"]
+        autocast=config["autocast"],
+        lr = config["lr"]
     )
 
     return results

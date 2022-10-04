@@ -15,10 +15,9 @@ import pandas as pd
 from mne_connectivity.viz import plot_connectivity_circle
 from CheXpert2.dataloaders.MongoDB import MongoDB
 
-
+from CheXpert2 import names
 os.environ["DEBUG"]="False"
-with open("data/data.yaml", "r") as stream:
-    names = yaml.safe_load(stream)["names"]
+
 
 def chord_chexpert():
     data = MongoDB("10.128.107.212", 27017, []).dataset("Train",[])

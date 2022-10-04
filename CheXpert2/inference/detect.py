@@ -12,11 +12,12 @@ from six.moves import urllib
 from sklearn import metrics
 
 import wandb
-from CheXpert2.dataloaders.Chexpertloader import Chexpertloader
+from CheXpert2.dataloaders.CXRLoader import CXRLoader
 from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Ensemble import Ensemble
 #from polycam.polycam.polycam import PCAMp
 from CheXpert2.Metrics import Metrics
+from CheXpert2 import names
 import yaml
 proxy = urllib.request.ProxyHandler(
     {
@@ -51,7 +52,7 @@ def infer_loop(model, loader, criterion, device):
         # get the inputs; data is a list of [inputs, labels]
 
         inputs, labels = (
-            inputs.to(device, non_blocking=True, memory_format=torch.channels_last),
+            inputs.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
         inputs = loader.dataset.preprocess(inputs)
@@ -59,7 +60,7 @@ def infer_loop(model, loader, criterion, device):
 
         outputs = model(inputs)
         loss = criterion(outputs, labels)
-
+        outputs = torch.sigmoid(outputs)
         running_loss += loss.detach()
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
@@ -96,8 +97,49 @@ def set_thresholds(self, true, pred):
     return best_threshold
 
 
+def load_model() :
+    if torch.cuda.is_available():
+        device = "cuda:0"
+    else:
+        device = "cpu"
+        warnings.warn("No gpu is available for the computation")
+    models = [
+        CNN("convnext_small_384_in22ft1k", img_size=384, channels=1, num_classes=18, pretrained=False,
+            pretraining=False),
+        #    CNN("convnext_base", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
+        #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
+        #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
+    ]
+    # model =  torch.nn.parallel.DistributedDataParallel(model)
+
+    # api = wandb.Api()
+    # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
+    # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
+    weights = [
+        "/data/model_weights/convnext_small.pt",
+        #    "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base_2.pt",
+        #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201.pt",
+        #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201_2.pt",
+    ]
+
+    for model, weight in zip(models, weights):
+        state_dict = torch.load(weight, map_location=torch.device(device))
+
+        # from collections import OrderedDict
+        # new_state_dict = OrderedDict()
+        # for k, v in state_dict.items():
+        #     name = k[7:]  # remove 'module.' of DataParallel/DistributedDataParallel
+        #     new_state_dict[name] = v
+
+        # model.load_state_dict(new_state_dict)
+        model.load_state_dict(state_dict)
+        # model = model.to(device)
+        model.eval()
+
+        return model
+
 def main():
-    criterion = torch.nn.BCELoss()
+    criterion = torch.nn.BCEWithLogitsLoss()
     if torch.cuda.is_available():
         device = "cuda:0"
     else:
@@ -112,44 +154,12 @@ def main():
     # ------loading test set --------------------------------------
     img_dir = os.environ["img_dir"]
     #img_dir = "data"
-    test_dataset = Chexpertloader(f"{img_dir}/valid.csv", img_dir, img_size=384,channels=1,N=0,M=0,pretrain=False)
+    test_dataset = CXRLoader("test_chexpert",img_dir, img_size=384,channels=1,N=0,M=0,pretrain=False)
 
 
     # ----------------loading model -------------------------------
 
-    models = [
-        CNN("convnext_base", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-        CNN("convnext_base", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-        CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-        CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-    ]
-    # model =  torch.nn.parallel.DistributedDataParallel(model)
-
-    #api = wandb.Api()
-    # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
-    # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
-    weights = [
-        "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base.pt",
-        "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base_2.pt",
-        "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201.pt",
-        "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201_2.pt",
-    ]
-
-    for model,weight in zip (models, weights) :
-        # state_dict = torch.load(weight)
-        #
-        # from collections import OrderedDict
-        # new_state_dict = OrderedDict()
-        # for k, v in state_dict.items():
-        #     name = k[7:]  # remove 'module.' of DataParallel/DistributedDataParallel
-        #     new_state_dict[name] = v
-
-        #model.load_state_dict(new_state_dict)
-        model.load_state_dict(torch.load(weight,map_location=torch.device(device)))
-        #model = model.to(device)
-        model.eval()
-    ensemble = Ensemble(models,14)
-    ensemble.to(device)
+    model=load_model()
 
     test_loader = torch.utils.data.DataLoader(
         test_dataset,
@@ -171,9 +181,8 @@ def main():
     #plt.imshow(np.sum(heatmaps[0][0].detach().cpu().numpy(), axis=0))
     #plt.savefig("heatmaps.png")
 
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
-    metric = Metrics(num_classes=14, names=names, threshold=np.zeros((14)) + 0.5)
+
+    metric = Metrics(num_classes=20, names=names, threshold=np.zeros((20)) + 0.5)
     metrics = metric.metrics()
     metrics_results = {}
     for key in metrics:

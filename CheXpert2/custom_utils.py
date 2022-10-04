@@ -1,9 +1,9 @@
 import contextlib
 import copy
-
+import functools
 import numpy as np
 import torch
-
+from torch.autograd import Variable
 
 # -----------------------------------------------------------------------------------
 
@@ -58,60 +58,40 @@ def dummy_context_mgr():
 
 #----------------------------------------------------------------------------------
 def channels321(backbone):
-    try:
-        for name, weight1 in backbone.named_parameters():
-            break
 
-        name = name[:-7]  # removed the .weight of first conv
+    for name, weight1 in backbone.named_parameters():
+        break
 
-        first_layer = functools.reduce(getattr, [backbone] + name.split("."))
+    name = name[:-7]  # removed the .weight of first conv
 
-        # try:
-        #     first_layer = first_layer[0]
-        # except:
-        #     pass
-        bias = True if first_layer.bias is not None else False
-        new_first_layer = torch.nn.Conv2d(
-            1,
-            first_layer.out_channels,
-            kernel_size=first_layer.kernel_size,
-            stride=first_layer.stride,
-            padding=first_layer.padding,
-            bias=bias,
-            device=backbone.device
-        ).requires_grad_()
+    first_layer = functools.reduce(getattr, [backbone] + name.split("."))
 
-        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
-        new_first_layer.weight[:, :, :, :].data[...] += Variable(
-            weight1[:, 1:2, :, :], requires_grad=True
-        )
-        # change first layer attribute
-        name = name.split(".")
-        last_item = name.pop()
-        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
-        setattr(item, last_item, new_first_layer)
+    # try:
+    #     first_layer = first_layer[0]
+    # except:
+    #     pass
+    bias = True if first_layer.bias is not None else False
+    new_first_layer = torch.nn.Conv2d(
+        1,
+        first_layer.out_channels,
+        kernel_size=first_layer.kernel_size,
+        stride=first_layer.stride,
+        padding=first_layer.padding,
+        bias=bias,
+        device=backbone.device
+    ).requires_grad_()
 
-    except:  # transformers
-        name = "patch_embed.proj"
-        weight1 = backbone.patch_embed.proj.weight
-        first_layer = backbone.patch_embed.proj
-        bias = True if first_layer.bias is not None else False
-        new_first_layer = torch.nn.Conv2d(
-            1,
-            first_layer.out_channels,
-            kernel_size=first_layer.kernel_size,
-            stride=first_layer.stride,
-            padding=first_layer.padding,
-            bias=bias,
-        ).requires_grad_()
-        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
-        new_first_layer.weight[:, :, :, :].data[...] += Variable(
-            weight1[:, 1:2, :, :], requires_grad=True
-        )
-        name = name.split(".")
-        last_item = name.pop()
-        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
-        setattr(item, last_item, new_first_layer)
+    new_first_layer.weight[:, :, :, :].data[...].fill_(0)
+    new_first_layer.weight[:, :, :, :].data[...] += Variable(
+        weight1[:, 1:2, :, :], requires_grad=True
+    )
+    # change first layer attribute
+    name = name.split(".")
+    last_item = name.pop()
+    item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
+    setattr(item, last_item, new_first_layer)
+
+
 
 
 
