@@ -198,6 +198,7 @@ class CXRLoader(Dataset):
             [
 
             #   transforms.CenterCrop(img_size),
+                transforms.Resize(img_size),
                 transforms.ConvertImageDtype(torch.float32),
                 normalize,
             ]

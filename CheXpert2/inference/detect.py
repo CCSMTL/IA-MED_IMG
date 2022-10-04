@@ -115,7 +115,7 @@ def load_model() :
     # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
     # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
     weights = [
-        "C:/Users/bejo2361/Downloads/convnext_small.pt",
+        "/data/model_weights/convnext_small.pt",
         #    "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base_2.pt",
         #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201.pt",
         #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201_2.pt",
