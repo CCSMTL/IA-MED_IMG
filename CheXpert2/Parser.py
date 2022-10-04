@@ -7,7 +7,7 @@ def init_parser():
 
     parser.add_argument(
         "--model",
-        default="alexnet",
+        default="densenet201",
         const="all",
         type=str,
         nargs="?",

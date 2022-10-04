@@ -94,22 +94,33 @@ class CXRLoader(Dataset):
             self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
 
         self.files[self.classes] = self.files[self.classes].astype(int)
+
         mask = self.files[self.classes].values.sum(axis=1)>0
         self.files = self.files.loc[mask]
         self.img_dir = img_dir
 
 
 
+
+        self.img_dir = img_dir
+        weights = self.samples_weights()
+        paths=self.files.groupby("Exam ID")["Path"].apply(list)
+        frontal_lateral = self.files.groupby("Exam ID")["Frontal/Lateral"].apply(list)
+        self.files=self.files[self.classes+["Exam ID"]].groupby("Exam ID").mean().round(0)
+        self.files["Path"]=paths
+        self.files["Frontal/Lateral"]=frontal_lateral
+
+        self.files.to_csv("grouped_data.csv")
         if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
             with parallel_backend('threading', n_jobs=num_worker):
                 self.images = Parallel()(
-                    delayed(self.read_img_from_disk)(f"{self.img_dir}/{self.files.iloc[idx]['Path']}") for idx in
+                    delayed(self.read_img_from_disk)(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral']) for idx in
                     tqdm.tqdm(range(0, len(self.files))))
             self.read_img = lambda idx : self.images[idx]
         else :
-            self.read_img = lambda idx : self.read_img_from_disk(f"{self.img_dir}{self.files.iloc[idx]['Path']}")
+            self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
 
-        weights=self.samples_weights()
+
         if split == "Train" and not pretrain:
             self.weights = weights
         else:
@@ -209,10 +220,12 @@ class CXRLoader(Dataset):
         This function returns weights 1/class_count for each image in the dataset such that each class
         is seen in similar amount
         """
-        data = copy.copy(self.files[self.classes]).fillna(0)
-
+        data = copy.copy(self.files).fillna(0)
+        data = data.replace(-1,0.75)
+        data=data.groupby("Exam ID").mean().round(0)
+        data = data[self.classes]
         data = data.astype(int)
-        data = data.replace(-1, 1)
+
         count = data.sum().to_numpy()
 
         for name,cat_count in zip(self.classes,count) :
@@ -236,38 +249,66 @@ class CXRLoader(Dataset):
 
         return weights
 
-    def read_img_from_disk(self, file):
+    def read_img_from_disk(self, paths,views):
+        views=np.array(views)
 
-        image = cv.imread(file, cv.IMREAD_GRAYSCALE)
+        frontal_views=np.where(views=="F")[0]
+        lateral_views=np.where(views=="L")[0]
+        if len(frontal_views)>0 :
+            frontal_path=paths[np.random.permutation(frontal_views)[0]]
 
-        if image is None:
-            raise Exception("Image not found by cv.imread: " + file)
+            frontal = cv.imread(f"{self.img_dir}{frontal_path}", cv.IMREAD_GRAYSCALE)
+            frontal = cv.resize(
+                frontal,
+                (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
+            )
 
-        image = cv.resize(
-            image,
-            (int(self.img_size ), int(self.img_size )), cv.INTER_CUBIC,  # removed center crop
-        )
+        else :
+            frontal=np.zeros((self.img_size,self.img_size))
+        if len(lateral_views) > 0:
+            lateral_path = paths[np.random.permutation(lateral_views)[0]]
+            lateral = cv.imread(f"{self.img_dir}{lateral_path}", cv.IMREAD_GRAYSCALE)
+            lateral = cv.resize(
+                lateral,
+                (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
+            )
+        else :
+            lateral=np.zeros((self.img_size,self.img_size))
+        assert len(lateral_views)+len(frontal_views)>0
 
 
 
-        return image
+
+
+
+
+        return frontal,lateral
 
     def __getitem__(self, idx) :
 
-        image = self.read_img(idx)
+        frontal,lateral= self.read_img(idx)
         label = self.get_label(idx)
 
         if self.split == "Train" :
-            image = self.transform(image=image)["image"]
+            images = self.transform(image=np.concatenate([frontal[None,:,:],lateral[None,:,:]],axis=0))["image"]
+            frontal,lateral=images[0],images[1]
 
-        image = torch.tensor(
-            image,
+
+
+
+        frontal = torch.tensor(
+            frontal,
+            dtype=torch.uint8,
+        )[None, :, :]
+        lateral = torch.tensor(
+            lateral,
             dtype=torch.uint8,
         )[None, :, :]
 
-        if self.channels == 3:
-            image = image.repeat((3, 1, 1))
-        return image, label.float()
+        # if self.channels == 3:
+        #     image = image.repeat((3, 1, 1))
+
+        return frontal,lateral, label.float(),idx
 
 
 

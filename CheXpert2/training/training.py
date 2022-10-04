@@ -24,21 +24,25 @@ def training_loop(
     model.train()
     iters = len(loader.iterable)
     i = 1
-    for inputs, labels in loader:
+    for frontals,laterals, labels,idx in loader:
 
         #send to GPU
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
+        frontals,laterals,labels = (
+            frontals.to(device, non_blocking=True),
+            laterals.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
 
         #Apply transformation on GPU to avoid CPU bottleneck
-        #inputs = loader.iterable.dataset.transform(inputs)
-        inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
-        inputs = loader.iterable.dataset.preprocess(inputs)
+
+
+        frontals, labels = loader.iterable.dataset.advanced_transform((frontals, labels))
+        laterals, labels = loader.iterable.dataset.advanced_transform((laterals, labels))
+        frontals = loader.iterable.dataset.preprocess(frontals)
+        laterals = loader.iterable.dataset.preprocess(laterals)
 
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs = model(inputs)
+            outputs = model(frontal=frontals,lateral=laterals)
             loss = criterion(outputs, labels)
 
 
@@ -63,7 +67,8 @@ def training_loop(
         del (
             outputs,
             labels,
-            inputs,
+            frontals,
+            laterals,
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
@@ -89,17 +94,21 @@ def validation_loop(model, loader, criterion, device):
 
     results = [torch.tensor([]), torch.tensor([])]
 
-    for inputs, labels in loader:
+    for frontals,laterals, labels,idx in loader:
         # get the inputs; data is a list of [inputs, labels]
 
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
+        # send to GPU
+        frontals, laterals, labels = (
+            frontals.to(device, non_blocking=True),
+            laterals.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.iterable.dataset.preprocess(inputs)
+
+        frontals = loader.iterable.dataset.preprocess(frontals)
+        laterals = loader.iterable.dataset.preprocess(laterals)
         # forward + backward + optimize
 
-        outputs = model(inputs)
+        outputs = model(frontal=frontals,lateral=laterals)
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
@@ -109,7 +118,8 @@ def validation_loop(model, loader, criterion, device):
                                dim=0)  # round to 0 or 1 in case of label smoothing
 
         del (
-            inputs,
+            frontals,
+            laterals,
             labels,
             outputs,
             loss,

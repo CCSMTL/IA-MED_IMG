@@ -17,6 +17,7 @@ from CheXpert2.models.CNN import CNN
 from CheXpert2.models.Ensemble import Ensemble
 #from polycam.polycam.polycam import PCAMp
 from CheXpert2.Metrics import Metrics
+from CheXpert2 import names
 import yaml
 proxy = urllib.request.ProxyHandler(
     {
@@ -180,8 +181,7 @@ def main():
     #plt.imshow(np.sum(heatmaps[0][0].detach().cpu().numpy(), axis=0))
     #plt.savefig("heatmaps.png")
 
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
+
     metric = Metrics(num_classes=20, names=names, threshold=np.zeros((20)) + 0.5)
     metrics = metric.metrics()
     metrics_results = {}

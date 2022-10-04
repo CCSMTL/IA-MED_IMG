@@ -6,14 +6,15 @@ import pymongo
 import yaml
 import urllib
 from CheXpert2 import names
+
 class MongoDB:
     def __init__(self, address, port, collectionnames):
-        #assert urllib.request.urlopen(f"{address}:{port}").getcode() == 200 #make sure connection is up
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
 
         self.data = []
+
 
         if "CIUSSS" in collectionnames :
             self.db_CIUSSS = self.client["CIUSSS"]
@@ -26,18 +27,22 @@ class MongoDB:
         columns=names
 
 
-        self.names = columns + ["Path","collection"]
+        self.names = columns + ["Path","collection","Exam ID","Frontal/Lateral"]
 
         for name in collectionnames:
             self.data.append(self.db_public[name])
-
+        self.collectionnames=collectionnames
 
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = [pd.DataFrame([],columns=self.names)]
 
 
-        query = {datasetname: 1,"Frontal/Lateral": "F"}
+        if datasetname=="Valid" and self.collectionnames==["ChexPert"] and os.environ["DEBUG"] == "True":
+            query = {"Path" : {"$regex" : "valid"}}
+
+        else :
+            query = {datasetname: 1}
 
         if len(classnames) > 0:
             query["$or"] = [{classname: 1} for classname in classnames]
@@ -58,6 +63,7 @@ class MongoDB:
                     if column not in data.columns :
                         data[column] = 0
                 data["Patient ID"] = data["Patient ID"].astype(str)
+                data["Exam ID"] = data["Exam ID"].astype(str)
                 data.set_index("Patient ID")
                 train_dataset.append(data)
 
@@ -70,11 +76,11 @@ class MongoDB:
         #set up parent class
         df.fillna(0, inplace=True)
 
-        df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion","Lung Opacity"]].replace(-1,1).max(axis=1)
+        df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"]].replace(-1,1).max(axis=1)
         df["Air"]     = df[["Emphysema","Pneumothorax","Pneumo other"]].replace(-1,1).max(axis=1)
         df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
         df.fillna(0, inplace=True)
-        df[self.names[:-2]] = df[self.names[:-2]].astype(int)
+        df[self.names[:-4]] = df[self.names[:-4]].astype(int)
         df.to_csv("test.csv",sep=" ")
         return df
 
@@ -83,8 +89,7 @@ if __name__ == "__main__":
     import yaml
 
     os.environ["DEBUG"] = "False"
-    with open("data/data.yaml", "r") as stream:
-        names = yaml.safe_load(stream)["names"]
+    from CheXpert2 import names
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
