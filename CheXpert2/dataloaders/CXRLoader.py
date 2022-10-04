@@ -95,8 +95,8 @@ class CXRLoader(Dataset):
 
         self.files[self.classes] = self.files[self.classes].astype(int)
 
-        mask = self.files[self.classes].values.sum(axis=1)>0
-        self.files = self.files.loc[mask]
+        #mask = self.files[self.classes].values.sum(axis=1)>0
+        #self.files = self.files.loc[mask]
         self.img_dir = img_dir
 
 
@@ -110,7 +110,6 @@ class CXRLoader(Dataset):
         self.files["Path"]=paths
         self.files["Frontal/Lateral"]=frontal_lateral
 
-        self.files.to_csv("grouped_data.csv")
         if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
             with parallel_backend('threading', n_jobs=num_worker):
                 self.images = Parallel()(
@@ -290,7 +289,7 @@ class CXRLoader(Dataset):
         label = self.get_label(idx)
 
         if self.split == "Train" :
-            images = self.transform(image=np.concatenate([frontal[None,:,:],lateral[None,:,:]],axis=0))["image"]
+            images = self.transform(image=np.concatenate([frontal[None,:,:],lateral[None,:,:]],axis=0).astype(np.float32))["image"]
             frontal,lateral=images[0],images[1]
 
 
