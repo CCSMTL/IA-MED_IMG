@@ -42,7 +42,7 @@ class MongoDB:
             query = {"Path" : {"$regex" : "valid"}}
 
         else :
-            query = {datasetname: 1}
+            query = {datasetname: 1,"Frontal/Lateral" : "F"}
 
         if len(classnames) > 0:
             query["$or"] = [{classname: 1} for classname in classnames]

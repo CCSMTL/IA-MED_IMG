@@ -42,7 +42,7 @@ def training_loop(
         
 
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs=torch.zeros((images.shape[0],model.num_classes))
+            outputs=torch.zeros((images.shape[0],model.num_classes)).to(device)
             for channel in range(images.shape[1]) :
                 outputs += model(images[:,channel:channel+1,:,:])
             loss = criterion(outputs, labels)
@@ -64,7 +64,8 @@ def training_loop(
 
         scaler.step(optimizer)
         scaler.update()
-        optimizer.zero_grad(set_to_none=True)
+        #optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad()
         scheduler.step()
         running_loss += loss.detach()
         # ending loop
@@ -112,9 +113,9 @@ def validation_loop(model, loader, criterion, device,autocast):
 
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast) :
-            outputs = torch.zeros((images.shape[0], model.num_classes))
+            outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
             for channel in range(images.shape[1]) :
-                outputs += model(images[:,channel,channel+1,:,:])
+                outputs += model(images[:,channel:channel+1,:,:])
             loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
