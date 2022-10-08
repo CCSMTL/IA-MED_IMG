@@ -25,25 +25,26 @@ def training_loop(
     iters = len(loader.iterable)
     results = [torch.tensor([]), torch.tensor([])]
     i = 1
-    for frontals,laterals, labels,idx in loader:
+    for images, labels,idx in loader:
 
         #send to GPU
-        frontals,laterals,labels = (
-            frontals.to(device, non_blocking=True),
-            laterals.to(device, non_blocking=True),
+        images,labels = (
+            images.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
 
         #Apply transformation on GPU to avoid CPU bottleneck
 
 
-        frontals, labels = loader.iterable.dataset.advanced_transform((frontals, labels))
-        laterals, labels = loader.iterable.dataset.advanced_transform((laterals, labels))
-        frontals = loader.iterable.dataset.preprocess(frontals)
-        laterals = loader.iterable.dataset.preprocess(laterals)
+        images, labels = loader.iterable.dataset.advanced_transform((images, labels))
+        
+        images = loader.iterable.dataset.preprocess(images)
+        
 
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs = model(frontal=frontals,lateral=laterals)
+            outputs=torch.zeros((images.shape[0],model.num_classes))
+            for channel in range(images.shape[1]) :
+                outputs += model(images[:,channel:channel+1,:,:])
             loss = criterion(outputs, labels)
 
 
@@ -72,8 +73,7 @@ def training_loop(
         del (
             outputs,
             labels,
-            frontals,
-            laterals,
+            images,
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
@@ -83,7 +83,7 @@ def training_loop(
 
 
 @torch.no_grad()
-def validation_loop(model, loader, criterion, device):
+def validation_loop(model, loader, criterion, device,autocast):
     """
 
     :param model: model to evaluate
@@ -99,22 +99,23 @@ def validation_loop(model, loader, criterion, device):
 
     results = [torch.tensor([]), torch.tensor([])]
 
-    for frontals,laterals, labels,idx in loader:
+    for images, labels,idx in loader:
         # get the inputs; data is a list of [inputs, labels]
 
         # send to GPU
-        frontals, laterals, labels = (
-            frontals.to(device, non_blocking=True),
-            laterals.to(device, non_blocking=True),
+        images, labels = (
+            images.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
 
-        frontals = loader.iterable.dataset.preprocess(frontals)
-        laterals = loader.iterable.dataset.preprocess(laterals)
-        # forward + backward + optimize
+        images = loader.iterable.dataset.preprocess(images)
 
-        outputs = model(frontal=frontals,lateral=laterals)
-        loss = criterion(outputs.float(), labels.float())
+        # forward + backward + optimize
+        with torch.cuda.amp.autocast(enabled=autocast) :
+            outputs = torch.zeros((images.shape[0], model.num_classes))
+            for channel in range(images.shape[1]) :
+                outputs += model(images[:,channel,channel+1,:,:])
+            loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
         outputs = torch.sigmoid(outputs.detach().cpu())
@@ -123,8 +124,7 @@ def validation_loop(model, loader, criterion, device):
                                dim=0)  # round to 0 or 1 in case of label smoothing
 
         del (
-            frontals,
-            laterals,
+            images,
             labels,
             outputs,
             loss,
@@ -154,8 +154,8 @@ def training(
     scaler = torch.cuda.amp.GradScaler()
     val_loss = np.inf
     n, m = len(training_loader), len(validation_loader)
-    criterion_val = criterion()
-    criterion = criterion(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
+    criterion_val = criterion#()
+    criterion = criterion#(pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
     #scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
@@ -181,7 +181,7 @@ def training(
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
-                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion_val, device
+                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion_val, device,autocast
             )
             print("mean output : ",torch.mean(results[1]))
             val_loss = val_loss.cpu() / m

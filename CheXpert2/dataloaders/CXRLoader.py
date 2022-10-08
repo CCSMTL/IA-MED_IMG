@@ -260,6 +260,8 @@ class CXRLoader(Dataset):
 
         frontal_views=np.where(views=="F")[0]
         lateral_views=np.where(views=="L")[0]
+        for path in paths :
+            assert os.path.exists(path) ,f"path does not exists : {path}"
         if len(frontal_views)>0 :
             frontal_path=paths[np.random.permutation(frontal_views)[0]]
 
@@ -288,33 +290,29 @@ class CXRLoader(Dataset):
 
 
 
-        return frontal,lateral
+        return np.concatenate(frontal[None,:,:],lateral[None,:,:],dim=0).astype(np.float32)
 
     def __getitem__(self, idx) :
 
-        frontal,lateral= self.read_img(idx)
+        images= self.read_img(idx)
         label = self.get_label(idx)
 
         if self.split == "Train" :
-            images = self.transform(image=np.concatenate([frontal[None,:,:],lateral[None,:,:]],axis=0).astype(np.float32))["image"]
-            frontal,lateral=images[0],images[1]
+            images = self.transform(image=images)["image"]
 
 
 
 
-        frontal = torch.tensor(
-            frontal,
-            dtype=torch.uint8,
-        )[None, :, :]
-        lateral = torch.tensor(
-            lateral,
+
+        images = torch.tensor(
+            images,
             dtype=torch.uint8,
         )[None, :, :]
 
         # if self.channels == 3:
         #     image = image.repeat((3, 1, 1))
 
-        return frontal,lateral, label.float(),idx
+        return images, label.float(),idx
 
 
 

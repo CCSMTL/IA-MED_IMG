@@ -45,6 +45,7 @@ class CNN(torch.nn.Module):
         self.backbone2=backbone2
         self.pretrain = pretraining
 
+
     def forward(self,frontal=None,lateral=None):
         x,y=0,0
         assert frontal is not None or lateral is not None

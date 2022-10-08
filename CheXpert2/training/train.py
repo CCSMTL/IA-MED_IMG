@@ -19,6 +19,9 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
 from CheXpert2 import names
+
+from libauc.losses import AUCMLoss
+from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
 # torch.autograd.set_detect_anomaly(True)
@@ -74,7 +77,7 @@ def initialize_config():
     # ----------- hyperparameters-------------------------------------<
 
     config = vars(args)
-    torch.set_num_threads(config["num_worker"])
+    torch.set_num_threads(max(config["num_worker"],1))
 
     # ----------- load classes ----------------------------------------
 
@@ -252,7 +255,6 @@ if __name__ == "__main__":
 
 
     # training
-
-    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss, device, prob, metrics,
-                   pretrain=False)
+    loss= AUCMLoss()
+    results = main(config, img_dir, model, experiment, PESG(model,loss_fn=loss),loss, device, prob, metrics,pretrain=False)
     experiment.end(results)
