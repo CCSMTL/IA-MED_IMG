@@ -33,7 +33,7 @@ except:
 def initialize_config():
     # -------- proxy config ---------------------------
     #
-    # proxy = urllib.request.ProxyHandler(
+    # proxy = urllib.request.ProxyHandler(line
     #     {
     #         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
     #         "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
@@ -253,6 +253,6 @@ if __name__ == "__main__":
 
     # training
 
-    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(),lr=config["lr"]), torch.nn.BCEWithLogitsLoss, device, prob, metrics,
+    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss, device, prob, metrics,
                    pretrain=False)
     experiment.end(results)

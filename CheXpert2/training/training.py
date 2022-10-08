@@ -64,11 +64,11 @@ def training_loop(
         scaler.step(optimizer)
         scaler.update()
         optimizer.zero_grad(set_to_none=True)
-        scheduler.step(i)
+        scheduler.step()
         running_loss += loss.detach()
         # ending loop
 
-        loader.iterable.dataset.step(idx.numpy(), outputs.detach().cpu().numpy())
+        #loader.iterable.dataset.step(idx.numpy(), outputs.detach().cpu().numpy())
         del (
             outputs,
             labels,

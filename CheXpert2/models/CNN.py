@@ -46,6 +46,11 @@ class CNN(torch.nn.Module):
         self.pretrain = pretraining
 
     def forward(self,frontal=None,lateral=None):
+
+        if torch.sum(frontal)==0:
+            frontal = None
+        if torch.sum(lateral)==0:
+            lateral = None
         x,y=0,0
         assert frontal is not None or lateral is not None
         if frontal is not None :
