@@ -243,7 +243,7 @@ if __name__ == "__main__":
         )
 
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss, device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                        metrics=metrics, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)
