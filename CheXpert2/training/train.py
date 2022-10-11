@@ -255,6 +255,8 @@ if __name__ == "__main__":
 
 
     # training
+    model.backbone.reset_classifier()
+
     config.update({"lr":0.1},allow_val_change=True)
 
     loss= AUCM_MultiLabel(device=device,num_classes=num_classes)
