@@ -26,35 +26,21 @@ class CNN(torch.nn.Module):
         else:
             try:
                 import timm
-                backbone1 = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
+                backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
                                              num_classes=num_classes,drop_rate=drop_rate,global_pool=global_pool)
-                backbone2 = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
-                                              num_classes=num_classes, drop_rate=drop_rate, global_pool=global_pool)
-                self.frontal_feature=backbone1.forward_features
-                self.lateral_feature=backbone2.forward_features
-
-                #backbone.forward_head = Identity()
-                self.classifier = backbone1.forward_head
 
             except :
                 raise NotImplementedError("This model has not been found within the available repos.")
 
         self.num_classes = num_classes
 
-        self.backbone1=backbone1
-        self.backbone2=backbone2
+        self.backbone=backbone
+
         self.pretrain = pretraining
 
 
-    def forward(self,frontal=None,lateral=None):
-        x,y=0,0
-        assert frontal is not None or lateral is not None
-        if frontal is not None :
-            x = self.frontal_feature(frontal)
-        if lateral is not None :
-            y = self.lateral_feature(lateral)
-
-        return self.classifier(x+y)
+    def forward(self,images):
+        return self.backbone(images)
 
 
 

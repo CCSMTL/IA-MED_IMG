@@ -257,6 +257,7 @@ if __name__ == "__main__":
     # training
     config.update({"lr":0.1},allow_val_change=True)
 
-    loss= AUCM_MultiLabel()
+    loss= AUCM_MultiLabel(device=device,num_classes=num_classes)
+    criterion = lambda outputs,preds : loss(torch.sigmoid(outputs),preds)
     results = main(config, img_dir, model, experiment, PESG(model,loss_fn=loss),loss, device, prob, metrics,pretrain=False)
     experiment.end(results)
