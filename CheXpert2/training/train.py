@@ -20,7 +20,7 @@ from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
 from CheXpert2 import names
 
-from libauc.losses import AUCMLoss
+from libauc.losses import AUCM_MultiLabel
 from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -92,7 +92,7 @@ def initialize_config():
 
     # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=20,
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20,
         no_log=False
     )
 
@@ -255,6 +255,8 @@ if __name__ == "__main__":
 
 
     # training
-    loss= AUCMLoss()
+    config.update({"lr":0.1},allow_val_change=True)
+
+    loss= AUCM_MultiLabel()
     results = main(config, img_dir, model, experiment, PESG(model,loss_fn=loss),loss, device, prob, metrics,pretrain=False)
     experiment.end(results)

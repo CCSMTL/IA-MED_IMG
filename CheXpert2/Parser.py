@@ -229,11 +229,12 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--tags",
+        "--tag",
         default=None,
-        nargs="+",
+        nargs="?",
         required=False,
-        help="extra tags to add to the logs",
+        type=str,
+        help="tag to add to the logs",
     )
 
     parser.add_argument(
