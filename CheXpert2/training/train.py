@@ -238,7 +238,7 @@ if __name__ == "__main__":
     metrics = metric.metrics()
     if config["pretraining"] !=0 :
         experiment2 = Experiment(
-            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
+            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5,
             no_log=False
         )
 
