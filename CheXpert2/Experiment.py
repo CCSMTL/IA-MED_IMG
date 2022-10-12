@@ -18,7 +18,7 @@ from CheXpert2.results_visualization import plot_polar_chart
 
 
 class Experiment:
-    def __init__(self, directory, names, tags=None, config=None, epoch_max=50, patience=5,no_log=False):
+    def __init__(self, directory, names, tag=None, config=None, epoch_max=50, patience=5,no_log=False):
         self.names = names
         self.weight_dir = "models_weights/" + directory
 
@@ -37,7 +37,7 @@ class Experiment:
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
         if self.rank == 0:
-            wandb.init(project="Chestxray", entity="ccsmtl2", config=config)
+            wandb.init(project="Chestxray", entity="ccsmtl2", config=config,tags=tag)
 
         self.no_log = no_log
     def next_epoch(self, val_loss, model):
