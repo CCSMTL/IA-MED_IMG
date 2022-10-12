@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
 
     # training
-    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"],device=device)
     model = model.to(device)
     config.update({"lr":0.001},allow_val_change=True)
 
