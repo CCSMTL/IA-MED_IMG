@@ -20,7 +20,7 @@ from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
 from CheXpert2 import names
 
-from libauc.losses import AUCMLoss
+from libauc.losses import AUCM_MultiLabel
 from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
@@ -33,7 +33,7 @@ try:
     os.environ["img_dir"] = os.environ["img_dir"]
 except:
     os.environ["img_dir"] = ""
-def initialize_config():
+def initialize_config(args):
     # -------- proxy config ---------------------------
     #
     # proxy = urllib.request.ProxyHandler(
@@ -50,8 +50,7 @@ def initialize_config():
     # urllib.request.install_opener(opener)
 
     # ------------ parsing & Debug -------------------------------------
-    parser = init_parser()
-    args = parser.parse_args()
+
     # 1) set up debug env variable
     os.environ["DEBUG"] = str(args.debug)
     if args.debug:
@@ -92,7 +91,7 @@ def initialize_config():
 
     # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["epoch"], patience=20,
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20,
         no_log=False
     )
 
@@ -214,7 +213,9 @@ def main(config, img_dir, model, experiment, optimizer, criterion, device, prob,
 
 
 if __name__ == "__main__":
-    config, img_dir, experiment, device, prob, names = initialize_config()
+    parser = init_parser()
+    args = parser.parse_args()
+    config, img_dir, experiment, device, prob, names = initialize_config(args)
     num_classes = len(names)
 
 
@@ -238,12 +239,12 @@ if __name__ == "__main__":
     metrics = metric.metrics()
     if config["pretraining"] !=0 :
         experiment2 = Experiment(
-            f"{config['model']}", names=names, tags=None, config=config, epoch_max=config["pretraining"], patience=5,
+            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5,
             no_log=False
         )
 
 
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss, device, prob,
+        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
                        metrics=metrics, pretrain=False)
 
         #set_parameter_requires_grad(model.backbone)
@@ -255,6 +256,11 @@ if __name__ == "__main__":
 
 
     # training
-    loss= AUCMLoss()
-    results = main(config, img_dir, model, experiment, PESG(model,loss_fn=loss),loss, device, prob, metrics,pretrain=False)
+    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+    model = model.to(device)
+    config.update({"lr":0.001},allow_val_change=True)
+
+    loss= AUCM_MultiLabel(device=device,num_classes=num_classes)
+    criterion = lambda outputs,preds : loss(torch.sigmoid(outputs),preds)
+    results = main(config, img_dir, model, experiment, PESG(model,loss_fn=loss,device=device),criterion, device, prob, metrics,pretrain=False)
     experiment.end(results)
