@@ -70,7 +70,7 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0],
+        default=[0,0,0,0,0,0],
         type=float,
         nargs="+",
         required=False,

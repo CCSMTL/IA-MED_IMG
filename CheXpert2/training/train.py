@@ -82,12 +82,8 @@ def initialize_config(args):
 
 
     #--------- set up augment_prob ---------------------------------
-    if len(config["augment_prob"]) == 1:
-        prob = [0, ] * 6
-        for i in range(6):
-            prob[i] = config[f"augment_prob_{i}"]
-    else:
-        prob = config["augment_prob"]
+
+
 
     # --------- instantiate experiment tracker ------------------------
     experiment = Experiment(
@@ -102,165 +98,59 @@ def initialize_config(args):
         config = wandb.config
 
 
-    return config, img_dir, experiment, device, prob,names
+    return config, img_dir, experiment, device
+
+def main() :
+    parser = init_parser()
+    args = parser.parse_args()
+    config, img_dir, experiment, device = initialize_config(args)
+    num_classes = len(names)
+
+    # -----------model initialisation------------------------------
+
+    model = CNN(config["model"], num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
+                pretrained=config["pretrained"], channels=config["channels"], drop_rate=config["drop_rate"],
+                global_pool=config["global_pool"])
+    # send model to gpu
 
 
-def main(config, img_dir, model, experiment, optimizer, criterion, device, prob, metrics, pretrain=False):
-    # -------data initialisation-------------------------------
+    print("The model has now been successfully loaded into memory")
+    # pre-training
 
+    if config["pretraining"] != 0:
+        experiment2 = Experiment(
+            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5,
+            no_log=False
+        )
+        experiment.compile(model, optimizer="AdamW", criterion="BCEWithLogitsLoss",
+                           train_datasets=["CIUSSS", "ChexPert"],
+                           val_datasets=["CIUSSS"], config=config, device=device)
+        results = experiment.train()
 
-    if os.environ["DEBUG"] =="False" :
-        num_samples = 100000
-    else :
-        num_samples=100
+    # setting up for the training
 
-    train_dataset = CXRLoader(
-        split="Train",
-        img_dir=img_dir,
-        img_size=config["img_size"],
-        prob=prob,
-        intensity=config["augment_intensity"],
-        label_smoothing=config["label_smoothing"],
-        cache=config["cache"],
-        num_worker=config["num_worker"],
-        unet=False,
-        channels=config["channels"],
-        N=config["N"],
-        M=config["M"],
-        pretrain=pretrain,
-        datasets=["ChexPert"] if os.environ["DEBUG"]=="True" else ["CIUSSS","ChexPert"]
-    )
-    val_dataset = CXRLoader(
-        split="Valid",
-        img_dir=img_dir,
-        img_size=config["img_size"],
-        cache=False,
-        num_worker=config["num_worker"],
-        unet=False,
-        channels=config["channels"],
-        N=0,
-        M=0,
-        pretrain=pretrain,
-        datasets=["ChexPert"] if os.environ["DEBUG"]=="True" else ["CIUSSS"]
-    )
+    # training
+    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+    config.update({"lr": 0.001}, allow_val_change=True)
+    loss = AUCM_MultiLabel(device=device, num_classes=num_classes)
+    criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
 
-    if train_dataset.weights is not None :
-        sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights, num_samples=min(num_samples,len(train_dataset)))
-    else :
-        sampler = torch.utils.data.SubsetRandomSampler(list(range(len(train_dataset)))[0:min(num_samples,len(train_dataset))], generator=None)
-
-
-    if dist.is_initialized() :
-        sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))
-
-    if experiment.rank == 0:
-        import plotly.express as px
-
-        fig = px.bar(y=train_dataset.count,x=experiment.names)
-        wandb.log({"Train histogram": fig})
-        fig = px.bar(y=val_dataset.count, x=experiment.names)
-        wandb.log({"Valid histogram": fig})
-
-
-    training_loader = torch.utils.data.DataLoader(
-        train_dataset,
-        batch_size=config["batch_size"],
-        num_workers=config["num_worker"],
-        pin_memory=True,
-        sampler=sampler,
-
-
-    )
-    validation_loader = torch.utils.data.DataLoader(
-        val_dataset,
-        batch_size=config["batch_size"],
-        num_workers=config["num_worker"],
-        pin_memory=True,
-        shuffle=False,
-    )
-    print("The data has now been loaded successfully into memory")
-
-    # ------------- Metrics & Trackers -----------------------------------------------------------
-    experiment.watch(model)
-    # ------------training--------------------------------------------
-    print("Starting training now")
-
-    # initialize metrics loggers
-
-    #TODO : remove pretrain boolean?
-    training_loader.dataset.pretrain = pretrain
-    validation_loader.dataset.pretrain = pretrain
-
-    results = training(
-        model,
-        optimizer,
-        criterion,
-        training_loader,
-        validation_loader,
-        device,
-        minibatch_accumulate=1,
-        experiment=experiment,
-        metrics=metrics,
-        clip_norm=config["clip_norm"],
-        pos_weight=config["pos_weight"],
-        autocast=config["autocast"],
-        lr = config["lr"]
+    experiment.compile(
+        model=model,
+        optimizer = None,
+        criterion=None,
+        train_datasets=["ChexPert","CIUSSS"],
+        val_datasets = ["CIUSSS"],
+        config=config,
+        device=device
     )
 
-    return results
+    experiment.train(optimizer=PESG(model, loss_fn=loss, device=device) , criterion=criterion)
+
+    experiment.end(results)
 
 
 
 
 if __name__ == "__main__":
-    parser = init_parser()
-    args = parser.parse_args()
-    config, img_dir, experiment, device, prob, names = initialize_config(args)
-    num_classes = len(names)
-
-
-    # -----------model initialisation------------------------------
-
-    model = CNN(config["model"], num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                pretrained=config["pretrained"], channels=config["channels"],drop_rate=config["drop_rate"],global_pool=config["global_pool"])
-    # send model to gpu
-    model = model.to(device, dtype=torch.float)
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
-    print("The model has now been successfully loaded into memory")
-    # pre-training
-    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
-
-    metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
-    metrics = metric.metrics()
-    if config["pretraining"] !=0 :
-        experiment2 = Experiment(
-            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5,
-            no_log=False
-        )
-
-
-        results = main(config, img_dir, model, experiment2, optimizer, torch.nn.BCEWithLogitsLoss(), device, prob,
-                       metrics=metrics, pretrain=False)
-
-        #set_parameter_requires_grad(model.backbone)
-
-    #setting up for the training
-
-
-
-
-
-    # training
-    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"],device=device)
-    model = model.to(device)
-    config.update({"lr":0.001},allow_val_change=True)
-
-    loss= AUCM_MultiLabel(device=device,num_classes=num_classes)
-    criterion = lambda outputs,preds : loss(torch.sigmoid(outputs),preds)
-    results = main(config, img_dir, model, experiment, PESG(model,loss_fn=loss,device=device),criterion, device, prob, metrics,pretrain=False)
-    experiment.end(results)
+  main()

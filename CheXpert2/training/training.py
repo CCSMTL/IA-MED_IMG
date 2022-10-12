@@ -2,8 +2,6 @@ import numpy as np
 import torch
 import torch.distributed as dist
 import tqdm
-from libauc.losses import AUCM_MultiLabel
-from CheXpert2.custom_utils import set_parameter_requires_grad
 
 
 def training_loop(
