@@ -113,8 +113,8 @@ class Experiment:
 
     def save_weights(self):
         if self.rank == 0 and os.environ["DEBUG"] == "False" :
-            torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone_get_name()}.pt")
-            wandb.save(f"{self.weight_dir}/{self.model.backbone_get_name()}.pt")
+            torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
+            wandb.save(f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
 
     def summarize(self):
         self.summary = self.metrics
