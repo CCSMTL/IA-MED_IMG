@@ -82,7 +82,7 @@ class CXRLoader(Dataset):
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset("Train", classnames=classnames)
+        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
 
 
 
