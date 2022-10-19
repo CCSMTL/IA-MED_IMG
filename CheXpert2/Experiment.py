@@ -55,7 +55,7 @@ class Experiment:
         self.weight_dir = "models_weights/" + directory
 
         self.summary = {}
-        self.metrics = {}
+        self.metrics_results = {}
         self.pbar = tqdm.tqdm(total=epoch_max, position=0)
         self.best_loss = np.inf
         self.keep_training = True
@@ -87,7 +87,7 @@ class Experiment:
                 self.patience -= 1
                 if logging :
                     logging.info(f"patience has been reduced by 1, now at {self.patience}")
-                    logging.info(f"training loss : {self.metrics['training_loss']}")
+                    logging.info(f"training loss : {self.metrics_results['training_loss']}")
                     logging.info(f"validation loss : {val_loss}")
         self.pbar.update(1)
         self.epoch += 1
@@ -103,13 +103,13 @@ class Experiment:
                 wandb.log({metric_name: value, "epoch": epoch})
             else:
                 wandb.log({metric_name: value})
-            self.metrics[metric_name] = value
+            self.metrics_results[metric_name] = value
 
     def log_metrics(self, metrics, epoch=None):
         if self.rank == 0 :
             metrics["epoch"] = epoch
             wandb.log(metrics)
-            self.metrics = self.metrics | metrics
+            self.metrics_results = self.metrics_results | metrics
 
     def save_weights(self):
         if self.rank == 0 and os.environ["DEBUG"] == "False" :
@@ -117,7 +117,7 @@ class Experiment:
             wandb.save(f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
 
     def summarize(self):
-        self.summary = self.metrics
+        self.summary = self.metrics_results
 
     def watch(self, model):
         if self.rank == 0 :
@@ -280,7 +280,7 @@ class Experiment:
         scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
-        print(f"Train : {n}, Valid : {m}")
+
         criterion_val = self.criterion  # ()
         criterion = self.criterion  # (pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
@@ -318,10 +318,11 @@ class Experiment:
 
                     val_loss = val_loss.cpu() / m
                     if self.metrics:
-                        for key in self.metrics:
+                        for key,metric in self.metrics.items():
                             pred = results[1].numpy()
                             true = results[0].numpy().round(0)
-                            metric_result = self.metrics[key](true, pred)
+
+                            metric_result = metric(true, pred)
                             metrics_results[key] = metric_result
 
                         self.log_metrics(metrics_results, epoch=self.epoch)

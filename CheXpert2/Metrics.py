@@ -2,8 +2,8 @@ import numpy as np
 import sklearn.metrics
 import timm.utils.metrics
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc
-
+from sklearn.metrics import roc_curve, auc,f1_score,recall_score,precision_score
+import logging
 
 class Metrics:
     def __init__(self, num_classes, names, threshold):
@@ -63,14 +63,14 @@ class Metrics:
         pred2 = self.convert(pred)
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
-        return metrics.f1_score(
+        return f1_score(
             true, pred2, average="weighted", zero_division=0
         )  # weighted??
 
     def precision(self, true, pred):
         pred = self.convert(pred)
         pred = np.where(pred > 0.5, 1, 0)
-        results = metrics.precision_score(true, pred, average=None, zero_division=0)
+        results = precision_score(true, pred, average=None, zero_division=0)
 
         results_dict = {}
         for item, name in zip(results, self.names):
@@ -81,7 +81,7 @@ class Metrics:
 
         pred = self.convert(pred)
         pred = np.where(pred > 0.5, 1, 0)
-        results=metrics.recall_score(true, pred, average=None, zero_division=0)
+        results=recall_score(true, pred, average=None, zero_division=0)
         results_dict={}
         for item,name in zip(results,self.names) :
             results_dict[name] = item
@@ -97,7 +97,7 @@ class Metrics:
             fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
 
             threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
-            print(f"threshold {self.names[i]} : ",threshold)
+            logging.info(f"threshold {self.names[i]} : ",threshold)
             self.thresholds[i] =threshold
             try :
                 auroc =  auc(fpr[i], tpr[i])
@@ -119,6 +119,18 @@ class Metrics:
             "recall": self.recall,
             "precision": self.precision,
             "accuracy": self.accuracy,
-        #    "accuracy-3" : self.accuracy3
+
         }
         return dict
+
+
+if __name__=="__main__" :
+    from CheXpert2 import names
+    num_classes=len(names)
+    metric = Metrics(num_classes=num_classes, names=names, threshold=np.zeros((num_classes)) + 0.5)
+    metrics = metric.metrics()
+    print(metrics)
+    label=np.random.randint(0,2,(10,num_classes))
+    pred =np.random.random(size=(10,num_classes))
+    for key,metric in metrics.items() :
+        metric(label,pred)
