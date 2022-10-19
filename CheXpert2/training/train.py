@@ -121,7 +121,7 @@ def main() :
     if config["pretraining"] != 0:
         experiment2 = Experiment(
             f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5)
-        experiment.compile(
+        experiment2.compile(
             model,
             optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
@@ -130,7 +130,7 @@ def main() :
             config=config,
             device=device
         )
-        results = experiment.train()
+        results = experiment2.train()
 
     # setting up for the training
 
