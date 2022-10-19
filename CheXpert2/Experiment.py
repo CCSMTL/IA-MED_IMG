@@ -56,7 +56,7 @@ class Experiment:
 
         self.summary = {}
         self.metrics = {}
-
+        self.pbar = tqdm.tqdm(total=epoch_max, position=0)
         self.best_loss = np.inf
         self.keep_training = True
         self.epoch = 0
@@ -65,7 +65,7 @@ class Experiment:
         self.patience = patience
         self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         self.names = names
-        self.logging = logging.basicConfig(filename='RADIA.log',level=verbose*10)
+
         # create directory if doesnt existe
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
@@ -73,6 +73,8 @@ class Experiment:
             wandb.init(project="Chestxray", entity="ccsmtl2", config=config,tags=tag)
 
         self.verbose=verbose
+
+
     def next_epoch(self, val_loss):
         if self.rank == 0 :
             if val_loss < self.best_loss or self.epoch == 0:
@@ -83,14 +85,16 @@ class Experiment:
                 self.save_weights()
             else:
                 self.patience -= 1
-                self.logging.info(f"patience has been reduced by 1, now at {self.patience}")
-                self.logging.info(f"training loss : {self.metrics['training_loss']}")
-                self.logging.info(f"validation loss : {val_loss}")
+                if logging :
+                    logging.info(f"patience has been reduced by 1, now at {self.patience}")
+                    logging.info(f"training loss : {self.metrics['training_loss']}")
+                    logging.info(f"validation loss : {val_loss}")
         self.pbar.update(1)
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
-        self.logging.info(pd.DataFrame(self.summary,columns=list(self.summary.keys())))
+        if logging :
+            logging.info(pd.DataFrame(self.summary,columns=list(self.summary.keys())))
 
 
     def log_metric(self, metric_name, value, epoch=None):
@@ -193,8 +197,6 @@ class Experiment:
 
 
         img_dir=os.environ["img_dir"]
-        train_datasets = ["ChexPert"] if os.environ["DEBUG"]=="True" else train_datasets
-        val_datasets = ["ChexPert"] if os.environ["DEBUG"]=="True" else val_datasets
 
         train_dataset =CXRLoader(
             split="Train",
@@ -209,7 +211,7 @@ class Experiment:
             channels=config["channels"],
             N=config["N"],
             M=config["M"],
-            logger=self.logging,
+            logger=logging,
             datasets=train_datasets
         )
         val_dataset=CXRLoader(
@@ -225,14 +227,18 @@ class Experiment:
                 channels=config["channels"],
                 N=0,
                 M=0,
-                logger=self.logging,
+                logger=logging,
                 datasets=val_datasets
         )
-
+        if logging :
+            logging.debug(f"Loaded {len(train_dataset)} exams for training")
+            logging.debug(f"Loaded {len(val_dataset)} exams for validation")
         if os.environ["DEBUG"] == "False":
-            num_samples = 100000
+            num_samples = 100_000
         else:
-            num_samples = 100
+            num_samples = 10
+
+
         if train_dataset.weights is not None:
             sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,
                                                                      num_samples=min(num_samples, len(train_dataset)))
@@ -286,6 +292,7 @@ class Experiment:
         scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
+        print(f"Train : {n}, Valid : {m}")
         criterion_val = self.criterion  # ()
         criterion = self.criterion  # (pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
@@ -296,7 +303,7 @@ class Experiment:
                                                         epochs=self.epoch_max)
 
         with logging_redirect_tqdm():
-            self.pbar = tqdm.tqdm(total=self.epoch_max, position=0)
+
             while self.keep_training:  # loop over the dataset multiple times
                 metrics_results = {}
                 if dist.is_initialized():
@@ -319,7 +326,7 @@ class Experiment:
                     val_loss, results = validation_loop(
                         self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
                     )
-                    self.logging.debug("mean output : ", torch.mean(results[1]))
+                    logging.debug("mean output : ", torch.mean(results[1]))
 
                     val_loss = val_loss.cpu() / m
                     if self.metrics:
@@ -340,8 +347,8 @@ class Experiment:
                 #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
                 if self.epoch == self.epoch_max:
                     self.keep_training = False
-
-            self.logging.info("Finished Training")
+            if logging :
+                logging.info("Finished Training")
             return results
 
 

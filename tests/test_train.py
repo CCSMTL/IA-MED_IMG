@@ -9,13 +9,15 @@ import os
 
 import torch
 import yaml
-
+import logging
 from CheXpert2.Experiment import Experiment
 from CheXpert2.models.CNN import CNN
 from CheXpert2.training.train import main
-from CheXpert2 import names
+from CheXpert2 import names,debug_config
 
 def test_train():
+    verbose=5
+    logging.basicConfig(filename='RADIA.log', level=verbose * 10)
     try:
         img_dir = os.environ["img_dir"]
     except:
@@ -26,38 +28,26 @@ def test_train():
     os.environ["DEBUG"] = "True"
     os.environ["WANDB_MODE"] = "offline"
 
-    config = {
-        "model": "convnext_tiny",
-        "batch_size": 2,
-        "img_size": 224,
-        "num_worker": 0,
-        "augment_intensity": 0,
-        "cache": False,
-        "N": 0,
-        "M": 2,
-        "clip_norm": 100,
-        "label_smoothing": 0,
-        "lr": 0.001,
-        "beta1": 0.9,
-        "beta2": 0.999,
-        "weight_decay": 0.01,
-        "freeze": False,
-        "pretrained": False,
-        "pretraining": 0,
-        "channels": 1,
-        "autocast": True,
-        "pos_weight": 1,
-    }
+
 
     experiment = Experiment(
-        f"{config['model']}", names=names, tags=None, config=config, epoch_max=1, patience=5
+        f"{debug_config['model']}", names=names, tag=None, config=debug_config, epoch_max=1, patience=5
     )
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    prob = [0, ] * 6
-    model = CNN(config["model"], len(names), img_size=config["img_size"], freeze_backbone=config["freeze"],
-                pretrained=config["pretrained"], channels=config["channels"], pretraining=False)
-    results = main(config, img_dir, model, experiment, torch.optim.SGD(model.parameters(), lr=config["lr"]),
-                   torch.nn.BCEWithLogitsLoss, device, prob, None,pretrain=False)
+
+    model = CNN(debug_config["model"], len(names), img_size=debug_config["img_size"], freeze_backbone=debug_config["freeze"],
+                pretrained=debug_config["pretrained"], channels=debug_config["channels"], pretraining=False)
+
+    experiment.compile(
+        model=model,
+        optimizer="AdamW",
+        criterion="BCEWithLogitsLoss",
+        train_datasets=["ChexPert"],
+        val_datasets=["ChexPert"],
+        config=debug_config,
+        device=device
+    )
+    results = experiment.train()
 
     assert experiment.best_loss != 0
 

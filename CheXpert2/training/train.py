@@ -8,7 +8,7 @@ import torch
 import torch.distributed as dist
 import yaml
 from torch.utils.data.sampler import SequentialSampler
-
+import logging
 import wandb
 from CheXpert2.Experiment import Experiment
 # ----------- parse arguments----------------------------------
@@ -101,6 +101,7 @@ def initialize_config(args):
     return config, img_dir, experiment, device
 
 def main() :
+    logging.basicConfig(filename='RADIA.log', level=5 * 10)
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir, experiment, device = initialize_config(args)

@@ -32,14 +32,16 @@ def test_dataloader_get_item():
             img_dir = img_dir,
             img_size=224,
             datasets=["ChexPert"])
-    frontal,lateral, label,idx = train[4]
-    assert frontal.shape == (1, int(224), int(224))
+    print(len(train))
+    images, label,idx = train[4]
+    frontal = images[0,:,:]
+    assert frontal.shape == (224,224)
     assert label.shape == (len(names),)
 
 
 def test_dataloader_transform():
     os.environ["DEBUG"] = "True"
-    transform = CXRLoader.get_transform([0.2, ] * 6, 0.1)
+    transform = CXRLoader.get_transform([0.2, ] * 6)
     # testing outputs
     x = np.random.randint(0, 255, (224,224,1), dtype=np.uint8)
 

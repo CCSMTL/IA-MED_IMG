@@ -61,7 +61,6 @@ class CXRLoader(Dataset):
 
 
         self.classes = names
-        self.logger = logger if logger else logging.getLogger("CXRLoader")
         self.img_dir = img_dir
         self.annotation_files = {}
 
@@ -86,12 +85,11 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        if split == "test_chexpert" :
-            self.files = MongoDB("10.128.107.212", 27017, datasets,logger=self.logger).dataset("Train", classnames=classnames)
-            self.files = self.files.loc[self.files['Path'].str.contains("valid", case=False)]
 
-        else :
-            self.files = MongoDB("10.128.107.212", 27017, datasets,logger=self.logger).dataset(split, classnames=classnames)
+        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset("Train", classnames=classnames)
+
+
+
 
         self.files[self.classes] = self.files[self.classes].astype(int)
 
@@ -109,15 +107,14 @@ class CXRLoader(Dataset):
         self.files=self.files[self.classes+["Exam ID"]].groupby("Exam ID").mean().round(0)
         self.files["Path"]=paths
         self.files["Frontal/Lateral"]=frontal_lateral
-
-        if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
-            with parallel_backend('threading', n_jobs=num_worker):
-                self.images = Parallel()(
-                    delayed(self.read_img_from_disk)(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral']) for idx in
-                    tqdm.tqdm(range(0, len(self.files))))
-            self.read_img = lambda idx : self.images[idx]
-        else :
-            self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
+        # if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
+        #     with parallel_backend('threading', n_jobs=num_worker):
+        #         self.images = Parallel()(
+        #             delayed(self.read_img_from_disk)(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral']) for idx in
+        #             tqdm.tqdm(range(0, len(self.files))))
+        #     self.read_img = lambda idx : self.images[idx]
+        # else :
+        self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
 
 
         if split == "Train" :
@@ -126,6 +123,8 @@ class CXRLoader(Dataset):
             self.weights = None
 
         self.files.reset_index(inplace=True)
+
+
     def __len__(self):
         return len(self.files)
 
@@ -229,7 +228,7 @@ class CXRLoader(Dataset):
 
         for name,cat_count in zip(self.classes,count) :
             if cat_count == 0:
-                self.logger.warning(f"Careful! The category {name} has 0 images!")
+                logging.warning(f"Careful! The category {name} has 0 images!")
         count[-1] /=2 #lets double the number of empty images we will give to the model
         self.count = count
         weights = np.zeros((len(data)))
@@ -315,12 +314,12 @@ class CXRLoader(Dataset):
 
 
 if __name__ == "__main__" :
-    os.environ["DEBUG"] = "False"
+    os.environ["DEBUG"] = "True"
     img_dir = os.environ["img_dir"]
     train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False, datasets = ["ChexPert"])
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, datasets = ["ChexPert"])
     valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0, pretrain=False, datasets = ["ChexPert"])
+                      cache=False, num_worker=0, channels=1, unet=False, N=0, M=0,  datasets = ["ChexPert"])
     print(len(train))
     print(len(valid))
     print(len(train.weights))

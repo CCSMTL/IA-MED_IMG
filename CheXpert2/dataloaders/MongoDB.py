@@ -6,13 +6,13 @@ import pymongo
 import yaml
 import urllib
 from CheXpert2 import names
-
+import logging
 class MongoDB:
-    def __init__(self, address, port, collectionnames,logger=None):
+    def __init__(self, address, port, collectionnames):
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
-        self.logger=logger
+
         self.data = []
         self.collectionnames = collectionnames
 
@@ -36,11 +36,6 @@ class MongoDB:
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = [pd.DataFrame([],columns=self.names)]
-
-
-
-
-
         query = {datasetname: 1}
 
         if len(classnames) > 0:
@@ -49,8 +44,8 @@ class MongoDB:
         for collection in self.data:
             results = list(collection.find(query))
 
-            if self.logger :
-                self.logger.info(f"Collected query for dataset {collection}")
+
+            logging.info(f"Collected query for dataset {collection}")
 
             if len(results) > 0:
 
@@ -88,12 +83,12 @@ class MongoDB:
 if __name__ == "__main__":
     import yaml
 
-    os.environ["DEBUG"] = "False"
+    os.environ["DEBUG"] = "True"
     from CheXpert2 import names
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert"],logger=None)
+    db = MongoDB("10.128.107.212", 27017, ["ChexPert"])
     print("database initialized")
     train = db.dataset("Train", [])
     print("training dataset loaded")
