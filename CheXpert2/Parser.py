@@ -24,24 +24,6 @@ def init_parser():
         required=False,
         help="width and length to resize the images to. Choose a value between 320 and 608.",
     )
-    parser.add_argument(
-        "--N",
-        default=2,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-    parser.add_argument(
-        "--M",
-        default=9,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
 
     parser.add_argument(
         "--device",
@@ -209,18 +191,7 @@ def init_parser():
         help="do you wish  to use pretrained weights?",
     )
 
-    parser.add_argument(
-        "--cache",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish  to cache the data into ram?",
-    )
-    parser.add_argument(
-        "--unet",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish to train the unet instead of the classifier",
-    )
+
 
     parser.add_argument(
         "--debug",
