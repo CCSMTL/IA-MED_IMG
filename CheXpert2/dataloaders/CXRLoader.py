@@ -47,9 +47,7 @@ class CXRLoader(Dataset):
             prob=None,
             intensity=0,
             label_smoothing=0,
-            cache=False,
             channels=1,
-
             datasets = ["ChexPert"],
     ):
 
@@ -67,7 +65,7 @@ class CXRLoader(Dataset):
 
         self.intensity = intensity
         self.img_size = img_size
-        self.cache = cache
+
         self.channels = channels
 
         self.split = split

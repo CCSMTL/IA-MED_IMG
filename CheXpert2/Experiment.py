@@ -205,7 +205,6 @@ class Experiment:
             prob=config["augment_prob"],
             intensity=config["augment_intensity"],
             label_smoothing=config["label_smoothing"],
-            cache=config["cache"],
             channels=config["channels"],
             datasets=train_datasets
         )
@@ -216,7 +215,6 @@ class Experiment:
                 prob=[0,0,0,0,0,0,0],
                 intensity=0,
                 label_smoothing=0,
-                cache=config["cache"],
                 channels=config["channels"],
                 datasets=val_datasets
         )
