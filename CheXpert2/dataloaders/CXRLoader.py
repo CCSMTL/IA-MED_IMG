@@ -48,12 +48,8 @@ class CXRLoader(Dataset):
             intensity=0,
             label_smoothing=0,
             cache=False,
-            num_worker=0,
             channels=1,
-            unet=False,
-            N=0,
-            M=0,
-            logger=None,
+
             datasets = ["ChexPert"],
     ):
 
@@ -73,14 +69,14 @@ class CXRLoader(Dataset):
         self.img_size = img_size
         self.cache = cache
         self.channels = channels
-        self.unet = unet
+
         self.split = split
 
         # ----- Transform definition ------------------------------------------------------
 
         self.preprocess = self.get_preprocess(channels, img_size)
         self.transform = self.get_transform(self.prob)
-        self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
+        self.advanced_transform = self.get_advanced_transform(self.prob, intensity)
 
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
@@ -151,7 +147,7 @@ class CXRLoader(Dataset):
             ]
         )
     @staticmethod
-    def get_advanced_transform(prob, intensity, N, M):
+    def get_advanced_transform(prob, intensity):
         return transforms.Compose(
             [  # advanced/custom
             #    custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default

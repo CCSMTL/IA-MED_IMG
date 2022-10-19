@@ -206,12 +206,7 @@ class Experiment:
             intensity=config["augment_intensity"],
             label_smoothing=config["label_smoothing"],
             cache=config["cache"],
-            num_worker=config["num_worker"],
-            unet=False,
             channels=config["channels"],
-            N=config["N"],
-            M=config["M"],
-            logger=logging,
             datasets=train_datasets
         )
         val_dataset=CXRLoader(
@@ -222,12 +217,7 @@ class Experiment:
                 intensity=0,
                 label_smoothing=0,
                 cache=config["cache"],
-                num_worker=config["num_worker"],
-                unet=False,
                 channels=config["channels"],
-                N=0,
-                M=0,
-                logger=logging,
                 datasets=val_datasets
         )
         if logging :

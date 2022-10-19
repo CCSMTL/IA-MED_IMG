@@ -55,7 +55,7 @@ def test_dataloader_advanced_transform():
     # testing outputs
     os.environ["DEBUG"] = "True"
     img = torch.randint(0, 255, (16, 3, 224, 224), dtype=torch.uint8)
-    transform = CXRLoader.get_advanced_transform([0.2, ] * 5, 0.1, 2, 9)
+    transform = CXRLoader.get_advanced_transform([0.2, ] * 5, 0.1)
     label = torch.randint(0, 2, (16, 14), dtype=torch.float32)
     for i in range(5):
         img2, label2 = transform((img, label))
