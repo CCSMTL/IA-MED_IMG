@@ -14,9 +14,9 @@ import torch.distributed as dist
 from CheXpert2.Experiment import Experiment
 from CheXpert2.custom_utils import set_parameter_requires_grad
 from CheXpert2.models.CNN import CNN
-from CheXpert2.training.train import main, initialize_config
-
-
+from CheXpert2.training.train import initialize_config
+from CheXpert2.Parser import init_parser
+from  CheXpert2 import names
 def cleanup():
     torch.distributed.destroy_process_group()
     torch.cuda.empty_cache()
@@ -24,7 +24,9 @@ def cleanup():
 
 if __name__ == "__main__":
     dist.init_process_group("nccl")
-    config, img_dir, experiment, device, prob, names = initialize_config()
+    parser = init_parser()
+    args = parser.parse_args()
+    config, img_dir, experiment, device = initialize_config(args)
     num_classes = len(names)
     rank = dist.get_rank()
     device = rank % torch.cuda.device_count()
@@ -32,36 +34,34 @@ if __name__ == "__main__":
 
     model = CNN(config["model"], num_classes=num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
-    # send model to gpu
-    model = model.to(device)
+
     optimizer = torch.optim.AdamW(
         model.parameters(),
         lr=config["lr"],
         betas=(config["beta1"], config["beta2"]),
         weight_decay=config["weight_decay"],
     )
-    # optimizer = torch.optim.SGD(
-    #     model.parameters(),
-    #     lr=config["lr"],
-    #     momentum=0.9
-    # )
+
+
     print("The model has now been successfully loaded into memory")
 
     local_rank = int(os.environ['LOCAL_RANK'])
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-    # ---pretraining-------------------------------------
+    # ---training-------------------------------------
 
-    from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+    experiment.compile(
+        model=model,
+        optimizer="AdamW",
+        criterion="BCEWithLogitsLoss",
+        train_datasets=["ChexPert", "CIUSSS"],
+        val_datasets=["CIUSSS"],
+        config=config,
+        device=device
+    )
 
-    metric = Metrics(num_classes=num_classes, names=experiment.names, threshold=np.zeros((num_classes)) + 0.5)
-    metrics = metric.metrics()
+    results = experiment.train()
 
-    # -----training-------------------------------------------
-
-
-    results = main(config, img_dir, model, experiment, optimizer, torch.nn.BCEWithLogitsLoss, device, prob,
-                   metrics=metrics, pretrain=False)
     experiment.end(results)
     cleanup()

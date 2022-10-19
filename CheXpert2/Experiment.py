@@ -5,12 +5,14 @@ Created on 2022-07-19$
 
 @author: Jonathan Beaulieu-Emond
 """
+import logging
 import os
 import pathlib
 
 import numpy as np
 import torch
 import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 from torch.utils.data.sampler import SequentialSampler
 import wandb
 from CheXpert2.custom_utils import convert
@@ -22,18 +24,39 @@ import tqdm
 from CheXpert2 import names
 import torch
 import numpy as np
-
+import pandas as pd
 from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
 
 class Experiment:
-    def __init__(self, directory, names, tag=None, config=None, epoch_max=50, patience=5,no_log=False):
+    def __init__(self, directory : str, names: [str], tag : str = None, config=None, epoch_max : int=50, patience : int=5,verbose : int=1):
+        """
+        Initalize the experiment with some prerequired information.
+
+        Parameters :
+        -------------------------------------------------------------
+
+        directory : Str
+            directory on which the images are stored
+        names : List
+            List of strings of the classes names
+        tag : Str
+            A string used to tag the run on Wandb
+        config : Dict
+            Dict of the config for the model as given by Parser.py
+        epoch_max : Int
+            The Number of epoch the experiment can run
+        patience : Int
+            Amount of patience of the experiment. Default is 5
+        verbose : Int
+            Integer between 0 & 5. Default is 1
+        """
         self.names = names
         self.weight_dir = "models_weights/" + directory
 
         self.summary = {}
         self.metrics = {}
-        self.pbar = tqdm.tqdm(total=epoch_max, position=0)
+
         self.best_loss = np.inf
         self.keep_training = True
         self.epoch = 0
@@ -42,13 +65,14 @@ class Experiment:
         self.patience = patience
         self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         self.names = names
+        self.logging = logging.basicConfig(filename='RADIA.log',level=verbose*10)
         # create directory if doesnt existe
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
         if self.rank == 0:
             wandb.init(project="Chestxray", entity="ccsmtl2", config=config,tags=tag)
 
-        self.no_log = no_log
+        self.verbose=verbose
     def next_epoch(self, val_loss):
         if self.rank == 0 :
             if val_loss < self.best_loss or self.epoch == 0:
@@ -59,17 +83,18 @@ class Experiment:
                 self.save_weights()
             else:
                 self.patience -= 1
-                print(f"patience has been reduced by 1, now at {self.patience}")
-                print(self.metrics["training_loss"],val_loss)
+                self.logging.info(f"patience has been reduced by 1, now at {self.patience}")
+                self.logging.info(f"training loss : {self.metrics['training_loss']}")
+                self.logging.info(f"validation loss : {val_loss}")
         self.pbar.update(1)
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
-        print(self.summary)
+        self.logging.info(pd.DataFrame(self.summary,columns=list(self.summary.keys())))
 
 
     def log_metric(self, metric_name, value, epoch=None):
-        if self.rank == 0 and not self.no_log:
+        if self.rank == 0 :
             if epoch is not None:
                 wandb.log({metric_name: value, "epoch": epoch})
             else:
@@ -77,13 +102,13 @@ class Experiment:
             self.metrics[metric_name] = value
 
     def log_metrics(self, metrics, epoch=None):
-        if self.rank == 0 and not self.no_log:
+        if self.rank == 0 :
             metrics["epoch"] = epoch
             wandb.log(metrics)
             self.metrics = self.metrics | metrics
 
     def save_weights(self):
-        if self.rank == 0 and os.environ["DEBUG"] == "False" and not self.no_log:
+        if self.rank == 0 and os.environ["DEBUG"] == "False" :
             torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone_get_name()}.pt")
             wandb.save(f"{self.weight_dir}/{self.model.backbone_get_name()}.pt")
 
@@ -91,13 +116,14 @@ class Experiment:
         self.summary = self.metrics
 
     def watch(self, model):
-        if self.rank == 0 and not self.no_log:
+        if self.rank == 0 :
             wandb.watch(model)
 
     def end(self, results):
+
         for key,value in self.summary.items():
             wandb.run.summary[key] = value
-        if self.rank == 0 and not self.no_log:
+        if self.rank == 0 :
             # 1) confusion matrix
 
             self.log_metric(
@@ -183,6 +209,7 @@ class Experiment:
             channels=config["channels"],
             N=config["N"],
             M=config["M"],
+            logger=self.logging,
             datasets=train_datasets
         )
         val_dataset=CXRLoader(
@@ -198,6 +225,7 @@ class Experiment:
                 channels=config["channels"],
                 N=0,
                 M=0,
+                logger=self.logging,
                 datasets=val_datasets
         )
 
@@ -255,7 +283,7 @@ class Experiment:
         self.epoch = 0
         results = None
         # Creates a GradScaler once at the beginning of training.
-        scaler = torch.cuda.amp.GradScaler()
+        scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
         criterion_val = self.criterion  # ()
@@ -267,51 +295,54 @@ class Experiment:
         scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader),
                                                         epochs=self.epoch_max)
 
-        while self.keep_training:  # loop over the dataset multiple times
-            metrics_results = {}
-            if dist.is_initialized():
-                self.training_loader.sampler.set_epoch(self.epoch)
+        with logging_redirect_tqdm():
+            self.pbar = tqdm.tqdm(total=self.epoch_max, position=0)
+            while self.keep_training:  # loop over the dataset multiple times
+                metrics_results = {}
+                if dist.is_initialized():
+                    self.training_loader.sampler.set_epoch(self.epoch)
 
-            train_loss = training_loop(
-                self.model,
-                tqdm.tqdm(self.training_loader, leave=False, position=position),
+                train_loss = training_loop(
+                    self.model,
+                    tqdm.tqdm(self.training_loader, leave=False, position=position),
 
-                self.optimizer,
-                criterion,
-                self.device,
-                scaler,
-                self.config["clip_norm"],
-                self.config["autocast"],
-                scheduler,
-                epoch=self.epoch
-            )
-            if self.rank == 0:
-                val_loss, results = validation_loop(
-                    self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
+                    self.optimizer,
+                    criterion,
+                    self.device,
+                    scaler,
+                    self.config["clip_norm"],
+                    self.config["autocast"],
+                    scheduler,
+                    epoch=self.epoch
                 )
-                print("mean output : ", torch.mean(results[1]))
-                val_loss = val_loss.cpu() / m
-                if self.metrics:
-                    for key in self.metrics:
-                        pred = results[1].numpy()
-                        true = results[0].numpy().round(0)
-                        metric_result = self.metrics[key](true, pred)
-                        metrics_results[key] = metric_result
+                if self.rank == 0:
+                    val_loss, results = validation_loop(
+                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
+                    )
+                    self.logging.debug("mean output : ", torch.mean(results[1]))
 
-                    self.log_metrics(metrics_results, epoch=self.epoch)
-                    self.log_metric("training_loss", train_loss.cpu() / n, epoch=self.epoch)
-                    self.log_metric("validation_loss", val_loss, epoch=self.epoch)
+                    val_loss = val_loss.cpu() / m
+                    if self.metrics:
+                        for key in self.metrics:
+                            pred = results[1].numpy()
+                            true = results[0].numpy().round(0)
+                            metric_result = self.metrics[key](true, pred)
+                            metrics_results[key] = metric_result
 
-                # Finishing the loop
+                        self.log_metrics(metrics_results, epoch=self.epoch)
+                        self.log_metric("training_loss", train_loss.cpu() / n, epoch=self.epoch)
+                        self.log_metric("validation_loss", val_loss, epoch=self.epoch)
 
-            self.next_epoch(val_loss)
-            # if not dist.is_initialized() and self.epoch % 5 == 0:
-            #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
-            if self.epoch == self.epoch_max:
-                self.keep_training = False
+                    # Finishing the loop
 
-        print("Finished Training")
-        return results
+                self.next_epoch(val_loss)
+                # if not dist.is_initialized() and self.epoch % 5 == 0:
+                #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
+                if self.epoch == self.epoch_max:
+                    self.keep_training = False
+
+            self.logging.info("Finished Training")
+            return results
 
 
 

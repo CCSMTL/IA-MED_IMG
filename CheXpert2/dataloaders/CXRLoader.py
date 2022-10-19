@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import torch
 import tqdm
-
+import logging
 from joblib import Parallel, delayed, parallel_backend
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -53,7 +53,7 @@ class CXRLoader(Dataset):
             unet=False,
             N=0,
             M=0,
-            pretrain=False,
+            logger=None,
             datasets = ["ChexPert"],
     ):
 
@@ -61,7 +61,7 @@ class CXRLoader(Dataset):
 
 
         self.classes = names
-
+        self.logger = logger if logger else logging.getLogger("CXRLoader")
         self.img_dir = img_dir
         self.annotation_files = {}
 
@@ -80,18 +80,18 @@ class CXRLoader(Dataset):
         # ----- Transform definition ------------------------------------------------------
 
         self.preprocess = self.get_preprocess(channels, img_size)
-        self.transform = self.get_transform(self.prob, intensity)
+        self.transform = self.get_transform(self.prob)
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity, N, M)
 
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
         if split == "test_chexpert" :
-            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset("Train", classnames=classnames)
+            self.files = MongoDB("10.128.107.212", 27017, datasets,logger=self.logger).dataset("Train", classnames=classnames)
             self.files = self.files.loc[self.files['Path'].str.contains("valid", case=False)]
 
         else :
-            self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
+            self.files = MongoDB("10.128.107.212", 27017, datasets,logger=self.logger).dataset(split, classnames=classnames)
 
         self.files[self.classes] = self.files[self.classes].astype(int)
 
@@ -120,7 +120,7 @@ class CXRLoader(Dataset):
             self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
 
 
-        if split == "Train" and not pretrain:
+        if split == "Train" :
             self.weights = weights
         else:
             self.weights = None
@@ -130,7 +130,7 @@ class CXRLoader(Dataset):
         return len(self.files)
 
     @staticmethod
-    def get_transform(prob, intensity):  # for transform that would require pil images
+    def get_transform(prob):  # for transform that would require pil images
         return A.Compose(
             [
 
@@ -229,7 +229,7 @@ class CXRLoader(Dataset):
 
         for name,cat_count in zip(self.classes,count) :
             if cat_count == 0:
-                print(f"Careful! The category {name} has 0 images!")
+                self.logger.warning(f"Careful! The category {name} has 0 images!")
         count[-1] /=2 #lets double the number of empty images we will give to the model
         self.count = count
         weights = np.zeros((len(data)))

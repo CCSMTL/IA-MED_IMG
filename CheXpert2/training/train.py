@@ -119,33 +119,37 @@ def main() :
 
     if config["pretraining"] != 0:
         experiment2 = Experiment(
-            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5,
-            no_log=False
+            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5)
+        experiment.compile(
+            model,
+            optimizer="AdamW",
+            criterion="BCEWithLogitsLoss",
+            train_datasets=["ChexPert"],
+            val_datasets=["ChexPert"],
+            config=config,
+            device=device
         )
-        experiment.compile(model, optimizer="AdamW", criterion="BCEWithLogitsLoss",
-                           train_datasets=["CIUSSS", "ChexPert"],
-                           val_datasets=["CIUSSS"], config=config, device=device)
         results = experiment.train()
 
     # setting up for the training
 
     # training
     model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
-    config.update({"lr": 0.001}, allow_val_change=True)
+    config.update({"lr": 0.1}, allow_val_change=True)
     loss = AUCM_MultiLabel(device=device, num_classes=num_classes)
     criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
 
     experiment.compile(
         model=model,
-        optimizer = None,
-        criterion=None,
-        train_datasets=["ChexPert","CIUSSS"],
-        val_datasets = ["CIUSSS"],
+        optimizer = "AdamW",
+        criterion="BCEWithLogitsLoss",
+        train_datasets=["ChexPert"],
+        val_datasets = ["ChexPert"],
         config=config,
         device=device
     )
 
-    experiment.train(optimizer=PESG(model, loss_fn=loss, device=device) , criterion=criterion)
+    experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
 
     experiment.end(results)
 
