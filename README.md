@@ -1,4 +1,4 @@
-# Introduction
+_# Introduction
 
 TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. And give the main sources
 
@@ -68,13 +68,17 @@ git config --global --unset https.proxy
 
 pip config set global.proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080
 ```
-## Does not go there
+## Experiment Tracking - W&B
 
-[create an account](https://wandb.ai/site) on weight and biases than ask to join the project
-#### In settings
+[create an account](https://wandb.ai/site) on weight and biases than ask to join the [organization](https://wandb.ai/ccsmtl)
+
+
+## Setting the environment
+
+### In settings
 go to settings->network->proxy
 
-#### In the environment
+### In the environment
 
 You also need to set the following environment variables :
 ```
@@ -82,7 +86,7 @@ HTTP_PROXY={proxy_url:port}
 HTTPS_PROXY={proxy_url:port
 ```
 
-#### For apt
+### For apt
 
 apt requires its own configuration file
 ```
@@ -99,12 +103,17 @@ and add to the file :
 Acquire::http::Proxy "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080";
 Acquire::https::Proxy "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080";
 ```
-#### for pip
+
+To use apt without proxy after without changing the config file :
+```
+sudo apt-get -o Acquire::http::proxy=false <update/install> 
+```
+### for pip
 pip install takes the flag --proxy
 
-#### for wget, curl, etc
+### for wget, curl, etc
 those require different proxy config files. Remember Google is your friend
-## Create a virtual work environnement
+### Create a virtual work environnement
 install python 3.9
 ```
 python3.9 -m venv venv
@@ -112,12 +121,17 @@ python3.9 -m venv venv
 ```
 source venv/bin/activate
 ```
-## Install the dependencies
-pip install --proxy {proxy} -r requirements.txt
+### Install the dependencies
 
+```
+pip install --proxy {proxy} -r CheXpert2/requirements.txt
+pip install --proxy {proxy} -r requirements_dev.txt
+pip install -e .
+
+```
 
 ``
-## Download the data
+### Download the data (just Chexpert mini for debug purpose)
 A data manager has been provided to both download the data and extract it .
 These require wget to be configure properly.
 run
@@ -129,19 +143,18 @@ data_api/data_downloader.py
 ````
 data_api/data_organizer.py
 ````
-# Build and Test
 
-## Build
-TODO: Describe and show how to build your code and run the tests.
-
-sudo pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 -r requirements.txt
-python train.py --model densenet201
 
 ## Test
-The test can be found in test.py.
+The test can be found in the folder tests.
 Run them by executing
-
-pytest -v test.py
+```
+pytest -v test.py 
+```
+or run them all
+```
+pytest -v ./tests
+```
 
 ## Commits
 
@@ -159,10 +172,173 @@ git push -u origin
 In azure Devops, go to the repos and select pull request. Your changes should be available there
 in order to finalize the pull request. Please take notes that all the tests run by pytest need to work before 
 the pull request is allowed to move forward.
+
+
+
+# File structure
+````
+.
+├── CheXpert2
+│   ├── Experiment.py
+│   ├── Metrics.py
+│   ├── Parser.py
+│   ├── Transforms.py
+│   ├── __init__.py
+│   ├── custom_Transforms.py
+│   ├── custom_utils.py
+│   ├── data analysis
+│   │   ├── clustering.py
+│   │   └── temp.py
+│   ├── data_API
+│   │   ├── data_analysis.py
+│   │   ├── data_downloader_chestXray.py
+│   │   ├── data_organizer.py
+│   │   ├── download.sh
+│   │   └── links.txt
+│   ├── data_visualization.py
+│   ├── dataloaders
+│   │   ├── CXRLoader.py
+│   │   ├── MongoDB.py
+│   │   └── test.csv
+│   ├── inference
+│   │   ├── __init__.py
+│   │   ├── detect.py
+│   │   ├── inference.ipynb
+│   │   └── test.csv
+│   ├── models
+│   │   ├── CNN.py
+│   │   ├── Ensemble.py
+│   │   ├── Unet.py
+│   │   └── teacher_learning.py
+│   ├── requirements.txt
+│   ├── results_visualization.py
+│   ├── run.sh
+│   └── training
+│       ├── __init__.py
+│       ├── multi_gpu_train.py
+│       ├── train.py
+│       └── training.py
+├── Pipfile
+├── RADIA.log
+├── README.md
+├── azure-pipelines.yml
+├── data
+│   ├── chexnet_results.csv
+│   └── data_table.csv
+├── grouped_data.csv
+├── requirements_dev.txt
+├── setup.py
+├── test.csv
+├── tests
+│   ├── __init__.py
+│   ├── data_test
+│   │   ├── CheXpert-v1.0-small
+│   │   │   └── valid
+│   │   │       ├── patient64541
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64542
+│   │   │       │   └── study1
+│   │   │       │       ├── view1_frontal.jpg
+│   │   │       │       └── view2_lateral.jpg
+│   │   │       ├── patient64543
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64544
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64545
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64546
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64547
+│   │   │       │   └── study1
+│   │   │       │       ├── view1_frontal.jpg
+│   │   │       │       ├── view2_frontal.jpg
+│   │   │       │       └── view3_lateral.jpg
+│   │   │       ├── patient64548
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64549
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       └── patient64550
+│   │   │           └── study1
+│   │   │               └── view1_frontal.jpg
+│   │   ├── data.yaml
+│   │   ├── images
+│   │   │   ├── 00027725_000.png
+│   │   │   ├── 00027725_001.png
+│   │   │   ├── 00027725_002.png
+│   │   │   ├── 00027725_003.png
+│   │   │   ├── 00027725_004.png
+│   │   │   ├── 00027725_005.png
+│   │   │   ├── 00027725_006.png
+│   │   │   ├── 00027725_007.png
+│   │   │   ├── 00027725_008.png
+│   │   │   └── 00027725_009.png
+│   │   ├── labels
+│   │   │   ├── 00027725_000.txt
+│   │   │   ├── 00027725_001.txt
+│   │   │   ├── 00027725_002.txt
+│   │   │   ├── 00027725_003.txt
+│   │   │   ├── 00027725_004.txt
+│   │   │   ├── 00027725_005.txt
+│   │   │   ├── 00027725_006.txt
+│   │   │   ├── 00027725_007.txt
+│   │   │   ├── 00027725_008.txt
+│   │   │   └── 00027725_009.txt
+│   │   ├── sampler_weights.txt
+│   │   ├── train.csv
+│   │   └── valid.csv
+│   ├── run_black.sh
+│   ├── run_pylint.sh
+│   ├── test_.py
+│   ├── test_Experiment.py
+│   ├── test_Unet.py
+│   ├── test_cnn.py
+│   ├── test_cxrloader.py
+│   └── test_train.py
+├── valid.csv
+└── visualization.py
+
+
+````
+
+## Training Scripts
+
+### Initial Setup
+
+Make sure the environment variable img_dir is defined and points to the folder containing /data/...
+where the images are stored
+
+Make sure you have logged into your W&B account.
+
+You can use the command wandb online/wandb offline to toggle online/offline mode.
+
+### train.py
+
+Used to launch training on a single GPU/CPU
+Instruction on specific arguments can be obtained by running
+``
+python CheXpert2/training/train.py --help
+``
+
+## multi_gpu_train.py
+
+Used to launch training on multiple GPUs. Still unstable . Use with caution 
+
+
 # Contribute
 TODO: Explain how other users and developers can contribute to make your code better.
 
 If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
 - [ASP.NET Core](https://github.com/aspnet/Home)
 - [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+- [Chakra Core](https://github.com/Microsoft/ChakraCore)_
+
+
+
+

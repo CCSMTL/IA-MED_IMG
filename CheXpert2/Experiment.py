@@ -93,8 +93,8 @@ class Experiment:
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
-        if logging :
-            logging.info(pd.DataFrame(self.summary,columns=list(self.summary.keys())))
+
+        logging.info(pd.DataFrame(self.summary,columns=list(self.summary.keys())))
 
 
     def log_metric(self, metric_name, value, epoch=None):
@@ -118,7 +118,7 @@ class Experiment:
 
     def summarize(self):
         self.summary = self.metrics_results
-        logging.info(self.summary)
+
 
     def watch(self, model):
         if self.rank == 0 :
