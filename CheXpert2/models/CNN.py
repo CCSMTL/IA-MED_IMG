@@ -2,84 +2,12 @@ import functools
 
 import torch
 from torch.autograd import Variable
-
-
-@torch.no_grad()
-def get_output(model, x):
-    y = model(x)
-    if "inception" in model._get_name().lower():
-        y = y.logits
-    return y.shape[1]
-
-
-def channels321(backbone):
-    try:
-        for name, weight1 in backbone.named_parameters():
-            break
-
-        name = name[:-7]  # removed the .weight of first conv
-
-        first_layer = functools.reduce(getattr, [backbone] + name.split("."))
-
-        # try:
-        #     first_layer = first_layer[0]
-        # except:
-        #     pass
-        bias = True if first_layer.bias is not None else False
-        new_first_layer = torch.nn.Conv2d(
-            1,
-            first_layer.out_channels,
-            kernel_size=first_layer.kernel_size,
-            stride=first_layer.stride,
-            padding=first_layer.padding,
-            bias=bias,
-            device=backbone.device
-        ).requires_grad_()
-
-        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
-        new_first_layer.weight[:, :, :, :].data[...] += Variable(
-            weight1[:, 1:2, :, :], requires_grad=True
-        )
-        # change first layer attribute
-        name = name.split(".")
-        last_item = name.pop()
-        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
-        setattr(item, last_item, new_first_layer)
-
-    except:  # transformers
-        name = "patch_embed.proj"
-        weight1 = backbone.patch_embed.proj.weight
-        first_layer = backbone.patch_embed.proj
-        bias = True if first_layer.bias is not None else False
-        new_first_layer = torch.nn.Conv2d(
-            1,
-            first_layer.out_channels,
-            kernel_size=first_layer.kernel_size,
-            stride=first_layer.stride,
-            padding=first_layer.padding,
-            bias=bias,
-        ).requires_grad_()
-        new_first_layer.weight[:, :, :, :].data[...].fill_(0)
-        new_first_layer.weight[:, :, :, :].data[...] += Variable(
-            weight1[:, 1:2, :, :], requires_grad=True
-        )
-        name = name.split(".")
-        last_item = name.pop()
-        item = functools.reduce(getattr, [backbone] + name)  # item is a pointer!
-        setattr(item, last_item, new_first_layer)
-
-
-class Identity(torch.nn.Module):
-    def __init__(self):
-        super(Identity, self).__init__()
-
-    def forward(self, x):
-        return x
-
+from CheXpert2.custom_utils import channels321,Identity
+import copy
 
 class CNN(torch.nn.Module):
     def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True,
-                 pretraining=True):
+                 pretraining=True,drop_rate=0,global_pool="avg"):
         super().__init__()
         # if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
         #     repo = "pytorch/vision:v0.10.0"
@@ -99,50 +27,20 @@ class CNN(torch.nn.Module):
             try:
                 import timm
                 backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
-                                             num_classes=num_classes)
-                backbone.forward_head = Identity()
-                self.classifier = Identity()
-            except:
+                                             num_classes=num_classes,drop_rate=drop_rate,global_pool=global_pool)
+
+            except :
                 raise NotImplementedError("This model has not been found within the available repos.")
 
         self.num_classes = num_classes
-        # -------------------------------------------------------------
 
-        # finds the size of the last layer of the model, and name of the first
-        # x = torch.zeros((2, channels, img_size, img_size))
-        # size = get_output(self.backbone, x)  # dirty way
-        #
-        # # -------------------------------------------------------------
-        #
-        # if freeze_backbone:
-        #     set_parameter_requires_grad(self.backbone)
-        #
-        # # --------------------------------------------------------------
-        # self.classifier = torch.nn.Sequential(
-        #     torch.nn.Linear(size, num_classes, bias=True)
-        # )
+        self.backbone=backbone
 
-        self.backbone = backbone
         self.pretrain = pretraining
 
-    def forward(self, x):
 
-        x = self.backbone(x).float()
-        x = self.classifier(x).float()
-        #x[:, [0, 1, 2, ]] = torch.sigmoid(x[:, [0, 1, 2]].clone())
-        #x[:, 7::] = torch.sigmoid(x[:, 7::]).clone()
-        #x[:, [3, 4, 5, 6]] = torch.softmax(x[:, [3, 4, 5, 6]], dim=1, dtype=torch.float).clone()
-        x = torch.sigmoid(x).clone()
-        x[:, -1] = 1 - x[:, -1]  # lets the model predict sick instead of no finding
-        # x = torch.sigmoid(x).detach().cpu()
-        # x[:, [8,9,10]] = torch.softmax(x[:, [8,9,10]], dim=1).clone()
-        #x[:, [0, 2, 8, 9, 10, 11, 12, 13, 14]] = torch.mul(x[:, [0, 2, 8, 9, 10, 11, 12, 13, 14]].clone(),
-        #                                                   x[:, -1].clone()[:, None])
-        x[:, 1] = torch.mul(x[:, 1].clone(), x[:, 0].clone())
-        x[:, [3, 4, 5, 6]] = torch.mul(x[:, [3, 4, 5, 6]].clone(), x[:, 2][:, None].clone())
-
-        return x
-
+    def forward(self,images):
+        return self.backbone(images)
 
 
 

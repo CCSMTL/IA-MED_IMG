@@ -1,5 +1,0 @@
-nc: 15
-
-#names : ['Cardiomegaly', 'Emphysema', 'Effusion', 'Consolidation', 'Hernia', 'Infiltration', 'Mass', 'Nodule', 'Atelectasis', 'Pneumothorax', 'Pleural_Thickening', 'Pneumonia', 'Fibrosis', 'Edema', 'No Finding']
-names: [ "Enlarged Cardiomediastinum"    ,"Cardiomegaly"    ,"Lung Opacity"    ,"Lung Lesion"    ,"Edema"    ,"Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Pleural Other"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule", "Normal" ]
-#names: [ "Enlarged Cardiomediastinum"    ,"Cardiomegaly"    ,"Lung Opacity"    ,"Lung Lesion"    ,"Edema"    ,"Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Pleural Other"    ,"Fracture" , "No Finding" ]

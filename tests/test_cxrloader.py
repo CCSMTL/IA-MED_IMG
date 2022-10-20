@@ -1,9 +1,9 @@
 import os
 
 import torch
-
+import numpy as np
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
-
+from CheXpert2 import names
 
 # -------- proxy config ---------------------------
 
@@ -20,24 +20,33 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # # install the openen on the module-level
 # urllib.request.install_opener(opener)
 
-
+try :
+    img_dir = os.environ["img_dir"]
+except :
+    img_dir = ""
 
 def test_dataloader_get_item():
     os.environ["DEBUG"] = "True"
-    train = CXRLoader("Train", img_dir="", img_size=224)
-    image, label = train[4]
-    assert image.shape == (1, int(224 * 1.14), int(224 * 1.14))
-    assert label.shape == (15,)
+    train = CXRLoader(
+            split="Train",
+            img_dir = img_dir,
+            img_size=224,
+            datasets=["ChexPert"])
+    print(len(train))
+    images, label,idx = train[4]
+    frontal = images[0,:,:]
+    assert frontal.shape == (224,224)
+    assert label.shape == (len(names),)
 
 
 def test_dataloader_transform():
     os.environ["DEBUG"] = "True"
-    transform = CXRLoader.get_transform([0.2, ] * 5, 0.1)
+    transform = CXRLoader.get_transform([0.2, ] * 6)
     # testing outputs
-    x = torch.randint(0, 255, (10, 3, 224, 224), dtype=torch.uint8)
+    x = np.random.randint(0, 255, (224,224,1), dtype=np.uint8)
 
     for i in range(5):
-        img2 = transform(x)
+        img2 = transform(image=x)["image"]
 
         assert x.shape == img2.shape
 
@@ -46,7 +55,7 @@ def test_dataloader_advanced_transform():
     # testing outputs
     os.environ["DEBUG"] = "True"
     img = torch.randint(0, 255, (16, 3, 224, 224), dtype=torch.uint8)
-    transform = CXRLoader.get_advanced_transform([0.2, ] * 5, 0.1, 2, 9)
+    transform = CXRLoader.get_advanced_transform([0.2, ] * 5, 0.1)
     label = torch.randint(0, 2, (16, 14), dtype=torch.float32)
     for i in range(5):
         img2, label2 = transform((img, label))
@@ -57,7 +66,7 @@ def test_dataloader_advanced_transform():
 
 def test_dataloader_sampler():
     os.environ["DEBUG"] = "False"
-    train = CXRLoader("Train")
+    train = CXRLoader("Train",datasets=["ChexPert"])
     assert len(train.weights) == len(train)
 
 

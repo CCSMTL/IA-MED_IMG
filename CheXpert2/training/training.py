@@ -3,11 +3,9 @@ import torch
 import torch.distributed as dist
 import tqdm
 
-from CheXpert2.custom_utils import set_parameter_requires_grad
-
 
 def training_loop(
-        model, loader, optimizer, criterion, device, scaler, clip_norm, autocast
+        model, loader, optimizer, criterion, device, scaler, clip_norm, autocast, scheduler, epoch
 ):
     """
 
@@ -22,66 +20,60 @@ def training_loop(
     running_loss = 0
 
     model.train()
-    i = 0
-    n = len(loader)
-    for inputs, labels in loader:
+    i = 1
+    for images, labels, idx in loader:
 
-        # get the inputs; data is a list of [inputs, labels]
-
-        # forward + backward + optimize
-        # loss = training_core(model, inputs, scaler, criterion,device)
-
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
+        # send to GPU
+        images, labels = (
+            images.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.iterable.dataset.transform(inputs)
-        inputs, labels = loader.iterable.dataset.advanced_transform((inputs, labels))
-        inputs = loader.iterable.dataset.preprocess(inputs)
+
+        # Apply transformation on GPU to avoid CPU bottleneck
+
+        images, labels = loader.iterable.dataset.advanced_transform((images, labels))
+
+        images = loader.iterable.dataset.preprocess(images)
 
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs = model(inputs)
+            outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
+            for channel in range(images.shape[1]):
+                outputs += model(images[:, channel:channel + 1, :, :])
             loss = criterion(outputs, labels)
 
-
-        assert not torch.isnan(outputs).any()
+        # assert not torch.isnan(outputs).any()
         # outputs = torch.nan_to_num(outputs,0)
 
-        if autocast:
-            scaler.scale(loss).backward()
-            # Unscales the gradients of optimizer's assigned params in-place
-            scaler.unscale_(optimizer)
-        else:
-            loss.backward()
-
+        scaler.scale(loss).backward()
+        # Unscales the gradients of optimizer's assigned params in-place
+        scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), clip_norm
         )
-        if autocast:
-            scaler.step(optimizer)
-            scaler.update()
-        else:
-            optimizer.step()
-        # optimizer.step()
 
-        optimizer.zero_grad(set_to_none=True)
+        scaler.step(optimizer)
+        scaler.update()
+        # optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad()
+        scheduler.step()
         running_loss += loss.detach()
         # ending loop
+
+        loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
         del (
             outputs,
             labels,
-            inputs,
+            images,
             loss,
         )  # garbage management sometimes fails with cuda
         i += 1
-
 
     return running_loss
 
 
 @torch.no_grad()
-def validation_loop(model, loader, criterion, device):
+def validation_loop(model, loader, criterion, device, autocast):
     """
 
     :param model: model to evaluate
@@ -92,32 +84,36 @@ def validation_loop(model, loader, criterion, device):
     """
     running_loss = 0
 
-
     model.eval()
 
     results = [torch.tensor([]), torch.tensor([])]
 
-    for inputs, labels in loader:
+    for images, labels, idx in loader:
         # get the inputs; data is a list of [inputs, labels]
 
-        inputs, labels = (
-            inputs.to(device, non_blocking=True),
+        # send to GPU
+        images, labels = (
+            images.to(device, non_blocking=True),
             labels.to(device, non_blocking=True),
         )
-        inputs = loader.iterable.dataset.preprocess(inputs)
-        # forward + backward + optimize
 
-        outputs = model(inputs)
-        loss = criterion(outputs.float(), labels.float())
+        images = loader.iterable.dataset.preprocess(images)
+
+        # forward + backward + optimize
+        with torch.cuda.amp.autocast(enabled=autocast):
+            outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
+            for channel in range(images.shape[1]):
+                outputs += model(images[:, channel:channel + 1, :, :])
+            loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
-        outputs = outputs.detach().cpu()
+        outputs = torch.sigmoid(outputs.detach().cpu())
         results[1] = torch.cat((results[1], outputs), dim=0)
         results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),
                                dim=0)  # round to 0 or 1 in case of label smoothing
 
         del (
-            inputs,
+            images,
             labels,
             outputs,
             loss,
@@ -127,18 +123,19 @@ def validation_loop(model, loader, criterion, device):
 
 
 def training(
-    model,
-    optimizer,
-    criterion,
-    training_loader,
-    validation_loader,
-    device="cpu",
-    metrics=None,
-    minibatch_accumulate=1,
-    experiment=None,
-
-    clip_norm = 100,
-    autocast=True
+        model,
+        optimizer,
+        criterion,
+        training_loader,
+        validation_loader,
+        device="cpu",
+        metrics=None,
+        minibatch_accumulate=1,
+        experiment=None,
+        pos_weight=1,
+        clip_norm=100,
+        autocast=True,
+        lr=0.001
 ):
     epoch = 0
     results = None
@@ -146,10 +143,14 @@ def training(
     scaler = torch.cuda.amp.GradScaler()
     val_loss = np.inf
     n, m = len(training_loader), len(validation_loader)
+    criterion_val = criterion  # ()
+    criterion = criterion  # (pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
 
     position = device + 1 if type(device) == int else 1
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=2,T_mult=5)
-    #scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
+    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
+    # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(training_loader),
+    #                                                 epochs=experiment.epoch_max)
     while experiment.keep_training:  # loop over the dataset multiple times
         metrics_results = {}
         if dist.is_initialized():
@@ -164,12 +165,15 @@ def training(
             device,
             scaler,
             clip_norm,
-            autocast
+            autocast,
+            scheduler,
+            epoch=epoch
         )
         if experiment.rank == 0:
             val_loss, results = validation_loop(
-                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion, device
+                model, tqdm.tqdm(validation_loader, position=position, leave=False), criterion_val, device, autocast
             )
+            print("mean output : ", torch.mean(results[1]))
             val_loss = val_loss.cpu() / m
             if metrics:
                 for key in metrics:
@@ -185,9 +189,9 @@ def training(
             # Finishing the loop
 
         experiment.next_epoch(val_loss, model)
-        scheduler.step()
-        if not dist.is_initialized() and experiment.epoch % 5 == 0:
-            set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
+        epoch += 1
+        # if not dist.is_initialized() and experiment.epoch % 5 == 0:
+        #     set_parameter_requires_grad(model, 1 + experiment.epoch // 2)
         if experiment.epoch == experiment.epoch_max:
             experiment.keep_training = False
 
