@@ -17,7 +17,7 @@ class student(torch.nn.Module) :
 
        self.student=torch.hub.load('ultralytics/yolov5', "_create",f'{teacher_model}.pt',channels=1)
 
-       self.teacher_cam = FullGrad(teacher)
+       self.teacher_cam = FullGrad(self.teacher)
 
 
 
