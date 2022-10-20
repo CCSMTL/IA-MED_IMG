@@ -86,9 +86,7 @@ def initialize_config(args):
 
 
     # --------- instantiate experiment tracker ------------------------
-    experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
-    )
+
 
     if dist.is_initialized():
         dist.barrier()
@@ -97,13 +95,13 @@ def initialize_config(args):
         config = wandb.config
 
 
-    return config, img_dir, experiment, device
+    return config, img_dir, device
 
 def main() :
     logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
     parser = init_parser()
     args = parser.parse_args()
-    config, img_dir, experiment, device = initialize_config(args)
+    config, img_dir, device = initialize_config(args)
     num_classes = len(names)
 
     # -----------model initialisation------------------------------
@@ -118,9 +116,9 @@ def main() :
     # pre-training
 
     if config["pretraining"] != 0:
-        experiment2 = Experiment(
+        experiment = Experiment(
             f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5)
-        experiment2.compile(
+        experiment.compile(
             model,
             optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
@@ -129,16 +127,18 @@ def main() :
             config=config,
             device=device
         )
-        results = experiment2.train()
+        results = experiment.train()
 
     # setting up for the training
+    experiment = Experiment(
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
+    )
 
-    # training
     model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
     config.update({"lr": 0.001}, allow_val_change=True)
     loss = AUCM_MultiLabel(device=device, num_classes=num_classes)
     criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
-
+    # training
     experiment.compile(
         model=model,
         optimizer = "AdamW",
