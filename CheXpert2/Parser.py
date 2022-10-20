@@ -7,7 +7,7 @@ def init_parser():
 
     parser.add_argument(
         "--model",
-        default="alexnet",
+        default="densenet201",
         const="all",
         type=str,
         nargs="?",
@@ -18,24 +18,6 @@ def init_parser():
     parser.add_argument(
         "--img_size",
         default=500,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-    parser.add_argument(
-        "--N",
-        default=2,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-    parser.add_argument(
-        "--M",
-        default=9,
         const="all",
         type=int,
         nargs="?",
@@ -70,50 +52,9 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0],
+        default=[0,0,0,0,0,0],
         type=float,
         nargs="+",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_4",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-
-    parser.add_argument(
-        "--augment_prob_3",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_2",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_1",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_0",
-        default=0,
-        type=float,
-        nargs="?",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
@@ -124,7 +65,7 @@ def init_parser():
         type=float,
         nargs="?",
         required=False,
-        help="The intensity of the data augmentation.Between 0 and 1. Default is 10%",
+        help="The intensity of the data augmentation.Between 0 and 1. Default is 0.1",
     )
     parser.add_argument(
         "--label_smoothing",
@@ -145,8 +86,17 @@ def init_parser():
         help="Norm for gradient clipping",
     )
     parser.add_argument(
+        "--pos_weight",
+        default=1,
+        const="all",
+        type=int,
+        nargs="?",
+        required=False,
+        help="A weight for the positive class.",
+    )
+    parser.add_argument(
         "--lr",
-        default=0.001,
+        default=0.0001,
         const="all",
         type=float,
         nargs="?",
@@ -209,37 +159,81 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--tags",
-        default=None,
-        nargs="+",
+        "--channels",
+        default=1,
+        nargs="?",
+        const="all",
+        type=int,
+        choices=[1, 3],
         required=False,
-        help="extra tags to add to the logs",
+        help="The number of channels for the inputs",
     )
 
     parser.add_argument(
-        "--frozen",
+        "--tag",
+        default=None,
+        nargs="?",
+        required=False,
+        type=str,
+        help="tag to add to the logs",
+    )
+
+    parser.add_argument(
+        "--freeze",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="do you wish  to freeze the backbone?",
+        help="do you wish  to freeze the backbone? This option has been disabled for now",
     )
     parser.add_argument(
-        "--cache",
+        "--pretrained",
         action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish  to cache the data into ram?",
+        default=True,
+        help="do you wish  to use pretrained weights?",
     )
-    parser.add_argument(
-        "--unet",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish to train the unet instead of the classifier",
-    )
+
+
 
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         default=False,
         help="do you wish to run in debug mode ? Only 100 images will be loaded",
+    )
+    parser.add_argument(
+        "--autocast",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="do you wish to disable autocast",
+    )
+    parser.add_argument(
+        "--pretraining",
+        default=0,
+        nargs="?",
+        const="all",
+        type=int,
+
+        required=False,
+        help="Number of step to pretrain the model (in case you want to use diff. training config)",
+    )
+    parser.add_argument(
+        "--drop_rate",
+        default=0,
+        nargs="?",
+        const="all",
+        type=float,
+
+        required=False,
+        help="The dropout rate. Must be between 0 and 1",
+    )
+    parser.add_argument(
+        "--global_pool",
+        default="avg",
+        nargs="?",
+        const="all",
+        type=str,
+
+        required=False,
+        help="the type of pooling to effectuate before the classifier",
     )
 
     return parser

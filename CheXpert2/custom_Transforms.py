@@ -8,10 +8,7 @@ from torchvision import transforms
 @torch.jit.script
 def invert_smaller(x1: int, x2: int) -> tuple[int, int]:
     if x1 > x2:
-        temp = x1
-        x1 = x2
-        x2 = temp
-
+        x1,x2 =  x2,x1
     return (x1, x2)
 
 
