@@ -118,6 +118,7 @@ class Experiment:
 
     def summarize(self):
         self.summary = self.metrics_results
+        logging.info(self.summary)
 
     def watch(self, model):
         if self.rank == 0 :
