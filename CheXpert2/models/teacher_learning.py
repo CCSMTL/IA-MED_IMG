@@ -13,11 +13,11 @@ class student(torch.nn.Module) :
        super().__init__()
 
 
-       teacher = Ensemble(student_models)
+       self.teacher = Ensemble(student_models)
 
-       student=torch.hub.load('ultralytics/yolov5', "_create",f'{teacher_model}.pt',channels=1)
+       self.student=torch.hub.load('ultralytics/yolov5', "_create",f'{teacher_model}.pt',channels=1)
 
-       teacher_cam = FullGrad(teacher)
+       self.teacher_cam = FullGrad(teacher)
 
 
 
@@ -34,7 +34,7 @@ class student(torch.nn.Module) :
         outputs=student(inputs)
         idxs=torch.where(outputs>0.5)
         for idx in idxs :
-            heatmap = teacher_cam(inputs,targets=[idx])
+            heatmap = self.teacher_cam(inputs,targets=[idx])
             bbox = self.heatmap_to_bbox(heatmap)
 
         classes = self.classifier(x+y)
