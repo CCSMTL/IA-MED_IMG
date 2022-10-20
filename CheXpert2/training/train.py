@@ -100,7 +100,7 @@ def initialize_config(args):
     return config, img_dir, experiment, device
 
 def main() :
-    logging.basicConfig(filename='RADIA.log', level=5 * 10)
+    logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir, experiment, device = initialize_config(args)
@@ -135,7 +135,7 @@ def main() :
 
     # training
     model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
-    config.update({"lr": 0.1}, allow_val_change=True)
+    config.update({"lr": 0.001}, allow_val_change=True)
     loss = AUCM_MultiLabel(device=device, num_classes=num_classes)
     criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
 

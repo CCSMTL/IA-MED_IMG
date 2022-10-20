@@ -237,59 +237,14 @@ the pull request is allowed to move forward.
 │   │   │       ├── patient64541
 │   │   │       │   └── study1
 │   │   │       │       └── view1_frontal.jpg
-│   │   │       ├── patient64542
-│   │   │       │   └── study1
-│   │   │       │       ├── view1_frontal.jpg
-│   │   │       │       └── view2_lateral.jpg
-│   │   │       ├── patient64543
-│   │   │       │   └── study1
-│   │   │       │       └── view1_frontal.jpg
-│   │   │       ├── patient64544
-│   │   │       │   └── study1
-│   │   │       │       └── view1_frontal.jpg
-│   │   │       ├── patient64545
-│   │   │       │   └── study1
-│   │   │       │       └── view1_frontal.jpg
-│   │   │       ├── patient64546
-│   │   │       │   └── study1
-│   │   │       │       └── view1_frontal.jpg
-│   │   │       ├── patient64547
-│   │   │       │   └── study1
-│   │   │       │       ├── view1_frontal.jpg
-│   │   │       │       ├── view2_frontal.jpg
-│   │   │       │       └── view3_lateral.jpg
-│   │   │       ├── patient64548
-│   │   │       │   └── study1
-│   │   │       │       └── view1_frontal.jpg
-│   │   │       ├── patient64549
-│   │   │       │   └── study1
-│   │   │       │       └── view1_frontal.jpg
-│   │   │       └── patient64550
-│   │   │           └── study1
-│   │   │               └── view1_frontal.jpg
+                    ....
 │   │   ├── data.yaml
 │   │   ├── images
 │   │   │   ├── 00027725_000.png
-│   │   │   ├── 00027725_001.png
-│   │   │   ├── 00027725_002.png
-│   │   │   ├── 00027725_003.png
-│   │   │   ├── 00027725_004.png
-│   │   │   ├── 00027725_005.png
-│   │   │   ├── 00027725_006.png
-│   │   │   ├── 00027725_007.png
-│   │   │   ├── 00027725_008.png
-│   │   │   └── 00027725_009.png
+                    ....
 │   │   ├── labels
 │   │   │   ├── 00027725_000.txt
-│   │   │   ├── 00027725_001.txt
-│   │   │   ├── 00027725_002.txt
-│   │   │   ├── 00027725_003.txt
-│   │   │   ├── 00027725_004.txt
-│   │   │   ├── 00027725_005.txt
-│   │   │   ├── 00027725_006.txt
-│   │   │   ├── 00027725_007.txt
-│   │   │   ├── 00027725_008.txt
-│   │   │   └── 00027725_009.txt
+                    ....
 │   │   ├── sampler_weights.txt
 │   │   ├── train.csv
 │   │   └── valid.csv
@@ -297,7 +252,6 @@ the pull request is allowed to move forward.
 │   ├── run_pylint.sh
 │   ├── test_.py
 │   ├── test_Experiment.py
-│   ├── test_Unet.py
 │   ├── test_cnn.py
 │   ├── test_cxrloader.py
 │   └── test_train.py
