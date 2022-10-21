@@ -4,23 +4,25 @@ import timm.utils.metrics
 from sklearn import metrics
 from sklearn.metrics import roc_curve, auc,f1_score,recall_score,precision_score
 import logging
-
+from libauc.metrics import roc_auc_score
 class Metrics:
     def __init__(self, num_classes, names, threshold):
         self.num_classes = num_classes
         self.thresholds = threshold
         self.names = names
 
-    def convert(self,pred):
+    # def convert(self,pred):
+    #
+    #     for i in range(self.num_classes) :
+    #         pred[:,i] = np.where(
+    #             pred[:,i]<=self.thresholds[i],
+    #             pred[:,i]/2/self.thresholds[i],               #if true
+    #             1 - (1-pred[:,i])/2/(1-self.thresholds[i])    #if false
+    #         )
+    #     return pred
 
-        for i in range(self.num_classes) :
-            pred[:,i] = np.where(
-                pred[:,i]<=self.thresholds[i],
-                pred[:,i]/2/self.thresholds[i],               #if true
-                1 - (1-pred[:,i])/2/(1-self.thresholds[i])    #if false
-            )
-        return pred
-        #self.convert = lambda x : x
+
+        self.convert = lambda x : x
 
     def accuracy(self, true, pred):
         # n, m = true.shape
@@ -63,6 +65,9 @@ class Metrics:
         pred2 = self.convert(pred)
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
+
+
+
         return f1_score(
             true, pred2, average="weighted", zero_division=0
         )  # weighted??
@@ -91,18 +96,22 @@ class Metrics:
         fpr = dict()
         tpr = dict()
         outAUROC = dict()
-        classCount = pred.shape[1]  # TODO : add auc no finding
+        classCount = pred.shape[1]
         for i in range(classCount):
 
-            fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
-
-            threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
-            logging.info(f"threshold {self.names[i]} : ",threshold)
-            self.thresholds[i] =threshold
+            # fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
+            #
+            # threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
+            # logging.info(f"threshold {self.names[i]} : ",threshold)
+            # self.thresholds[i] =threshold
+            # try :
+            #     auroc =  auc(fpr[i], tpr[i])
+            # except :
+            #     auroc=0
             try :
-                auroc =  auc(fpr[i], tpr[i])
-            except :
-                auroc=0
+                auroc = roc_auc_score(true[:, i], pred[:, i])
+            except ValueError:
+                auroc = 0
             outAUROC[self.names[i]] = auroc
             if np.isnan(outAUROC[self.names[i]]):
                 outAUROC[self.names[i]] = 0

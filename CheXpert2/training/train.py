@@ -76,12 +76,14 @@ def initialize_config(args):
     # ----------- hyperparameters-------------------------------------<
 
     config = vars(args)
+    experiment = Experiment(
+        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=5)
     torch.set_num_threads(max(config["num_worker"],1))
 
     # ----------- load classes ----------------------------------------
 
 
-    #--------- set up augment_prob ---------------------------------
+
 
 
 
@@ -95,13 +97,13 @@ def initialize_config(args):
         config = wandb.config
 
 
-    return config, img_dir, device
+    return config, img_dir,experiment, device
 
 def main() :
     logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
     parser = init_parser()
     args = parser.parse_args()
-    config, img_dir, device = initialize_config(args)
+    config, img_dir,experiment, device = initialize_config(args)
     num_classes = len(names)
 
     # -----------model initialisation------------------------------
@@ -109,6 +111,7 @@ def main() :
     model = CNN(config["model"], num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"], drop_rate=config["drop_rate"],
                 global_pool=config["global_pool"])
+
     # send model to gpu
 
 
@@ -116,11 +119,10 @@ def main() :
     # pre-training
 
     if config["pretraining"] != 0:
-        experiment = Experiment(
-            f"{config['model']}", names=names, tag=None, config=config, epoch_max=config["pretraining"], patience=5)
+
         experiment.compile(
             model,
-            optimizer="AdamW",
+            optimizer="Adam",
             criterion="BCEWithLogitsLoss",
             train_datasets=["ChexPert"],
             val_datasets=["ChexPert"],
@@ -134,20 +136,23 @@ def main() :
         f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
     )
 
-    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
-    config.update({"lr": 0.001}, allow_val_change=True)
-    loss = AUCM_MultiLabel(device=device, num_classes=num_classes)
-    criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
+
     # training
     experiment.compile(
         model=model,
-        optimizer = "AdamW",
+        optimizer = "Adam",
         criterion="BCEWithLogitsLoss",
         train_datasets=["ChexPert"],
         val_datasets = ["ChexPert"],
         config=config,
         device=device
     )
+    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+    config.update({"lr": 0.1}, allow_val_change=True)
+    loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
+                           imratio=(np.array(experiment.training_loader.dataset.count) / len(
+                               experiment.training_loader.dataset)).tolist())
+    criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
 
     experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
 
