@@ -8,11 +8,24 @@ Created on 2022-07-19$
 import os
 
 import numpy as np
+import timm
 
 from CheXpert2.Experiment import Experiment
-
+from CheXpert2 import debug_config
 os.environ["WANDB_MODE"] = "offline"
 experiment = Experiment(directory="/debug", names=np.arange(0, 13).astype(str))
+
+def test_experiment_compile():
+    os.environ["DEBUG"]="True"
+    experiment.compile(
+        model=timm.create_model("convnext_tiny"),
+        optimizer="AdamW",
+        criterion="BCEWithLogitsLoss",
+        train_datasets=["ChexPert"],
+        val_datasets=["ChexPert"],
+        config=debug_config,
+        device="cpu"
+    )
 
 
 def test_experiment_log_metric():
@@ -27,13 +40,14 @@ def test_experiment_log_metrics():
 
 def test_experiment_next_epoch():
     os.environ["DEBUG"] = "True"
-    experiment.next_epoch(3, None)
+    experiment.next_epoch(val_loss=0)
 
 
 # def test_experiment_end_result() :
 #     os.environ["DEBUG"] = "True"
 #     results = [torch.randint(0, 2, size=(100,13)), torch.rand(size=(100,13))]
 #     experiment.end(results)
+
 
 
 if __name__ == "__main__":

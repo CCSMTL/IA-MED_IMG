@@ -6,7 +6,7 @@ import pymongo
 import yaml
 import urllib
 from CheXpert2 import names
-
+import logging
 class MongoDB:
     def __init__(self, address, port, collectionnames):
 
@@ -14,7 +14,7 @@ class MongoDB:
         self.db_public = self.client["Public_Images"]
 
         self.data = []
-
+        self.collectionnames = collectionnames
 
         if "CIUSSS" in collectionnames :
             self.db_CIUSSS = self.client["CIUSSS"]
@@ -31,18 +31,12 @@ class MongoDB:
 
         for name in collectionnames:
             self.data.append(self.db_public[name])
-        self.collectionnames=collectionnames
+
 
     def dataset(self, datasetname, classnames):
         assert datasetname == "Train" or datasetname == "Valid"
         train_dataset = [pd.DataFrame([],columns=self.names)]
-
-
-        if datasetname=="Valid" and self.collectionnames==["ChexPert"] and os.environ["DEBUG"] == "True":
-            query = {"Path" : {"$regex" : "valid"}}
-
-        else :
-            query = {datasetname: 1}
+        query = {datasetname: 1}
 
         if len(classnames) > 0:
             query["$or"] = [{classname: 1} for classname in classnames]
@@ -50,7 +44,8 @@ class MongoDB:
         for collection in self.data:
             results = list(collection.find(query))
 
-            print(f"Collected query for dataset {collection}")
+
+            logging.info(f"Collected query for dataset {collection}")
 
             if len(results) > 0:
 
@@ -88,12 +83,12 @@ class MongoDB:
 if __name__ == "__main__":
     import yaml
 
-    os.environ["DEBUG"] = "False"
+    os.environ["DEBUG"] = "True"
     from CheXpert2 import names
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet","ChexPad"])
+    db = MongoDB("10.128.107.212", 27017, ["ChexPert"])
     print("database initialized")
     train = db.dataset("Train", [])
     print("training dataset loaded")
@@ -101,4 +96,4 @@ if __name__ == "__main__":
     print("validation dataset loaded")
     valid.iloc[0:100].to_csv("valid.csv")
     # valid = valid[names]
-    print(valid.head(100))
+    print(len(train),len(valid))

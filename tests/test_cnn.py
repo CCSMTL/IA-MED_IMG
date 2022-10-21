@@ -23,7 +23,7 @@ def test_cnn_grayscale():
     os.environ["DEBUG"] = "True"
     x = torch.randn((2, 1, 320, 320))
     cnn = CNN("convnext_tiny", 14, channels=1)
-    y = cnn(frontal=x)  # test forward loop
+    y = cnn(x)  # test forward loop
 
 
 def test_cnn_RGB():

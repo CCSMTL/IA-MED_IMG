@@ -24,24 +24,6 @@ def init_parser():
         required=False,
         help="width and length to resize the images to. Choose a value between 320 and 608.",
     )
-    parser.add_argument(
-        "--N",
-        default=2,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-    parser.add_argument(
-        "--M",
-        default=9,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
 
     parser.add_argument(
         "--device",
@@ -70,50 +52,9 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0],
+        default=[0,0,0,0,0,0],
         type=float,
         nargs="+",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_4",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-
-    parser.add_argument(
-        "--augment_prob_3",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_2",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_1",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_0",
-        default=0,
-        type=float,
-        nargs="?",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
@@ -124,7 +65,7 @@ def init_parser():
         type=float,
         nargs="?",
         required=False,
-        help="The intensity of the data augmentation.Between 0 and 1. Default is 10%",
+        help="The intensity of the data augmentation.Between 0 and 1. Default is 0.1",
     )
     parser.add_argument(
         "--label_smoothing",
@@ -229,11 +170,12 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--tags",
+        "--tag",
         default=None,
-        nargs="+",
+        nargs="?",
         required=False,
-        help="extra tags to add to the logs",
+        type=str,
+        help="tag to add to the logs",
     )
 
     parser.add_argument(
@@ -249,18 +191,7 @@ def init_parser():
         help="do you wish  to use pretrained weights?",
     )
 
-    parser.add_argument(
-        "--cache",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish  to cache the data into ram?",
-    )
-    parser.add_argument(
-        "--unet",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish to train the unet instead of the classifier",
-    )
+
 
     parser.add_argument(
         "--debug",
