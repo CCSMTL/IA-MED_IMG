@@ -223,7 +223,7 @@ class Experiment:
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
         if os.environ["DEBUG"] == "False":
-            num_samples = 100_000
+            num_samples = 10_000
         else:
             num_samples = 10
 
@@ -315,7 +315,7 @@ class Experiment:
                     val_loss, results = validation_loop(
                         self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
                     )
-                    logging.debug("mean output : ", torch.mean(results[1]))
+                    logging.debug(f"mean output : {torch.mean(results[1])}")
 
                     val_loss = val_loss.cpu() / m
                     if self.metrics:

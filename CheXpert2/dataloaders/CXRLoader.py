@@ -129,8 +129,8 @@ class CXRLoader(Dataset):
 
 
 
-                A.augmentations.geometric.transforms.Affine(translate_percent=15,rotate=45,shear=5,cval=0,keep_ratio=True,p=prob[1]),
-                A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2]),
+                A.augmentations.geometric.transforms.Affine(scale=(0.95,1.05),translate_percent=(0.05,0.05),rotate=(-15,15),shear=None,cval=0,keep_ratio=True,p=prob[1]),
+                #A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2]),
 
                 A.augmentations.HorizontalFlip(p=prob[3]),
 

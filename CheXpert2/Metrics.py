@@ -24,18 +24,7 @@ class Metrics:
 
         self.convert = lambda x : x
 
-    def accuracy(self, true, pred):
-        # n, m = true.shape
-        # pred2 = self.convert(pred)
-        # pred2 = np.where(pred2 > 0.5, 1, 0)
-        #
-        # accuracy = 0
-        # for x, y in zip(true, pred2):
-        #     if (x == y).all():
-        #         accuracy += 1
-        # accuracy /=n
-        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
-        return accuracy
+
 
     def accuracy3(self, true, pred):
         # n, m = true.shape
@@ -65,12 +54,13 @@ class Metrics:
         pred2 = self.convert(pred)
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
-
-
-
-        return f1_score(
-            true, pred2, average="weighted", zero_division=0
+        results = f1_score(
+            true, pred2, zero_division=0
         )  # weighted??
+        results_dict = {}
+        for item, name in zip(results, self.names):
+            results_dict[name] = item
+        return results_dict
 
     def precision(self, true, pred):
         pred = self.convert(pred)
