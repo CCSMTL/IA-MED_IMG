@@ -137,7 +137,7 @@ class CXRLoader(Dataset):
                 A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
 
                 A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[4]),
-                A.augmentations.transforms.RandomGamma()
+                #A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
                 #gaussian blur?
 
