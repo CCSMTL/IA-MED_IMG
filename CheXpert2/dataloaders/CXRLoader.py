@@ -249,41 +249,43 @@ class CXRLoader(Dataset):
         self.files.loc[idxs,self.classes] = new_labels
 
     def read_img_from_disk(self, paths,views):
-        views=np.array(views)
+        # views=np.array(views)
+        #
+        # frontal_views=np.where(views=="F")[0]
+        # lateral_views=np.where(views=="L")[0]
+        # for path in paths :
+        #     assert os.path.exists(self.img_dir+path) ,f"path does not exists : {self.img_dir}{path}"
+        # if len(frontal_views)>0 :
+        #     frontal_path=paths[np.random.permutation(frontal_views)[0]]
+        #
+        #     frontal = cv.imread(f"{self.img_dir}{frontal_path}", cv.IMREAD_GRAYSCALE)
+        #     frontal = cv.resize(
+        #         frontal,
+        #         (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
+        #     ).squeeze()
+        #
+        # else :
+        #     frontal=np.zeros((self.img_size,self.img_size))
+        #
+        #
+        # if len(lateral_views) > 0:
+        #     lateral_path = paths[np.random.permutation(lateral_views)[0]]
+        #     lateral = cv.imread(f"{self.img_dir}{lateral_path}", cv.IMREAD_GRAYSCALE)
+        #     lateral = cv.resize(
+        #         lateral,
+        #         (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
+        #     ).squeeze()
+        # else :
+        #     lateral=np.zeros((self.img_size,self.img_size))
+        # assert len(lateral_views)+len(frontal_views)>0
+        images=np.zeros((2,self.img_size,self.img_size))
+        for i,path in enumerate(np.random.permutation(paths)) :
+            images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
+            if i==1 :
+                break
 
-        frontal_views=np.where(views=="F")[0]
-        lateral_views=np.where(views=="L")[0]
-        for path in paths :
-            assert os.path.exists(self.img_dir+path) ,f"path does not exists : {self.img_dir}{path}"
-        if len(frontal_views)>0 :
-            frontal_path=paths[np.random.permutation(frontal_views)[0]]
 
-            frontal = cv.imread(f"{self.img_dir}{frontal_path}", cv.IMREAD_GRAYSCALE)
-            frontal = cv.resize(
-                frontal,
-                (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
-            )
-
-        else :
-            frontal=np.zeros((self.img_size,self.img_size))
-        if len(lateral_views) > 0:
-            lateral_path = paths[np.random.permutation(lateral_views)[0]]
-            lateral = cv.imread(f"{self.img_dir}{lateral_path}", cv.IMREAD_GRAYSCALE)
-            lateral = cv.resize(
-                lateral,
-                (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
-            )
-        else :
-            lateral=np.zeros((self.img_size,self.img_size))
-        assert len(lateral_views)+len(frontal_views)>0
-
-
-
-
-
-
-
-        return np.concatenate([frontal[None,:,:],lateral[None,:,:]],axis=0).astype(np.float32)
+        return images
 
     def __getitem__(self, idx) :
 
@@ -291,11 +293,8 @@ class CXRLoader(Dataset):
         label = self.get_label(idx)
 
         if self.split == "Train" :
-            images = self.transform(image=images)["image"]
-
-
-
-
+            for i,image in enumerate(images) :
+                images[i,:,:] = self.transform(image=image)["image"]
 
         images = torch.tensor(
             images,
