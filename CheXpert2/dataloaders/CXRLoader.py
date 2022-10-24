@@ -129,8 +129,8 @@ class CXRLoader(Dataset):
 
 
 
-                A.augmentations.geometric.transforms.Affine(scale=(0.95,1.05),translate_percent=(0.05,0.05),rotate=(-15,15),shear=None,cval=0,keep_ratio=True,p=prob[1]),
-                #A.augmentations.CropAndPad(percent=(-0.1,0.1),p=prob[2]),
+                A.augmentations.geometric.transforms.Affine(scale=(0.95,1.05),translate_percent=(0.05,0.05),rotate=(-15,15),shear=None,cval=128,keep_ratio=True,p=prob[1]),
+
 
                 A.augmentations.HorizontalFlip(p=prob[3]),
 
@@ -175,7 +175,7 @@ class CXRLoader(Dataset):
         labels[vector == 0] = label_smoothing
 
         if self.split == "Train" :
-            labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+            labels[vector == -1] = 0#torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
         else :
             labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
 
@@ -212,7 +212,7 @@ class CXRLoader(Dataset):
         is seen in similar amount
         """
         data = copy.copy(self.files).fillna(0)
-        data = data.replace(-1,0.75)
+        data = data.replace(-1,0.5)
         data=data.groupby("Exam ID").mean().round(0)
         data = data[self.classes]
         data = data.astype(int)

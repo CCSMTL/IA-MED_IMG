@@ -44,6 +44,7 @@ class CNN(torch.nn.Module):
 
 
 
+
 if __name__ == "__main__":  # for debugging purpose
     x = torch.zeros((2, 1, 320, 320))
     for name in ["densenet121", "resnet18"]:

@@ -290,7 +290,7 @@ class Experiment:
         scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1)
         #scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader),
         #                                                epochs=self.epoch_max)
-        
+
         with logging_redirect_tqdm():
 
             while self.keep_training:  # loop over the dataset multiple times

@@ -40,12 +40,15 @@ def training_loop(
             for channel in range(images.shape[1]):
                 image =  images[:, channel:channel + 1, :, :]
                 if model.backbone.features[0].in_channels == 3:
-                    image = torch.cat([image, image, image], dim=1)
+                    image = image.expand(-1, 3, -1, -1)
 
                 image = loader.iterable.dataset.preprocess(image)
                 outputs += model(image)
+
             loss = criterion(outputs, labels)
 
+        # optimizer.zero_grad(set_to_none=True)
+        optimizer.zero_grad()
         # assert not torch.isnan(outputs).any()
         # outputs = torch.nan_to_num(outputs,0)
 
@@ -59,8 +62,7 @@ def training_loop(
 
         scaler.step(optimizer)
         scaler.update()
-        # optimizer.zero_grad(set_to_none=True)
-        optimizer.zero_grad()
+
         scheduler.step()
         running_loss += loss.detach()
         # ending loop
