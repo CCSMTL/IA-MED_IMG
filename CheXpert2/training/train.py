@@ -148,9 +148,9 @@ def main() :
         config=config,
         device=device
     )
-    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
-    model = model.to(device)
-    config.update({"lr": 0.05}, allow_val_change=True)
+    #model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+    #model = model.to(device)
+    config.update({"lr": 0.01}, allow_val_change=True)
     loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
                            imratio=(np.array(experiment.training_loader.dataset.count) / len(
                                experiment.training_loader.dataset)).tolist())

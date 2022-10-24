@@ -33,12 +33,17 @@ def training_loop(
 
         images, labels = loader.iterable.dataset.advanced_transform((images, labels))
 
-        images = loader.iterable.dataset.preprocess(images)
+
 
         with torch.cuda.amp.autocast(enabled=autocast):
             outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
             for channel in range(images.shape[1]):
-                outputs += model(images[:, channel:channel + 1, :, :])
+                image =  images[:, channel:channel + 1, :, :]
+                if model.backbone.features[0].in_channels == 3:
+                    image = torch.cat([image, image, image], dim=1)
+
+                image = loader.iterable.dataset.preprocess(image)
+                outputs += model(image)
             loss = criterion(outputs, labels)
 
         # assert not torch.isnan(outputs).any()
@@ -46,11 +51,11 @@ def training_loop(
 
         scaler.scale(loss).backward()
         # Unscales the gradients of optimizer's assigned params in-place
-        scaler.unscale_(optimizer)
-        # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), clip_norm
-        )
+        # scaler.unscale_(optimizer)
+        # # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
+        # torch.nn.utils.clip_grad_norm_(
+        #     model.parameters(), clip_norm
+        # )
 
         scaler.step(optimizer)
         scaler.update()
@@ -97,13 +102,17 @@ def validation_loop(model, loader, criterion, device, autocast):
             labels.to(device, non_blocking=True),
         )
 
-        images = loader.iterable.dataset.preprocess(images)
+
 
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast):
             outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
             for channel in range(images.shape[1]):
-                outputs += model(images[:, channel:channel + 1, :, :])
+                image = images[:, channel:channel + 1, :, :]
+                if model.backbone.features[0].in_channels == 3:
+                    image = torch.cat([image, image, image], dim=1)
+                image = loader.iterable.dataset.preprocess(image)
+                outputs += model(image)
             loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()

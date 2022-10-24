@@ -136,7 +136,8 @@ class CXRLoader(Dataset):
 
                 A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
 
-                A.augmentations.transforms.RandomBrightnessContrast(brightness_limit=0.4,contrast_limit=0.4,always_apply=False,p=prob[4]),
+                A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,p=prob[4]),
+
                 #A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
                 #gaussian blur?
@@ -200,8 +201,6 @@ class CXRLoader(Dataset):
         return transforms.Compose(
             [
 
-            #   transforms.CenterCrop(img_size),
-                transforms.Resize(img_size),
                 transforms.ConvertImageDtype(torch.float32),
                 normalize,
             ]
@@ -278,7 +277,7 @@ class CXRLoader(Dataset):
         # else :
         #     lateral=np.zeros((self.img_size,self.img_size))
         # assert len(lateral_views)+len(frontal_views)>0
-        images=np.zeros((2,self.img_size,self.img_size))
+        images=np.zeros((2,self.img_size,self.img_size),dtype=np.uint8)
         for i,path in enumerate(np.random.permutation(paths)) :
             images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
             if i==1 :
