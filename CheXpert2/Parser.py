@@ -191,6 +191,12 @@ def init_parser():
         help="do you wish  to use pretrained weights?",
     )
 
+    parser.add_argument(
+        "--use_frontal",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="If this argument is given , the frontal images only will be used",
+    )
 
 
     parser.add_argument(

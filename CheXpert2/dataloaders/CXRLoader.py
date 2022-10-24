@@ -48,8 +48,9 @@ class CXRLoader(Dataset):
             intensity=0,
             label_smoothing=0,
             channels=1,
+            use_frontal=False,
             datasets = ["ChexPert"],
-    ):
+    ) :
 
         # ----- Variable definition ------------------------------------------------------
 
@@ -57,22 +58,16 @@ class CXRLoader(Dataset):
         self.classes = names
         self.img_dir = img_dir
         self.annotation_files = {}
-
         self.label_smoothing = label_smoothing
-
         self.prob = prob if prob else [0, ] * 6
-
-
         self.intensity = intensity
         self.img_size = img_size
-
         self.channels = channels
-
         self.split = split
 
         # ----- Transform definition ------------------------------------------------------
 
-        self.preprocess = self.get_preprocess(channels, img_size)
+
         self.transform = self.get_transform(self.prob)
         self.advanced_transform = self.get_advanced_transform(self.prob, intensity)
 
@@ -80,34 +75,22 @@ class CXRLoader(Dataset):
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets).dataset(split, classnames=classnames)
+        self.files = MongoDB("10.128.107.212", 27017, datasets,use_frontal=use_frontal).dataset(split, classnames=classnames)
 
 
 
 
         self.files[self.classes] = self.files[self.classes].astype(int)
 
-        #mask = self.files[self.classes].values.sum(axis=1)>0
-        #self.files = self.files.loc[mask]
-        self.img_dir = img_dir
 
-
-
-
-        self.img_dir = img_dir
         weights = self.samples_weights()
+
         paths=self.files.groupby("Exam ID")["Path"].apply(list)
         frontal_lateral = self.files.groupby("Exam ID")["Frontal/Lateral"].apply(list)
         self.files=self.files[self.classes+["Exam ID"]].groupby("Exam ID").mean().round(0)
         self.files["Path"]=paths
         self.files["Frontal/Lateral"]=frontal_lateral
-        # if self.cache: #if images are stored in RAM : CAREFUL! VERY RAM intensive
-        #     with parallel_backend('threading', n_jobs=num_worker):
-        #         self.images = Parallel()(
-        #             delayed(self.read_img_from_disk)(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral']) for idx in
-        #             tqdm.tqdm(range(0, len(self.files))))
-        #     self.read_img = lambda idx : self.images[idx]
-        # else :
+
         self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
 
 
@@ -129,14 +112,15 @@ class CXRLoader(Dataset):
 
 
 
-                A.augmentations.geometric.transforms.Affine(scale=(0.95,1.05),translate_percent=(0.05,0.05),rotate=(-15,15),shear=None,cval=128,keep_ratio=True,p=prob[1]),
+                A.augmentations.geometric.transforms.Affine(scale=(0.95,1.05),translate_percent=(0.05,0.05),rotate=(-15,15),shear=None,cval=0,keep_ratio=True,p=prob[1]),
 
 
-                A.augmentations.HorizontalFlip(p=prob[3]),
+                A.augmentations.HorizontalFlip(p=prob[2]),
+                A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
+                                                       p=prob[3]),
+                A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[4]),
 
-                A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[5]),
-
-                A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,p=prob[4]),
+                A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, interpolation=1, border_mode=4, value=None,p=prob[5]),
 
                 #A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
@@ -165,9 +149,6 @@ class CXRLoader(Dataset):
         vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
 
 
-
-
-
         # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
         # source : https://arxiv.org/pdf/1911.06475.pdf
         labels = np.zeros((len(vector),))
@@ -175,7 +156,7 @@ class CXRLoader(Dataset):
         labels[vector == 0] = label_smoothing
 
         if self.split == "Train" :
-            labels[vector == -1] = 0#torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+            labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
         else :
             labels[vector == -1] = 1 # we only output binary for validation #TODO : verify that
 
@@ -187,24 +168,6 @@ class CXRLoader(Dataset):
 
         return labels
 
-    @staticmethod
-    def get_preprocess(channels, img_size):
-        """
-        Pre-processing for the model . This WILL be applied before inference
-        """
-        if channels == 1:
-            normalize = transforms.Normalize(mean=[0.449], std=[0.226])
-        else :
-            normalize = transforms.Normalize(
-                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-            )
-        return transforms.Compose(
-            [
-
-                transforms.ConvertImageDtype(torch.float32),
-                normalize,
-            ]
-        )
 
     def samples_weights(self):
         """
@@ -222,8 +185,8 @@ class CXRLoader(Dataset):
         for name,cat_count in zip(self.classes,count) :
             if cat_count == 0:
                 logging.warning(f"Careful! The category {name} has 0 images!")
-        count[-1] /=2 #lets double the number of empty images we will give to the model
-        self.count = count
+
+        self.count = count/len(data)
         weights = np.zeros((len(data)))
         ex=0
         for i, line in data.iterrows() :

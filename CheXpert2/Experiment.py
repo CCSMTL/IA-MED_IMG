@@ -192,7 +192,7 @@ class Experiment:
         self.num_classes = len(names)
         assert optimizer in dir(torch.optim)+[None]
         assert criterion in dir(torch.nn)+[None]
-        self.criterion = getattr(torch.nn,criterion)()    if criterion else None
+
         metric = Metrics(num_classes=self.num_classes, names=names, threshold=np.zeros((self.num_classes)) + 0.5)
         self.metrics = metric.metrics()
 
@@ -207,6 +207,7 @@ class Experiment:
             intensity=config["augment_intensity"],
             label_smoothing=config["label_smoothing"],
             channels=config["channels"],
+            use_frontal=config["use_frontal"],
             datasets=train_datasets
         )
         val_dataset=CXRLoader(
@@ -217,8 +218,13 @@ class Experiment:
                 intensity=0,
                 label_smoothing=0,
                 channels=config["channels"],
+                use_frontal=config["use_frontal"],
                 datasets=val_datasets
         )
+
+        self.criterion = getattr(torch.nn, criterion)(pos_weight=torch.tensor(train_dataset.count).to(device)) if criterion else None
+
+
         if logging :
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
@@ -277,6 +283,7 @@ class Experiment:
 
         self.epoch = 0
         results = None
+
         # Creates a GradScaler once at the beginning of training.
         scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
         val_loss = np.inf
