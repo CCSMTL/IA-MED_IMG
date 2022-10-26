@@ -143,7 +143,7 @@ def main() :
     #------------training--------------------------------------
     experiment.compile(
         model=model,
-        optimizer = "Adam",
+        optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
         train_datasets=["CIUSSS"],
         val_datasets = ["CIUSSS"],

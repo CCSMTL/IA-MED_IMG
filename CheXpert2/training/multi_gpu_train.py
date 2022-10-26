@@ -23,32 +23,30 @@ def cleanup():
 
 
 if __name__ == "__main__":
-    dist.init_process_group("nccl")
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir, experiment, device = initialize_config(args)
+
+    if torch.cuda.is_available():
+        dist.init_process_group("nccl")
+        rank = dist.get_rank()
+        device = rank % torch.cuda.device_count()
+    else :
+        assert os.environ["DEBUG"] == "True" , "DEBUG is set to False but NO GPU is available"
+        dist.init_process_group("gloo")
+        device="cpu"
+
     num_classes = len(names)
-    rank = dist.get_rank()
-    device = rank % torch.cuda.device_count()
+
     # -----------model initialisation------------------------------
 
     model = CNN(config["model"], num_classes=num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
 
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=config["lr"],
-        betas=(config["beta1"], config["beta2"]),
-        weight_decay=config["weight_decay"],
-    )
-
-
-    print("The model has now been successfully loaded into memory")
-
-    local_rank = int(os.environ['LOCAL_RANK'])
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+    local_rank =[ int(os.environ['LOCAL_RANK'])] if torch.cuda.is_available() else None
+    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=local_rank)
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-
+    print("The model has now been successfully loaded into memory")
     # ---training-------------------------------------
 
     experiment.compile(
