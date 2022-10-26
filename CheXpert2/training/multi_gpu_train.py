@@ -6,7 +6,7 @@ Created on 2022-07-13$
 @author: Jonathan Beaulieu-Emond
 """
 import os
-
+import logging
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -23,11 +23,13 @@ def cleanup():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir, _, device = initialize_config(args)
 
     if torch.cuda.is_available():
+        logging.debug("Using GPU with nccl backend")
         dist.init_process_group("nccl")
         rank = dist.get_rank()
         device = rank % torch.cuda.device_count()
@@ -42,11 +44,11 @@ if __name__ == "__main__":
 
     model = CNN(config["model"], num_classes=num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
                 pretrained=config["pretrained"], channels=config["channels"])
-
+    model = model.to(device)
     local_rank =[ int(os.environ['LOCAL_RANK'])] if torch.cuda.is_available() else None
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=local_rank)
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-    print("The model has now been successfully loaded into memory")
+    logging.debug("The model has now been successfully loaded into memory")
     # ---training-------------------------------------
     experiment = Experiment(
         f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
