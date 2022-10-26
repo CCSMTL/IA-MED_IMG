@@ -85,15 +85,15 @@ def init_parser():
         required=False,
         help="Norm for gradient clipping",
     )
-    parser.add_argument(
-        "--pos_weight",
-        default=1,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="A weight for the positive class.",
-    )
+    # parser.add_argument(
+    #     "--pos_weight",
+    #     default=1,
+    #     const="all",
+    #     type=int,
+    #     nargs="?",
+    #     required=False,
+    #     help="A weight for the positive class.",
+    # )
     parser.add_argument(
         "--lr",
         default=0.0001,

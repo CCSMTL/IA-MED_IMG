@@ -25,7 +25,7 @@ def cleanup():
 if __name__ == "__main__":
     parser = init_parser()
     args = parser.parse_args()
-    config, img_dir, experiment, device = initialize_config(args)
+    config, img_dir, _, device = initialize_config(args)
 
     if torch.cuda.is_available():
         dist.init_process_group("nccl")
@@ -48,7 +48,9 @@ if __name__ == "__main__":
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
     print("The model has now been successfully loaded into memory")
     # ---training-------------------------------------
-
+    experiment = Experiment(
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
+    )
     experiment.compile(
         model=model,
         optimizer="AdamW",
