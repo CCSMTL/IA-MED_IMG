@@ -97,7 +97,7 @@ class Metrics:
             # except :
             #     auroc=0
             try :
-                auroc = roc_auc_score(true[:, i], pred[:, i])
+                auroc = roc_auc_score(true[:, i], pred[:, i],average="weighted")
             except ValueError:
                 auroc = 0
             outAUROC[self.names[i]] = auroc

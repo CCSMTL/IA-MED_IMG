@@ -145,8 +145,8 @@ def main() :
         model=model,
         optimizer = "Adam",
         criterion="BCEWithLogitsLoss",
-        train_datasets=["ChexPert"],
-        val_datasets = ["ChexPert"],
+        train_datasets=["CIUSSS"],
+        val_datasets = ["CIUSSS"],
         config=config,
         device=device
     )
@@ -158,7 +158,7 @@ def main() :
     #                            experiment.training_loader.dataset)).tolist())
     # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
     #experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
-    experiment.train()
+    results = experiment.train()
     experiment.end(results)
 
 

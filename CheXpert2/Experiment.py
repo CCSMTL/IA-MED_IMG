@@ -222,7 +222,7 @@ class Experiment:
                 datasets=val_datasets
         )
 
-        self.criterion = getattr(torch.nn, criterion)(pos_weight=torch.tensor(train_dataset.count).to(device)) if criterion else None
+
 
 
         if logging :
@@ -266,6 +266,10 @@ class Experiment:
             betas=(self.config["beta1"], self.config["beta2"]),
         ) if optimizer else None
 
+
+        self.criterion = getattr(torch.nn, criterion) if criterion else None
+
+
     def train(self,**kwargs):
         """
         Run the training for the compiled experiment
@@ -289,14 +293,19 @@ class Experiment:
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
 
-        criterion_val = self.criterion  # ()
-        criterion = self.criterion  # (pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
+        criterion_val = self.criterion()
+
+        num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
+        num_negatives = len(self.training_loader.dataset) - num_positives
+        pos_weight = num_negatives / num_positives
+
+
+        criterion = self.criterion(pos_weight=pos_weight)
 
         position = self.device + 1 if type(self.device) == int else 1
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
-        scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1)
-        #scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader),
-        #                                                epochs=self.epoch_max)
+        #scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader), epochs=self.epoch_max)
 
         with logging_redirect_tqdm():
 

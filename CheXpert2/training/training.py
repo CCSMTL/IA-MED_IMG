@@ -22,7 +22,7 @@ def training_loop(
     model.train()
     i = 1
     for images, labels, idx in loader:
-
+        optimizer.zero_grad(set_to_none=True)
         # send to GPU
         images, labels = (
             images.to(device, non_blocking=True),
@@ -42,7 +42,7 @@ def training_loop(
         loss = criterion(outputs, labels)
 
 
-        optimizer.zero_grad(set_to_none=True)
+
 
 
         scaler.scale(loss).backward()

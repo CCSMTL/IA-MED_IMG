@@ -186,7 +186,7 @@ class CXRLoader(Dataset):
             if cat_count == 0:
                 logging.warning(f"Careful! The category {name} has 0 images!")
 
-        self.count = count/len(data)
+        self.count = count
         weights = np.zeros((len(data)))
         ex=0
         for i, line in data.iterrows() :
