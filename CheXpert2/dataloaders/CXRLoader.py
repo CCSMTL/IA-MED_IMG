@@ -11,11 +11,11 @@ import os
 
 import cv2 as cv
 import numpy as np
-import pandas as pd
+
 import torch
-import tqdm
+
 import logging
-from joblib import Parallel, delayed, parallel_backend
+
 from torch.utils.data import Dataset
 from torchvision import transforms
 import albumentations as A
@@ -31,8 +31,7 @@ from CheXpert2 import names
 #     "Opacity","Lesion","Normal"
 
 
-cv.setNumThreads(0)
-cv.ocl.setUseOpenCL(False)
+
 
 class CXRLoader(Dataset):
     """
@@ -49,12 +48,12 @@ class CXRLoader(Dataset):
             label_smoothing=0,
             channels=1,
             use_frontal=False,
-            datasets = ["ChexPert"],
+            datasets=None,
     ) :
 
         # ----- Variable definition ------------------------------------------------------
 
-
+        assert datasets is not None, "You must specify the datasets to use"
         self.classes = names
         self.img_dir = img_dir
         self.annotation_files = {}
@@ -83,7 +82,7 @@ class CXRLoader(Dataset):
         self.files[self.classes] = self.files[self.classes].astype(int)
 
 
-        weights = self.samples_weights()
+
 
         paths=self.files.groupby("Exam ID")["Path"].apply(list)
         frontal_lateral = self.files.groupby("Exam ID")["Frontal/Lateral"].apply(list)
@@ -94,10 +93,9 @@ class CXRLoader(Dataset):
         self.read_img = lambda idx : self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],views=self.files.iloc[idx]['Frontal/Lateral'])
 
 
-        if split == "Train" :
-            self.weights = weights
-        else:
-            self.weights = None
+
+        self.weights = self.samples_weights()
+
 
         self.files.reset_index(inplace=True)
 
@@ -116,11 +114,12 @@ class CXRLoader(Dataset):
 
 
                 A.augmentations.HorizontalFlip(p=prob[2]),
-                A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
+                A.augmentations.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, always_apply=False,
                                                        p=prob[3]),
-                A.GridDistortion(num_steps=5,distort_limit=3,interpolation=1,border_mode=4,value=None,mask_value=None,always_apply=False,p=prob[4]),
+                A.GridDistortion(num_steps=5,distort_limit=0.3,interpolation=1,border_mode=0,value=None,mask_value=None,always_apply=False,p=prob[4]),
 
-                A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, interpolation=1, border_mode=4, value=None,p=prob[5]),
+                A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None,p=prob[5], borderMode=cv.BORDER_CONSTANT,
+                           borderValue=0),
 
                 #A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
@@ -181,12 +180,13 @@ class CXRLoader(Dataset):
         data = data.astype(int)
 
         count = data.sum().to_numpy()
-
+        self.count = count
         for name,cat_count in zip(self.classes,count) :
             if cat_count == 0:
                 logging.warning(f"Careful! The category {name} has 0 images!")
 
-        self.count = count
+        if self.split != "Train" :
+            return None
         weights = np.zeros((len(data)))
         ex=0
         for i, line in data.iterrows() :

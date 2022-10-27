@@ -85,10 +85,10 @@ class Experiment:
                 self.save_weights()
             else:
                 self.patience -= 1
-                if logging :
-                    logging.info(f"patience has been reduced by 1, now at {self.patience}")
-                    logging.info(f"training loss : {self.metrics_results['training_loss']}")
-                    logging.info(f"validation loss : {val_loss}")
+
+                logging.info(f"patience has been reduced by 1, now at {self.patience}")
+                logging.info(f"training loss : {self.metrics_results['training_loss']}")
+                logging.info(f"validation loss : {val_loss}")
             self.pbar.update(1)
             logging.info(pd.DataFrame(self.metrics_results, columns=list(self.metrics_results.keys())))
         self.epoch += 1
@@ -223,7 +223,7 @@ class Experiment:
                 use_frontal=config["use_frontal"],
                 datasets=val_datasets
         )
-        num_positives = torch.tensor(train_dataset.count).to(self.device)
+        num_positives = train_dataset.count
         num_negatives = len(train_dataset) - num_positives
         #thresholds    =  num_positives / num_negatives
 
