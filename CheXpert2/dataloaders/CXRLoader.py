@@ -118,8 +118,7 @@ class CXRLoader(Dataset):
                                                        p=prob[3]),
                 A.GridDistortion(num_steps=5,distort_limit=0.3,interpolation=1,border_mode=0,value=None,mask_value=None,always_apply=False,p=prob[4]),
 
-                A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None,p=prob[5], borderMode=cv.BORDER_CONSTANT,
-                           borderValue=0),
+                A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None,p=prob[5], border_mode=cv.BORDER_CONSTANT),
 
                 #A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
