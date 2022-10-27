@@ -17,7 +17,7 @@ from torch.utils.data.sampler import SequentialSampler
 import wandb
 from CheXpert2.custom_utils import convert
 from CheXpert2.results_visualization import plot_polar_chart
-from CheXpert2.training.training import training_loop, validation_loop
+from CheXpert2.training.training import training_loop,validation_loop
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 import torch.distributed as dist
 import tqdm
@@ -29,8 +29,7 @@ from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
 
 class Experiment:
-    def __init__(self, directory: str, names: [str], tag: str = None, config=None, epoch_max: int = 50,
-                 patience: int = 5, verbose: int = 1):
+    def __init__(self, directory : str, names: [str], tag : str = None, config=None, epoch_max : int=50, patience : int=5,verbose : int=1):
         """
         Initalize the experiment with some prerequired information.
 
@@ -71,12 +70,13 @@ class Experiment:
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
         if self.rank == 0:
-            wandb.init(project="Chestxray", entity="ccsmtl2", config=config, tags=tag)
+            wandb.init(project="Chestxray", entity="ccsmtl2", config=config,tags=tag)
 
-        self.verbose = verbose
+        self.verbose=verbose
+
 
     def next_epoch(self, val_loss):
-        if self.rank == 0:
+        if self.rank == 0 :
             if val_loss < self.best_loss or self.epoch == 0:
                 self.best_loss = val_loss
                 self.log_metric("best_loss", self.best_loss, epoch=self.epoch)
@@ -85,54 +85,55 @@ class Experiment:
                 self.save_weights()
             else:
                 self.patience -= 1
-                if logging:
+                if logging :
                     logging.info(f"patience has been reduced by 1, now at {self.patience}")
                     logging.info(f"training loss : {self.metrics_results['training_loss']}")
                     logging.info(f"validation loss : {val_loss}")
-        self.pbar.update(1)
+            self.pbar.update(1)
+            logging.info(pd.DataFrame(self.metrics_results, columns=list(self.metrics_results.keys())))
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
 
-        logging.info(pd.DataFrame(self.summary, columns=list(self.summary.keys())))
 
-    def log_metric(self, metric_name, value, epoch=None):
-        if self.rank == 0:
+
+
+    def log_metric(self, metric_name : str, value, epoch=None):
+        if self.rank == 0 :
             if epoch is not None:
                 wandb.log({metric_name: value, "epoch": epoch})
             else:
                 wandb.log({metric_name: value})
             self.metrics_results[metric_name] = value
 
-    def log_metrics(self, metrics, epoch=None):
-        if self.rank == 0:
+    def log_metrics(self, metrics : dict, epoch=None) :
+        if self.rank == 0 :
             metrics["epoch"] = epoch
             wandb.log(metrics)
             self.metrics_results = self.metrics_results | metrics
 
     def save_weights(self):
-        if self.rank == 0 :
-            if dist.is_initialized():
-                torch.save(self.model.module.state_dict(),
-                           f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
+        if self.rank == 0 and os.environ["DEBUG"] == "False" :
+            if dist.is_initialized() :
+                torch.save(self.model.module.state_dict(), f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
                 wandb.save(f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
-            else:
+            else :
                 torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
                 wandb.save(f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
-
 
     def summarize(self):
         self.summary = self.metrics_results
 
+
     def watch(self, model):
-        if self.rank == 0:
+        if self.rank == 0 :
             wandb.watch(model)
 
     def end(self, results):
 
-        for key, value in self.summary.items():
+        for key,value in self.summary.items():
             wandb.run.summary[key] = value
-        if self.rank == 0:
+        if self.rank == 0 :
             # 1) confusion matrix
 
             self.log_metric(
@@ -145,8 +146,7 @@ class Experiment:
                 epoch=None)
             plot_polar_chart(self.summary)
 
-    def compile(self, model, optimizer: str or None, criterion: str or None, train_datasets: [str], val_datasets: [str],
-                config, device):
+    def compile(self,model,optimizer : str or None,criterion : str or None ,train_datasets : [str],val_datasets : [str],config,device) :
         """
             Compile the experiment before training
 
@@ -190,20 +190,18 @@ class Experiment:
                     - "cuda:$x" with x being the GPU number (0 by default)
 
         """
-        self.model = model.to(device, dtype=torch.float)
+        self.model=model.to(device,dtype=torch.float)
         self.device = device
         self.watch(self.model)
         self.config = config
         self.num_classes = len(names)
-        assert optimizer in dir(torch.optim) + [None]
-        assert criterion in dir(torch.nn) + [None]
+        assert optimizer in dir(torch.optim)+[None]
+        assert criterion in dir(torch.nn)+[None]
 
-        metric = Metrics(num_classes=self.num_classes, names=names, threshold=np.zeros((self.num_classes)) + 0.5)
-        self.metrics = metric.metrics()
 
-        img_dir = os.environ["img_dir"]
+        img_dir=os.environ["img_dir"]
 
-        train_dataset = CXRLoader(
+        train_dataset =CXRLoader(
             split="Train",
             img_dir=img_dir,
             img_size=config["img_size"],
@@ -214,25 +212,35 @@ class Experiment:
             use_frontal=config["use_frontal"],
             datasets=train_datasets
         )
-        val_dataset = CXRLoader(
-            split="Valid",
-            img_dir=img_dir,
-            img_size=config["img_size"],
-            prob=[0, 0, 0, 0, 0, 0, 0],
-            intensity=0,
-            label_smoothing=0,
-            channels=config["channels"],
-            use_frontal=config["use_frontal"],
-            datasets=val_datasets
+        val_dataset=CXRLoader(
+                split="Valid",
+                img_dir=img_dir,
+                img_size=config["img_size"],
+                prob=[0,0,0,0,0,0,0],
+                intensity=0,
+                label_smoothing=0,
+                channels=config["channels"],
+                use_frontal=config["use_frontal"],
+                datasets=val_datasets
         )
+        num_positives = torch.tensor(train_dataset.count).to(self.device)
+        num_negatives = len(train_dataset) - num_positives
+        #thresholds    =  num_positives / num_negatives
 
-        if logging:
+        thresholds = np.zeros((self.num_classes)) + 0.5
+        metric = Metrics(num_classes=self.num_classes, names=names, threshold=thresholds)
+        self.metrics = metric.metrics()
+        threshold_log={}
+        threshold_log["thresholds"] = {name: threshold for name, threshold in zip(self.names, thresholds.tolist())}
+        self.log_metrics(threshold_log)
+        if logging :
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
         if os.environ["DEBUG"] == "False":
             num_samples = 10_000
         else:
             num_samples = 10
+
 
         if train_dataset.weights is not None:
             sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,
@@ -266,9 +274,11 @@ class Experiment:
             betas=(self.config["beta1"], self.config["beta2"]),
         ) if optimizer else None
 
+
         self.criterion = getattr(torch.nn, criterion) if criterion else None
 
-    def train(self, **kwargs):
+
+    def train(self,**kwargs):
         """
         Run the training for the compiled experiment
 
@@ -280,7 +290,8 @@ class Experiment:
 
         """
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            setattr(self,key,value)
+
 
         self.epoch = 0
         results = None
@@ -296,14 +307,13 @@ class Experiment:
         num_negatives = len(self.training_loader.dataset) - num_positives
         pos_weight = num_negatives / num_positives
 
+
         criterion = self.criterion(pos_weight=pos_weight)
 
         position = self.device + 1 if type(self.device) == int else 1
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
-        # scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1)
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"],
-                                                        steps_per_epoch=len(self.training_loader),
-                                                        epochs=self.epoch_max)
+        #scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader), epochs=self.epoch_max)
 
         with logging_redirect_tqdm():
 
@@ -327,14 +337,13 @@ class Experiment:
                 )
                 if self.rank == 0:
                     val_loss, results = validation_loop(
-                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val,
-                        self.device, self.config["autocast"]
+                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
                     )
                     logging.debug(f"mean output : {torch.mean(results[1])}")
 
                     val_loss = val_loss.cpu() / m
                     if self.metrics:
-                        for key, metric in self.metrics.items():
+                        for key,metric in self.metrics.items():
                             pred = results[1].numpy()
                             true = results[0].numpy().round(0)
 
@@ -352,9 +361,15 @@ class Experiment:
                 #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
                 if self.epoch == self.epoch_max:
                     self.keep_training = False
-            if logging:
+            if logging :
                 logging.info("Finished Training")
             return results
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

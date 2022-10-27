@@ -80,6 +80,35 @@ class Metrics:
             results_dict[name] = item
         return results_dict
 
+    def computeAUROC_weighted(self, true, pred):
+        fpr = dict()
+        tpr = dict()
+        outAUROC = dict()
+        classCount = pred.shape[1]
+        for i in range(classCount):
+
+            # fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
+            #
+            # threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
+            # logging.info(f"threshold {self.names[i]} : ",threshold)
+            # self.thresholds[i] =threshold
+            # try :
+            #     auroc =  auc(fpr[i], tpr[i])
+            # except :
+            #     auroc=0
+            try :
+                auroc = roc_auc_score(true[:, i], pred[:, i],average="weighted")
+            except ValueError:
+                auroc = 0
+            outAUROC[self.names[i]] = auroc
+            if np.isnan(outAUROC[self.names[i]]):
+                outAUROC[self.names[i]] = 0
+
+        outAUROC["mean"] = np.mean(list(outAUROC.values()))
+
+
+        return outAUROC
+
     def computeAUROC(self, true, pred):
         fpr = dict()
         tpr = dict()
