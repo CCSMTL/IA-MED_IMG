@@ -3,6 +3,7 @@ import os
 import urllib
 import warnings
 
+import libauc.datasets
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -116,46 +117,48 @@ def main() :
 
 
     print("The model has now been successfully loaded into memory")
-    # pre-training
 
+    #------------pre-training--------------------------------------
     if config["pretraining"] != 0:
 
         experiment.compile(
             model,
             optimizer="Adam",
             criterion="BCEWithLogitsLoss",
-            train_datasets=["ChexPert"],
+            train_datasets=["ChexPert","PadChest"],
             val_datasets=["ChexPert"],
             config=config,
             device=device
         )
         results = experiment.train()
+        model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+        model = model.to(device)
 
     # setting up for the training
     experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=5
     )
 
 
-    # training
+    #------------training--------------------------------------
     experiment.compile(
         model=model,
-        optimizer = "Adam",
+        optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
-        train_datasets=["ChexPert"],
-        val_datasets = ["ChexPert"],
+        train_datasets=["CIUSSS"],
+        val_datasets = ["CIUSSS"],
         config=config,
         device=device
     )
-    model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
-    config.update({"lr": 0.1}, allow_val_change=True)
-    loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
-                           imratio=(np.array(experiment.training_loader.dataset.count) / len(
-                               experiment.training_loader.dataset)).tolist())
-    criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
 
-    experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
-
+    #Libauc : not working for now
+    # config.update({"lr": 0.1}, allow_val_change=True)
+    # loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
+    #                        imratio=(np.array(experiment.training_loader.dataset.count) / len(
+    #                            experiment.training_loader.dataset)).tolist())
+    # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
+    #experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
+    results = experiment.train()
     experiment.end(results)
 
 

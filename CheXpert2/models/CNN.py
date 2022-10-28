@@ -1,21 +1,16 @@
 import functools
 
 import torch
-from torch.autograd import Variable
-from CheXpert2.custom_utils import channels321,Identity
-import copy
+from torchvision import transforms
+from CheXpert2.custom_utils import channels321
+
 
 class CNN(torch.nn.Module):
     def __init__(self, backbone_name, num_classes, channels=3, img_size=320, freeze_backbone=False, pretrained=True,
                  pretraining=True,drop_rate=0,global_pool="avg"):
         super().__init__()
-        # if backbone_name in torch.hub.list("pytorch/vision:v0.10.0"):
-        #     repo = "pytorch/vision:v0.10.0"
-        #     weights = "DEFAULT" if pretrained else None
-        #     backbone = torch.hub.load(repo, backbone_name, weights=weights)
-        #     backbone = backbone.features
-        # else:
 
+        self.channels = channels
         if "yolo" in backbone_name:
             backbone = torch.hub.load('ultralytics/yolov5', "_create",
                                       f'{backbone_name}-cls.pt')  # ,classes=num_classes,channels=channels)
@@ -37,10 +32,38 @@ class CNN(torch.nn.Module):
         self.backbone=backbone
 
         self.pretrain = pretraining
+        self.preprocess = self.get_preprocess(channels)
+    @staticmethod
+    def get_preprocess(channels):
+        """
+        Pre-processing for the model . This WILL be applied before inference
+        """
+        if channels == 1:
+            normalize = transforms.Normalize(mean=[0.449], std=[0.226])
+        else:
+            normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+        return transforms.Compose(
+            [
 
+                transforms.ConvertImageDtype(torch.float32),
+                normalize,
+            ]
+        )
 
     def forward(self,images):
-        return self.backbone(images)
+        outputs = torch.zeros((images.shape[0], self.num_classes)).to(images.device)
+        for channel in range(images.shape[1]):
+            image = images[:, channel:channel + 1, :, :]
+            if self.channels == 3:
+                image = image.expand(-1, 3, -1, -1)
+
+            image = self.preprocess(image)
+            outputs+=self.backbone(image)
+
+        return outputs
+
 
 
 

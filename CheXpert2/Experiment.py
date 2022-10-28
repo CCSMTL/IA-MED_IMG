@@ -85,19 +85,20 @@ class Experiment:
                 self.save_weights()
             else:
                 self.patience -= 1
-                if logging :
-                    logging.info(f"patience has been reduced by 1, now at {self.patience}")
-                    logging.info(f"training loss : {self.metrics_results['training_loss']}")
-                    logging.info(f"validation loss : {val_loss}")
-        self.pbar.update(1)
+
+                logging.info(f"patience has been reduced by 1, now at {self.patience}")
+                logging.info(f"training loss : {self.metrics_results['training_loss']}")
+                logging.info(f"validation loss : {val_loss}")
+            self.pbar.update(1)
+            logging.info(pd.DataFrame(self.metrics_results, columns=list(self.metrics_results.keys())))
         self.epoch += 1
         if self.patience == 0 or self.epoch == self.epoch_max:
             self.keep_training = False
 
-        logging.info(pd.DataFrame(self.summary,columns=list(self.summary.keys())))
 
 
-    def log_metric(self, metric_name, value, epoch=None):
+
+    def log_metric(self, metric_name : str, value, epoch=None):
         if self.rank == 0 :
             if epoch is not None:
                 wandb.log({metric_name: value, "epoch": epoch})
@@ -105,7 +106,7 @@ class Experiment:
                 wandb.log({metric_name: value})
             self.metrics_results[metric_name] = value
 
-    def log_metrics(self, metrics, epoch=None):
+    def log_metrics(self, metrics : dict, epoch=None) :
         if self.rank == 0 :
             metrics["epoch"] = epoch
             wandb.log(metrics)
@@ -113,8 +114,12 @@ class Experiment:
 
     def save_weights(self):
         if self.rank == 0 and os.environ["DEBUG"] == "False" :
-            torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
-            wandb.save(f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
+            if dist.is_initialized() :
+                torch.save(self.model.module.state_dict(), f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
+                wandb.save(f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
+            else :
+                torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
+                wandb.save(f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
 
     def summarize(self):
         self.summary = self.metrics_results
@@ -192,9 +197,6 @@ class Experiment:
         self.num_classes = len(names)
         assert optimizer in dir(torch.optim)+[None]
         assert criterion in dir(torch.nn)+[None]
-        self.criterion = getattr(torch.nn,criterion)()    if criterion else None
-        metric = Metrics(num_classes=self.num_classes, names=names, threshold=np.zeros((self.num_classes)) + 0.5)
-        self.metrics = metric.metrics()
 
 
         img_dir=os.environ["img_dir"]
@@ -207,6 +209,7 @@ class Experiment:
             intensity=config["augment_intensity"],
             label_smoothing=config["label_smoothing"],
             channels=config["channels"],
+            use_frontal=config["use_frontal"],
             datasets=train_datasets
         )
         val_dataset=CXRLoader(
@@ -217,13 +220,24 @@ class Experiment:
                 intensity=0,
                 label_smoothing=0,
                 channels=config["channels"],
+                use_frontal=config["use_frontal"],
                 datasets=val_datasets
         )
+        num_positives = train_dataset.count
+        num_negatives = len(train_dataset) - num_positives
+        #thresholds    =  num_positives / num_negatives
+
+        thresholds = np.zeros((self.num_classes)) + 0.5
+        metric = Metrics(num_classes=self.num_classes, names=names, threshold=thresholds)
+        self.metrics = metric.metrics()
+        threshold_log={}
+        threshold_log["thresholds"] = {name: threshold for name, threshold in zip(self.names, thresholds.tolist())}
+        self.log_metrics(threshold_log)
         if logging :
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
         if os.environ["DEBUG"] == "False":
-            num_samples = 100_000
+            num_samples = 10_000
         else:
             num_samples = 10
 
@@ -260,6 +274,10 @@ class Experiment:
             betas=(self.config["beta1"], self.config["beta2"]),
         ) if optimizer else None
 
+
+        self.criterion = getattr(torch.nn, criterion) if criterion else None
+
+
     def train(self,**kwargs):
         """
         Run the training for the compiled experiment
@@ -277,19 +295,25 @@ class Experiment:
 
         self.epoch = 0
         results = None
+
         # Creates a GradScaler once at the beginning of training.
         scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
 
-        criterion_val = self.criterion  # ()
-        criterion = self.criterion  # (pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
+        criterion_val = self.criterion()
+
+        num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
+        num_negatives = len(self.training_loader.dataset) - num_positives
+        pos_weight = num_negatives / num_positives
+
+
+        criterion = self.criterion(pos_weight=pos_weight)
 
         position = self.device + 1 if type(self.device) == int else 1
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
-        # scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader),
-                                                        epochs=self.epoch_max)
+        #scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(self.optimizer, max_lr=self.config["lr"], steps_per_epoch=len(self.training_loader), epochs=self.epoch_max)
 
         with logging_redirect_tqdm():
 
@@ -315,7 +339,7 @@ class Experiment:
                     val_loss, results = validation_loop(
                         self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
                     )
-                    logging.debug("mean output : ", torch.mean(results[1]))
+                    logging.debug(f"mean output : {torch.mean(results[1])}")
 
                     val_loss = val_loss.cpu() / m
                     if self.metrics:

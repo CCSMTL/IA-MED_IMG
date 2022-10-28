@@ -8,7 +8,7 @@ import urllib
 from CheXpert2 import names
 import logging
 class MongoDB:
-    def __init__(self, address, port, collectionnames):
+    def __init__(self, address, port, collectionnames,use_frontal=False):
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
@@ -26,7 +26,7 @@ class MongoDB:
 
         columns=names
 
-
+        self.use_frontal = use_frontal
         self.names = columns + ["Path","collection","Exam ID","Frontal/Lateral"]
 
         for name in collectionnames:
@@ -38,6 +38,8 @@ class MongoDB:
         train_dataset = [pd.DataFrame([],columns=self.names)]
         query = {datasetname: 1}
 
+        if self.use_frontal:
+            query["Frontal/Lateral"] = "F"
         if len(classnames) > 0:
             query["$or"] = [{classname: 1} for classname in classnames]
 
@@ -76,7 +78,7 @@ class MongoDB:
         df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
-        df.to_csv("test.csv",sep=" ")
+        #df.to_csv("test.csv",sep=" ")
         return df
 
 

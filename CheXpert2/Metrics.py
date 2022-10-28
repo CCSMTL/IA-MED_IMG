@@ -24,18 +24,7 @@ class Metrics:
 
         self.convert = lambda x : x
 
-    def accuracy(self, true, pred):
-        # n, m = true.shape
-        # pred2 = self.convert(pred)
-        # pred2 = np.where(pred2 > 0.5, 1, 0)
-        #
-        # accuracy = 0
-        # for x, y in zip(true, pred2):
-        #     if (x == y).all():
-        #         accuracy += 1
-        # accuracy /=n
-        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
-        return accuracy
+
 
     def accuracy3(self, true, pred):
         # n, m = true.shape
@@ -67,9 +56,8 @@ class Metrics:
         pred2 = np.where(pred2 > 0.5, 1, 0)
 
 
-
         return f1_score(
-            true, pred2, average="weighted", zero_division=0
+            true, pred2, zero_division=0,average="macro"
         )  # weighted??
 
     def precision(self, true, pred):
@@ -92,6 +80,35 @@ class Metrics:
             results_dict[name] = item
         return results_dict
 
+    def computeAUROC_weighted(self, true, pred):
+        fpr = dict()
+        tpr = dict()
+        outAUROC = dict()
+        classCount = pred.shape[1]
+        for i in range(classCount):
+
+            # fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
+            #
+            # threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
+            # logging.info(f"threshold {self.names[i]} : ",threshold)
+            # self.thresholds[i] =threshold
+            # try :
+            #     auroc =  auc(fpr[i], tpr[i])
+            # except :
+            #     auroc=0
+            try :
+                auroc = roc_auc_score(true[:, i], pred[:, i],average="weighted")
+            except ValueError:
+                auroc = 0
+            outAUROC[self.names[i]] = auroc
+            if np.isnan(outAUROC[self.names[i]]):
+                outAUROC[self.names[i]] = 0
+
+        outAUROC["mean"] = np.mean(list(outAUROC.values()))
+
+
+        return outAUROC
+
     def computeAUROC(self, true, pred):
         fpr = dict()
         tpr = dict()
@@ -109,7 +126,7 @@ class Metrics:
             # except :
             #     auroc=0
             try :
-                auroc = roc_auc_score(true[:, i], pred[:, i])
+                auroc = roc_auc_score(true[:, i], pred[:, i],average="weighted")
             except ValueError:
                 auroc = 0
             outAUROC[self.names[i]] = auroc

@@ -22,7 +22,7 @@ def training_loop(
     model.train()
     i = 1
     for images, labels, idx in loader:
-
+        optimizer.zero_grad(set_to_none=True)
         # send to GPU
         images, labels = (
             images.to(device, non_blocking=True),
@@ -33,19 +33,20 @@ def training_loop(
 
         images, labels = loader.iterable.dataset.advanced_transform((images, labels))
 
-        images = loader.iterable.dataset.preprocess(images)
+
 
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
-            for channel in range(images.shape[1]):
-                outputs += model(images[:, channel:channel + 1, :, :])
-            loss = criterion(outputs, labels)
 
-        # assert not torch.isnan(outputs).any()
-        # outputs = torch.nan_to_num(outputs,0)
+            outputs = model(images)
+
+        loss = criterion(outputs, labels)
+
+
+
+
 
         scaler.scale(loss).backward()
-        # Unscales the gradients of optimizer's assigned params in-place
+        #Unscales the gradients of optimizer's assigned params in-place
         scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
         torch.nn.utils.clip_grad_norm_(
@@ -54,13 +55,12 @@ def training_loop(
 
         scaler.step(optimizer)
         scaler.update()
-        # optimizer.zero_grad(set_to_none=True)
-        optimizer.zero_grad()
         scheduler.step()
+
         running_loss += loss.detach()
         # ending loop
 
-        loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
+        #loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
         del (
             outputs,
             labels,
@@ -97,14 +97,14 @@ def validation_loop(model, loader, criterion, device, autocast):
             labels.to(device, non_blocking=True),
         )
 
-        images = loader.iterable.dataset.preprocess(images)
+
 
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast):
-            outputs = torch.zeros((images.shape[0], model.num_classes)).to(device)
-            for channel in range(images.shape[1]):
-                outputs += model(images[:, channel:channel + 1, :, :])
-            loss = criterion(outputs.float(), labels.float())
+
+
+            outputs = model(images)
+        loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()
         outputs = torch.sigmoid(outputs.detach().cpu())
@@ -148,7 +148,7 @@ def training(
 
     position = device + 1 if type(device) == int else 1
     # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
-    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=0.1)
+    scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1)
     # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(training_loader),
     #                                                 epochs=experiment.epoch_max)
     while experiment.keep_training:  # loop over the dataset multiple times

@@ -12,13 +12,14 @@ import timm
 
 from CheXpert2.Experiment import Experiment
 from CheXpert2 import debug_config
+from CheXpert2.models.CNN import CNN
 os.environ["WANDB_MODE"] = "offline"
 experiment = Experiment(directory="/debug", names=np.arange(0, 13).astype(str))
 
 def test_experiment_compile():
     os.environ["DEBUG"]="True"
     experiment.compile(
-        model=timm.create_model("convnext_tiny"),
+        model=CNN("convnext_tiny", num_classes=13, img_size=224, freeze_backbone=False, pretrained=False, channels=3),
         optimizer="AdamW",
         criterion="BCEWithLogitsLoss",
         train_datasets=["ChexPert"],

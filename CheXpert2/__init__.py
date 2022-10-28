@@ -1,9 +1,9 @@
 
 #nc: 15
 
+#names = [ "Cardiomegaly", "Edema","Consolidation", "Atelectasis", "Pleural Effusion","No Finding"]
 
 names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema"    ,"Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pneumo other","No Finding"]
-#names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Lung Opacity"    ,"Emphysema","Edema"    ,"Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pleural Thickening","Pneumo other","No Finding"]
 
 debug_config = {
         "model": "convnext_tiny",
@@ -26,5 +26,6 @@ debug_config = {
         "pretraining": 0,
         "channels": 1,
         "autocast": True,
+        "use_frontal" : False,
         "pos_weight": 1,
     }
