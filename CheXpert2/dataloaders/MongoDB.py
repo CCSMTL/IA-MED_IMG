@@ -34,14 +34,17 @@ class MongoDB:
 
 
     def dataset(self, datasetname, classnames):
-        assert datasetname == "Train" or datasetname == "Valid"
+        assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
+        if datasetname=="Test" :
+            self.data= [self .db_CIUSSS["test"]]
+            datasetname="Valid" #TODO correct this hack in the future
         train_dataset = [pd.DataFrame([],columns=self.names)]
         query = {datasetname: 1}
 
         if self.use_frontal:
             query["Frontal/Lateral"] = "F"
-        if len(classnames) > 0:
-            query["$or"] = [{classname: 1} for classname in classnames]
+        # if len(classnames) > 0:
+        #     query["$or"] = [{classname: {"$in":[-1,1]}} for classname in classnames]
 
         for collection in self.data:
             results = list(collection.find(query))
