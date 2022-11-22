@@ -63,7 +63,7 @@ class Experiment:
         self.epoch_max = epoch_max
         self.max_patience = patience
         self.patience = patience
-        self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
+        self.rank = int(os.environ['LOCAL_RANK']) if torch.distributed.is_initialized() else 0
         self.names = names
 
         # create directory if doesnt existe
@@ -279,11 +279,10 @@ class Experiment:
         results = None
         # Creates a GradScaler once at the beginning of training.
         scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
-        val_loss = np.inf
+        val_loss = torch.inf
         n, m = len(self.training_loader), len(self.validation_loader)
 
-        criterion_val = self.criterion  # ()
-        criterion = self.criterion  # (pos_weight=torch.ones((len(experiment.names),),device=device)*pos_weight)
+
 
         position = self.device + 1 if type(self.device) == int else 1
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
@@ -301,9 +300,8 @@ class Experiment:
                 train_loss = training_loop(
                     self.model,
                     tqdm.tqdm(self.training_loader, leave=False, position=position),
-
                     self.optimizer,
-                    criterion,
+                    self.criterion,
                     self.device,
                     scaler,
                     self.config["clip_norm"],
@@ -313,11 +311,11 @@ class Experiment:
                 )
                 if self.rank == 0:
                     val_loss, results = validation_loop(
-                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
+                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), self.criterion, self.device,self.config["autocast"]
                     )
                     logging.debug("mean output : ", torch.mean(results[1]))
 
-                    val_loss = val_loss.cpu() / m
+
                     if self.metrics:
                         for key,metric in self.metrics.items():
                             pred = results[1].numpy()
@@ -328,11 +326,11 @@ class Experiment:
 
                         self.log_metrics(metrics_results, epoch=self.epoch)
                         self.log_metric("training_loss", train_loss.cpu() / n, epoch=self.epoch)
-                        self.log_metric("validation_loss", val_loss, epoch=self.epoch)
+                        self.log_metric("validation_loss", val_loss.cpu() / m, epoch=self.epoch)
 
                     # Finishing the loop
 
-                self.next_epoch(val_loss)
+                self.next_epoch(val_loss.cpu() / m)
                 # if not dist.is_initialized() and self.epoch % 5 == 0:
                 #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
                 if self.epoch == self.epoch_max:
