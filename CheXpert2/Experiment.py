@@ -237,13 +237,14 @@ class Experiment:
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
         if os.environ["DEBUG"] == "False":
-            num_samples = 10_000
+            num_samples = 50_000
         else:
-            num_samples = 10
+            num_samples = 50_000
 
 
         if train_dataset.weights is not None:
-            sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,
+            samples_weights = np.ones_like(train_dataset.weights)
+            sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
                                                                      num_samples=min(num_samples, len(train_dataset)))
         else:
             sampler = torch.utils.data.SubsetRandomSampler(
@@ -301,14 +302,14 @@ class Experiment:
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
 
-        criterion_val = self.criterion()
+        criterion_val = self.criterion#()
 
         num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
         num_negatives = len(self.training_loader.dataset) - num_positives
         pos_weight = num_negatives / num_positives
 
 
-        criterion = self.criterion(pos_weight=pos_weight)
+        criterion = self.criterion#()#pos_weight=pos_weight)
 
         position = self.device + 1 if type(self.device) == int else 1
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)

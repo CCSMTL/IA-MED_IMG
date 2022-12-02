@@ -38,7 +38,7 @@ def training_loop(
         with torch.cuda.amp.autocast(enabled=autocast):
 
             outputs = model(images)
-
+            assert not torch.isnan(outputs).any()
         loss = criterion(outputs, labels)
 
 
@@ -101,9 +101,8 @@ def validation_loop(model, loader, criterion, device, autocast):
 
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast):
-
-
             outputs = model(images)
+            assert not torch.isnan(outputs).any()
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()

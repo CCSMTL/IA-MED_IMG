@@ -74,7 +74,7 @@ class CXRLoader(Dataset):
         classnames = []#["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets,use_frontal=use_frontal).dataset(split, classnames=classnames)
+        self.files = MongoDB("10.128.107.212", 27017, datasets,use_frontal=use_frontal,img_dir=img_dir).dataset(split, classnames=classnames)
 
 
 
@@ -203,48 +203,20 @@ class CXRLoader(Dataset):
         return weights
 
 
-    def step(self,idxs,pseudo_labels):#moving avg
+    def step(self,idxs,pseudo_labels):#moving avg ; not yet fully implemented
 
         labels=self.files.loc[idxs,self.classes].to_numpy()
         new_labels = 0.9*labels+0.1*pseudo_labels
         self.files.loc[idxs,self.classes] = new_labels
 
     def read_img_from_disk(self, paths,views):
-        # views=np.array(views)
-        #
-        # frontal_views=np.where(views=="F")[0]
-        # lateral_views=np.where(views=="L")[0]
-        # for path in paths :
-        #     assert os.path.exists(self.img_dir+path) ,f"path does not exists : {self.img_dir}{path}"
-        # if len(frontal_views)>0 :
-        #     frontal_path=paths[np.random.permutation(frontal_views)[0]]
-        #
-        #     frontal = cv.imread(f"{self.img_dir}{frontal_path}", cv.IMREAD_GRAYSCALE)
-        #     frontal = cv.resize(
-        #         frontal,
-        #         (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
-        #     ).squeeze()
-        #
-        # else :
-        #     frontal=np.zeros((self.img_size,self.img_size))
-        #
-        #
-        # if len(lateral_views) > 0:
-        #     lateral_path = paths[np.random.permutation(lateral_views)[0]]
-        #     lateral = cv.imread(f"{self.img_dir}{lateral_path}", cv.IMREAD_GRAYSCALE)
-        #     lateral = cv.resize(
-        #         lateral,
-        #         (int(self.img_size), int(self.img_size)), cv.INTER_CUBIC,  # removed center crop
-        #     ).squeeze()
-        # else :
-        #     lateral=np.zeros((self.img_size,self.img_size))
-        # assert len(lateral_views)+len(frontal_views)>0
+
         images=np.zeros((2,self.img_size,self.img_size),dtype=np.uint8)
         for i,path in enumerate(np.random.permutation(paths)) :
+            assert os.path.exists(f"{self.img_dir}{path}"), f"The provided path {self.img_dir}{path} does not exists!"
             images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
             if i==1 :
                 break
-
 
         return images
 

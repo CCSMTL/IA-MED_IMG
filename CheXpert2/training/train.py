@@ -3,7 +3,7 @@ import os
 import urllib
 import warnings
 
-import libauc.datasets
+#import libauc.datasets
 import numpy as np
 import torch
 import torch.distributed as dist
@@ -21,15 +21,15 @@ from CheXpert2.models.CNN import CNN
 from CheXpert2.training.training import training
 from CheXpert2 import names
 
-from libauc.losses import AUCM_MultiLabel
-from libauc.optimizers import PESG
+#from libauc.losses import AUCM_MultiLabel
+#from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-# torch.autograd.set_detect_anomaly(True)
-# torch.autograd.profiler.profile(False)
-# torch.autograd.profiler.emit_nvtx(False)
-# torch.backends.cudnn.benchmark = True
-
+torch.autograd.set_detect_anomaly(False)
+torch.autograd.profiler.profile(False)
+torch.autograd.profiler.emit_nvtx(False)
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = False
 try:
     os.environ["img_dir"] = os.environ["img_dir"]
 except:
@@ -144,9 +144,9 @@ def main() :
     experiment.compile(
         model=model,
         optimizer = "AdamW",
-        criterion="BCEWithLogitsLoss",
-        train_datasets=["CIUSSS"],
-        val_datasets = ["CIUSSS"],
+        criterion="MSELoss",
+        train_datasets=["ChexPert"],
+        val_datasets = ["ChexPert"],
         config=config,
         device=device
     )
@@ -158,7 +158,8 @@ def main() :
     #                            experiment.training_loader.dataset)).tolist())
     # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
     #experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
-    results = experiment.train()
+    criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
+    results = experiment.train(criterion=criterion)
     experiment.end(results)
 
 
