@@ -55,10 +55,12 @@ class Metrics:
 
         pred2 = np.where(pred2 > 0.5, 1, 0)
 
-
-        return f1_score(
-            true, pred2, zero_division=0,average="macro"
+        f1=f1_score(
+            true, pred2, zero_division=0, average=None
         )  # weighted??
+        f1_dict={name: item for name, item in zip(self.names, f1)}
+        f1_dict["mean"] = np.sum(f1)/np.sum(f1!=0)
+        return f1_dict
 
     def precision(self, true, pred):
         pred = self.convert(pred)

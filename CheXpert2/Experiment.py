@@ -239,7 +239,7 @@ class Experiment:
         if os.environ["DEBUG"] == "False":
             num_samples = 50_000
         else:
-            num_samples = 50_000
+            num_samples = 10
 
 
         if train_dataset.weights is not None:
@@ -275,9 +275,14 @@ class Experiment:
             betas=(self.config["beta1"], self.config["beta2"]),
         ) if optimizer else None
 
-
-        self.criterion = getattr(torch.nn, criterion) if criterion else None
-
+        num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
+        num_negatives = len(self.training_loader.dataset) - num_positives
+        pos_weight = num_negatives / num_positives
+        pos_weight = torch.nan_to_num(pos_weight, nan=1.0, posinf=1.0, neginf=1.0)
+        print("pos_weight :" ,pos_weight)
+        criterion = getattr(torch.nn, criterion) if criterion else None
+        self.criterion_val = criterion()
+        self.criterion = criterion(pos_weight = pos_weight.to(device))
 
     def train(self,**kwargs):
         """
@@ -302,14 +307,8 @@ class Experiment:
         val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
 
-        criterion_val = self.criterion#()
-
-        num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
-        num_negatives = len(self.training_loader.dataset) - num_positives
-        pos_weight = num_negatives / num_positives
 
 
-        criterion = self.criterion#()#pos_weight=pos_weight)
 
         position = self.device + 1 if type(self.device) == int else 1
         # scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer, T_0=10,T_mult=1)
@@ -328,7 +327,7 @@ class Experiment:
                     tqdm.tqdm(self.training_loader, leave=False, position=position),
 
                     self.optimizer,
-                    criterion,
+                    self.criterion,
                     self.device,
                     scaler,
                     self.config["clip_norm"],
@@ -338,7 +337,11 @@ class Experiment:
                 )
                 if self.rank == 0:
                     val_loss, results = validation_loop(
-                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), criterion_val, self.device,self.config["autocast"]
+                        self.model,
+                        tqdm.tqdm(self.validation_loader, position=position, leave=False),
+                        self.criterion_val,
+                        self.device,
+                        self.config["autocast"]
                     )
                     logging.debug(f"mean output : {torch.mean(results[1])}")
 

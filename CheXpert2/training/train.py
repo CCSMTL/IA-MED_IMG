@@ -144,7 +144,7 @@ def main() :
     experiment.compile(
         model=model,
         optimizer = "AdamW",
-        criterion="MSELoss",
+        criterion="BCEWithLogitsLoss",
         train_datasets=["ChexPert"],
         val_datasets = ["ChexPert"],
         config=config,
@@ -158,8 +158,8 @@ def main() :
     #                            experiment.training_loader.dataset)).tolist())
     # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
     #experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
-    criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
-    results = experiment.train(criterion=criterion)
+    #criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
+    results = experiment.train()#criterion=criterion)
     experiment.end(results)
 
 

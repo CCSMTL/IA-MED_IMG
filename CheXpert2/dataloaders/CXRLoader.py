@@ -104,7 +104,7 @@ class CXRLoader(Dataset):
         return len(self.files)
 
     @staticmethod
-    def get_transform(prob):  # for transform that would require pil images
+    def get_transform(prob) :  # for transform that would require pil images
         return A.Compose(
             [
 
@@ -123,12 +123,10 @@ class CXRLoader(Dataset):
                 #A.augmentations.transforms.RandomGamma()
                 #A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
                 #gaussian blur?
-
-
             ]
         )
     @staticmethod
-    def get_advanced_transform(prob, intensity):
+    def get_advanced_transform(prob, intensity) :
         return transforms.Compose(
             [  # advanced/custom
             #    custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
@@ -213,9 +211,14 @@ class CXRLoader(Dataset):
 
         images=np.zeros((2,self.img_size,self.img_size),dtype=np.uint8)
         for i,path in enumerate(np.random.permutation(paths)) :
-            assert os.path.exists(f"{self.img_dir}{path}"), f"The provided path {self.img_dir}{path} does not exists!"
-            images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
-            if i==1 :
+            # images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
+
+            image = cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE)
+            h, w = image.shape
+
+            crop_img = image[int(0.2 * h):int(0.8 * h), int(0.2 * w):int(0.8 * w)]
+            images[i, :, :] = cv.resize(crop_img, (self.img_size, self.img_size))
+            if i == 1:
                 break
 
         return images

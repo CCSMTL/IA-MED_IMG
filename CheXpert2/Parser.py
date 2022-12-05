@@ -16,6 +16,7 @@ def init_parser():
     )
 
     parser.add_argument(
+
         "--img_size",
         default=500,
         const="all",
