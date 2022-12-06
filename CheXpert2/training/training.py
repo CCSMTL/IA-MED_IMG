@@ -32,15 +32,17 @@ def training_loop(
         # Apply transformation on GPU to avoid CPU bottleneck
 
         images, labels = loader.iterable.dataset.advanced_transform((images, labels))
-
-
+        assert not torch.isnan(images).any(),print(images)
+        assert not torch.isnan(labels).any(), print(labels)
 
         with torch.cuda.amp.autocast(enabled=autocast):
 
             outputs = model(images)
 
-        loss = criterion(outputs, labels)
+            assert not torch.isnan(outputs).any(),print(outputs)
 
+        loss = criterion(outputs, labels)
+        assert not torch.isnan(loss).any()
 
 
 
@@ -101,9 +103,9 @@ def validation_loop(model, loader, criterion, device, autocast):
 
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast):
-
-
             outputs = model(images)
+            assert not torch.isnan(outputs).any()
+
         loss = criterion(outputs.float(), labels.float())
 
         running_loss += loss.detach()

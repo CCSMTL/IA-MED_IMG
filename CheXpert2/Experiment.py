@@ -63,7 +63,7 @@ class Experiment:
         self.epoch_max = epoch_max
         self.max_patience = patience
         self.patience = patience
-        self.rank = int(os.environ['LOCAL_RANK']) if torch.distributed.is_initialized() else 0
+        self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         self.names = names
 
         # create directory if doesnt existe
@@ -237,13 +237,14 @@ class Experiment:
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
         if os.environ["DEBUG"] == "False":
-            num_samples = 10_000
+            num_samples = 50_000
         else:
             num_samples = 10
 
 
         if train_dataset.weights is not None:
-            sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,
+            samples_weights = np.ones_like(train_dataset.weights)
+            sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
                                                                      num_samples=min(num_samples, len(train_dataset)))
         else:
             sampler = torch.utils.data.SubsetRandomSampler(
@@ -274,9 +275,14 @@ class Experiment:
             betas=(self.config["beta1"], self.config["beta2"]),
         ) if optimizer else None
 
-
-        self.criterion = getattr(torch.nn, criterion) if criterion else None
-
+        num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
+        num_negatives = len(self.training_loader.dataset) - num_positives
+        pos_weight = num_negatives / num_positives
+        pos_weight = torch.nan_to_num(pos_weight, nan=1.0, posinf=1.0, neginf=1.0)
+        print("pos_weight :" ,pos_weight)
+        criterion = getattr(torch.nn, criterion) if criterion else None
+        self.criterion_val = criterion()
+        self.criterion = criterion(pos_weight = pos_weight.to(device))
 
     def train(self,**kwargs):
         """
@@ -298,8 +304,9 @@ class Experiment:
 
         # Creates a GradScaler once at the beginning of training.
         scaler = torch.cuda.amp.GradScaler(enabled=self.config["autocast"])
-        val_loss = torch.inf
+        val_loss = np.inf
         n, m = len(self.training_loader), len(self.validation_loader)
+
 
 
 
@@ -318,6 +325,7 @@ class Experiment:
                 train_loss = training_loop(
                     self.model,
                     tqdm.tqdm(self.training_loader, leave=False, position=position),
+
                     self.optimizer,
                     self.criterion,
                     self.device,
@@ -329,11 +337,15 @@ class Experiment:
                 )
                 if self.rank == 0:
                     val_loss, results = validation_loop(
-                        self.model, tqdm.tqdm(self.validation_loader, position=position, leave=False), self.criterion, self.device,self.config["autocast"]
+                        self.model,
+                        tqdm.tqdm(self.validation_loader, position=position, leave=False),
+                        self.criterion_val,
+                        self.device,
+                        self.config["autocast"]
                     )
                     logging.debug(f"mean output : {torch.mean(results[1])}")
 
-
+                    val_loss = val_loss.cpu() / m
                     if self.metrics:
                         for key,metric in self.metrics.items():
                             pred = results[1].numpy()
@@ -344,11 +356,11 @@ class Experiment:
 
                         self.log_metrics(metrics_results, epoch=self.epoch)
                         self.log_metric("training_loss", train_loss.cpu() / n, epoch=self.epoch)
-                        self.log_metric("validation_loss", val_loss.cpu() / m, epoch=self.epoch)
+                        self.log_metric("validation_loss", val_loss, epoch=self.epoch)
 
                     # Finishing the loop
 
-                self.next_epoch(val_loss.cpu() / m)
+                self.next_epoch(val_loss)
                 # if not dist.is_initialized() and self.epoch % 5 == 0:
                 #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
                 if self.epoch == self.epoch_max:

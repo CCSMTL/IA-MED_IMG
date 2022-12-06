@@ -21,22 +21,22 @@ def test_train():
     try:
         img_dir = os.environ["img_dir"]
     except:
-        img_dir = ""
+        os.environ["img_dir"] = ""
 
-    torch.cuda.is_available = lambda: False
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    #torch.cuda.is_available = lambda: False
+    #os.environ["CUDA_VISIBLE_DEVICES"] = ""
     os.environ["DEBUG"] = "True"
     os.environ["WANDB_MODE"] = "offline"
 
 
 
     experiment = Experiment(
-        f"{debug_config['model']}", names=names, tag=None, config=debug_config, epoch_max=1, patience=5
+        f"{debug_config['model']}", names=names, tag=None, config=debug_config, epoch_max=1, patience=1
     )
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     model = CNN(debug_config["model"], len(names), img_size=debug_config["img_size"], freeze_backbone=debug_config["freeze"],
-                pretrained=debug_config["pretrained"], channels=debug_config["channels"], pretraining=False)
+                pretrained=debug_config["pretrained"], channels=debug_config["channels"], pretraining=debug_config["pretraining"])
 
     experiment.compile(
         model=model,
@@ -48,8 +48,8 @@ def test_train():
         device=device
     )
     results = experiment.train()
-
     assert experiment.best_loss != 0
+
 
 
 if __name__ == "__main__":

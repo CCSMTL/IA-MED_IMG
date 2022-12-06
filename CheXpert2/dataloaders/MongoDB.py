@@ -8,33 +8,35 @@ import urllib
 from CheXpert2 import names
 import logging
 class MongoDB:
-    def __init__(self, address, port, collectionnames,use_frontal=False):
-
-        self.client = pymongo.MongoClient(address, port)
-        self.db_public = self.client["Public_Images"]
-
-        self.data = []
-        self.collectionnames = collectionnames
-
-        if "CIUSSS" in collectionnames :
-            self.db_CIUSSS = self.client["CIUSSS"]
-            self.data.append(self.db_CIUSSS["images"])
-            collectionnames.remove("CIUSSS")
-
-        for collectionname in collectionnames:
-            assert collectionname in self.db_public.list_collection_names()
-
-        columns=names
-
+    def __init__(self, address, port, collectionnames,use_frontal=False,img_dir=""):
         self.use_frontal = use_frontal
-        self.names = columns + ["Path","collection","Exam ID","Frontal/Lateral"]
+        self.names = names + ["Path", "collection", "Exam ID", "Frontal/Lateral"]
+        self.img_dir = img_dir
+        if os.environ["DEBUG"] != "True" :
+            self.client = pymongo.MongoClient(address, port)
+            self.db_public = self.client["Public_Images"]
 
-        for name in collectionnames:
-            self.data.append(self.db_public[name])
+            self.data = []
+            self.collectionnames = collectionnames
+
+            if "CIUSSS" in collectionnames :
+                self.db_CIUSSS = self.client["CIUSSS"]
+                self.data.append(self.db_CIUSSS["images"])
+                collectionnames.remove("CIUSSS")
+
+            for collectionname in collectionnames:
+                assert collectionname in self.db_public.list_collection_names()
 
 
-    def dataset(self, datasetname, classnames):
-        assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
+
+
+
+            for name in collectionnames:
+                self.data.append(self.db_public[name])
+        else :
+            assert collectionnames==["ChexPert"]
+
+    def load_online(self,datasetname):
         if datasetname=="Test" :
             self.data= [self .db_CIUSSS["test"]]
             datasetname="Valid" #TODO correct this hack in the future
@@ -72,12 +74,22 @@ class MongoDB:
         else:
             raise Exception("No data found")
 
+        return df
+    def load_offline(self,datasetname):
+        data = pd.read_csv(f"{self.img_dir}/data/ChexPert.csv")
+        return data[data[datasetname]==1]
+    def dataset(self, datasetname, classnames):
+        assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
 
+        if os.environ["DEBUG"]=="True" :
+            df = self.load_offline(datasetname)
+        else :
+            df = self.load_online(datasetname)
         #set up parent class
         df.fillna(0, inplace=True)
 
         df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"]].replace(-1,1).max(axis=1)
-        df["Air"]     = df[["Emphysema","Pneumothorax","Pneumo other"]].replace(-1,1).max(axis=1)
+        df["Air"]     = df[["Emphysema","Pneumothorax","Pleural Other"]].replace(-1,1).max(axis=1)
         df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
