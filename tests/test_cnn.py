@@ -35,8 +35,6 @@ def test_cnn_RGB():
     y = cnn(x)  # test forward loop
 
 
-
-
 if __name__ == "__main__":
 
     test_cnn_grayscale()

@@ -17,9 +17,12 @@ def training_loop(
     :param minibatch_accumulate: number of minibatch to accumulate before applying gradient. Can be useful on smaller gpu memory
     :return: epoch loss, tensor of concatenated labels and predictions
     """
+
+
     running_loss = 0
 
     model.train()
+
     i = 1
     for images, labels, idx in loader:
         optimizer.zero_grad(set_to_none=True)

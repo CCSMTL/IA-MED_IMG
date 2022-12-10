@@ -53,7 +53,7 @@ class Metrics:
 
         pred2 = self.convert(pred)
 
-        pred2 = np.where(pred2 > 0.5, 1, 0)
+        pred2 = np.where(pred2 > 0.7, 1, 0)
 
         f1=f1_score(
             true, pred2, zero_division=0, average=None
