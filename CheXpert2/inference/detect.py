@@ -7,18 +7,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 import torch
-# -------- proxy config ---------------------------
 from six.moves import urllib
 from sklearn import metrics
+# -------- local import ---------------------------
 
-import wandb
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 from CheXpert2.models.CNN import CNN
-from CheXpert2.models.Ensemble import Ensemble
-#from polycam.polycam.polycam import PCAMp
 from CheXpert2.Metrics import Metrics
 from CheXpert2 import names
-import yaml
+
+# -------- proxy config ---------------------------
 proxy = urllib.request.ProxyHandler(
     {
         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
@@ -32,8 +30,8 @@ opener = urllib.request.build_opener(proxy)
 # install the openen on the module-level
 urllib.request.install_opener(opener)
 
-os.environ["DEBUG"] = "False"
 
+# -------- main --------------------------------------
 
 @torch.no_grad()
 def infer_loop(model, loader, criterion, device):

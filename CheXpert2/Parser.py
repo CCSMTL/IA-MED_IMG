@@ -16,26 +16,9 @@ def init_parser():
     )
 
     parser.add_argument(
+
         "--img_size",
         default=500,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-    parser.add_argument(
-        "--N",
-        default=2,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="width and length to resize the images to. Choose a value between 320 and 608.",
-    )
-    parser.add_argument(
-        "--M",
-        default=9,
         const="all",
         type=int,
         nargs="?",
@@ -70,62 +53,13 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0],
+        default=[0,0,0,0,0],
         type=float,
         nargs="+",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
-    parser.add_argument(
-        "--augment_prob_4",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
 
-    parser.add_argument(
-        "--augment_prob_3",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_2",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_1",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_prob_0",
-        default=0,
-        type=float,
-        nargs="?",
-        required=False,
-        help="the probability of an augmentation. Between 0 and 1",
-    )
-    parser.add_argument(
-        "--augment_intensity",
-        default=0.1,
-        const="all",
-        type=float,
-        nargs="?",
-        required=False,
-        help="The intensity of the data augmentation.Between 0 and 1. Default is 10%",
-    )
     parser.add_argument(
         "--label_smoothing",
         default=0,
@@ -144,15 +78,15 @@ def init_parser():
         required=False,
         help="Norm for gradient clipping",
     )
-    parser.add_argument(
-        "--pos_weight",
-        default=1,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="A weight for the positive class.",
-    )
+    # parser.add_argument(
+    #     "--pos_weight",
+    #     default=1,
+    #     const="all",
+    #     type=int,
+    #     nargs="?",
+    #     required=False,
+    #     help="A weight for the positive class.",
+    # )
     parser.add_argument(
         "--lr",
         default=0.0001,
@@ -198,15 +132,7 @@ def init_parser():
         required=False,
         help="The batch size to use. If > max_batch_size,gradient accumulation will be used",
     )
-    parser.add_argument(
-        "--accumulate",
-        default=1,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="The number of epoch to accumulate gradient. Choose anything >0",
-    )
+
     parser.add_argument(
         "--num_worker",
         default=int(os.cpu_count() / 4),
@@ -229,11 +155,12 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--tags",
+        "--tag",
         default=None,
-        nargs="+",
+        nargs="?",
         required=False,
-        help="extra tags to add to the logs",
+        type=str,
+        help="tag to add to the logs",
     )
 
     parser.add_argument(
@@ -250,17 +177,12 @@ def init_parser():
     )
 
     parser.add_argument(
-        "--cache",
+        "--use_frontal",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="do you wish  to cache the data into ram?",
+        help="If this argument is given , the frontal images only will be used",
     )
-    parser.add_argument(
-        "--unet",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish to train the unet instead of the classifier",
-    )
+
 
     parser.add_argument(
         "--debug",

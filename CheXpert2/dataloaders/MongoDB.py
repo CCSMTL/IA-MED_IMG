@@ -1,20 +1,27 @@
-import numpy as np
+
 from functools import reduce
 import os
 import pandas as pd
 import pymongo
-import yaml
-import urllib
+import logging
 from CheXpert2 import names
-
 class MongoDB:
-    def __init__(self, address, port, collectionnames):
+    def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False) :
+
+        self.use_frontal = use_frontal
+        self.names = names + ["Path", "collection", "Exam ID", "Frontal/Lateral"]
+        self.img_dir = img_dir
+        self.debug = debug
+
+        if debug :
+            assert collectionnames == ["ChexPert"]
+            return
 
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
 
         self.data = []
-
+        self.collectionnames = collectionnames
 
         if "CIUSSS" in collectionnames :
             self.db_CIUSSS = self.client["CIUSSS"]
@@ -24,37 +31,33 @@ class MongoDB:
         for collectionname in collectionnames:
             assert collectionname in self.db_public.list_collection_names()
 
-        columns=names
-
-
-        self.names = columns + ["Path","collection","Exam ID","Frontal/Lateral"]
-
         for name in collectionnames:
             self.data.append(self.db_public[name])
-        self.collectionnames=collectionnames
 
-    def dataset(self, datasetname, classnames):
-        assert datasetname == "Train" or datasetname == "Valid"
+
+
+    def load_online(self,datasetname):
+        if datasetname=="Test" :
+            self.data= [self .db_CIUSSS["test"]]
         train_dataset = [pd.DataFrame([],columns=self.names)]
+        query = {datasetname: 1}
 
-
-        if datasetname=="Valid" and self.collectionnames==["ChexPert"] and os.environ["DEBUG"] == "True":
-            query = {"Path" : {"$regex" : "valid"}}
-
-        else :
-            query = {datasetname: 1}
-
-        if len(classnames) > 0:
-            query["$or"] = [{classname: 1} for classname in classnames]
+        if self.use_frontal:
+            query["Frontal/Lateral"] = "F"
 
         for collection in self.data:
             results = list(collection.find(query))
 
-            print(f"Collected query for dataset {collection}")
+
+            logging.info(f"Collected query for dataset {collection}")
 
             if len(results) > 0:
 
                 data=pd.DataFrame(results)
+
+                if "Exam ID" not in data.columns: #TODO: remove this when the database is updated
+                    data["Exam ID"] = data["Patient ID"]
+
 
                 #data = data[self.names + ["Path"]]
                 data["collection"] = collection.name
@@ -72,16 +75,26 @@ class MongoDB:
         else:
             raise Exception("No data found")
 
+        return df
+    def load_offline(self,datasetname):
+        data = pd.read_csv(f"{self.img_dir}/data/ChexPert.csv")
+        return data[data[datasetname]==1]
+    def dataset(self, datasetname, classnames):
+        assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
 
+        if self.debug :
+            df = self.load_offline(datasetname)
+        else :
+            df = self.load_online(datasetname)
         #set up parent class
         df.fillna(0, inplace=True)
 
         df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"]].replace(-1,1).max(axis=1)
-        df["Air"]     = df[["Emphysema","Pneumothorax","Pneumo other"]].replace(-1,1).max(axis=1)
+        df["Air"]     = df[["Emphysema","Pneumothorax","Pleural Other"]].replace(-1,1).max(axis=1)
         df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
-        df.to_csv("test.csv",sep=" ")
+        #df.to_csv("test.csv",sep=" ")
         return df
 
 
@@ -93,12 +106,12 @@ if __name__ == "__main__":
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet","ChexPad"])
+    db = MongoDB("10.128.107.212", 27017, ["vinBigData"])
     print("database initialized")
-    train = db.dataset("Train", [])
-    print("training dataset loaded")
+    #train = db.dataset("Train", [])
+    #print("training dataset loaded")
     valid = db.dataset("Valid", [])
     print("validation dataset loaded")
     valid.iloc[0:100].to_csv("valid.csv")
     # valid = valid[names]
-    print(valid.head(100))
+    #print(len(train),len(valid))
