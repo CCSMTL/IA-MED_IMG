@@ -4,7 +4,7 @@ import functools
 import numpy as np
 import torch
 from torch.autograd import Variable
-
+import cv2 as cv
 # -----------------------------------------------------------------------------------
 
 def convert(array1):
@@ -103,3 +103,59 @@ class Identity(torch.nn.Module):
 
     def forward(self, x):
         return x
+
+
+#-------------------------------------------------------------------------------------------
+
+
+
+def get_LUT_value(data, window, level):
+    """Apply the RGB Look-Up Table for the given
+       data and window/level value."""
+
+    return np.piecewise(data,
+                        [data <= (level - 0.5 - (window - 1) / 2),
+                         data > (level - 0.5 + (window - 1) / 2)],
+                        [0, 255, lambda data: ((data - (level - 0.5)) /
+                                               (window - 1) + 0.5) * (255 - 0)])
+
+
+def crop_coords(img):
+    """
+    Crop ROI from image. Still need work before implementation.
+    """
+    # Otsu's thresholding after Gaussian filtering
+    blur = cv.GaussianBlur(img, (5, 5), 0)
+    _, breast_mask = cv.threshold(blur, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+
+    cnts, _ = cv.findContours(breast_mask.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    cnt = max(cnts, key=cv.contourArea)
+    x, y, w, h = cv.boundingRect(cnt)
+    return (x, y, w, h)
+
+
+def truncation_normalization(img):
+    """
+    Clip and normalize pixels in the breast ROI.
+    @img : numpy array image
+    return: numpy array of the normalized image
+    """
+    Pmin = np.percentile(img[img != 0], 5)
+    Pmax = np.percentile(img[img != 0], 99)
+    truncated = np.clip(img, Pmin, Pmax)
+    normalized = (truncated - Pmin) / (Pmax - Pmin)
+    normalized[img == 0] = 0
+    return normalized
+
+
+def clahe(img, clip):
+    """
+    Image enhancement.
+    @img : numpy array image
+    @clip : float, clip limit for CLAHE algorithm
+    return: numpy array of the enhanced image
+    """
+    clahe = cv.createCLAHE(clipLimit=clip)
+    cl = clahe.apply(np.array(img * 255, dtype=np.uint8))
+    return cl
+

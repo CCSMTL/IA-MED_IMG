@@ -1,49 +1,49 @@
-import numpy as np
+
 from functools import reduce
 import os
 import pandas as pd
 import pymongo
-import yaml
-import urllib
-from CheXpert2 import names
 import logging
+from CheXpert2 import names
 class MongoDB:
-    def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False):
+    def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False) :
+
         self.use_frontal = use_frontal
         self.names = names + ["Path", "collection", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
         self.debug = debug
-        if not debug :
-            self.client = pymongo.MongoClient(address, port)
-            self.db_public = self.client["Public_Images"]
 
-            self.data = []
-            self.collectionnames = collectionnames
+        if debug :
+            assert collectionnames == ["ChexPert"]
+            return
 
-            if "CIUSSS" in collectionnames :
-                self.db_CIUSSS = self.client["CIUSSS"]
-                self.data.append(self.db_CIUSSS["images"])
-                collectionnames.remove("CIUSSS")
+        self.client = pymongo.MongoClient(address, port)
+        self.db_public = self.client["Public_Images"]
 
-            for collectionname in collectionnames:
-                assert collectionname in self.db_public.list_collection_names()
+        self.data = []
+        self.collectionnames = collectionnames
 
-            for name in collectionnames:
-                self.data.append(self.db_public[name])
-        else :
-            assert collectionnames==["ChexPert"]
+        if "CIUSSS" in collectionnames :
+            self.db_CIUSSS = self.client["CIUSSS"]
+            self.data.append(self.db_CIUSSS["images"])
+            collectionnames.remove("CIUSSS")
+
+        for collectionname in collectionnames:
+            assert collectionname in self.db_public.list_collection_names()
+
+        for name in collectionnames:
+            self.data.append(self.db_public[name])
+
+
 
     def load_online(self,datasetname):
         if datasetname=="Test" :
             self.data= [self .db_CIUSSS["test"]]
-            datasetname="Valid" #TODO correct this hack in the future
         train_dataset = [pd.DataFrame([],columns=self.names)]
         query = {datasetname: 1}
 
         if self.use_frontal:
             query["Frontal/Lateral"] = "F"
-        # if len(classnames) > 0:
-        #     query["$or"] = [{classname: {"$in":[-1,1]}} for classname in classnames]
 
         for collection in self.data:
             results = list(collection.find(query))
@@ -54,8 +54,11 @@ class MongoDB:
             if len(results) > 0:
 
                 data=pd.DataFrame(results)
-                if "Exam ID" not in data.columns:
+
+                if "Exam ID" not in data.columns: #TODO: remove this when the database is updated
                     data["Exam ID"] = data["Patient ID"]
+
+
                 #data = data[self.names + ["Path"]]
                 data["collection"] = collection.name
                 #data[self.names] = data[self.names].astype(np.int32)

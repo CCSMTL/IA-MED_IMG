@@ -117,3 +117,4 @@ def validation_loop(model, loader, criterion, device, autocast):
 
     return running_loss, results,
 
+

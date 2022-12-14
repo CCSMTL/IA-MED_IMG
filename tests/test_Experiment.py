@@ -8,7 +8,7 @@ Created on 2022-07-19$
 import os
 
 import numpy as np
-import timm
+
 
 from CheXpert2.Experiment import Experiment
 from CheXpert2 import debug_config
@@ -25,7 +25,7 @@ def test_experiment_compile():
         train_datasets=["ChexPert"],
         val_datasets=["ChexPert"],
         config=debug_config,
-        device="cpu"
+        device="cpu",
     )
 
 

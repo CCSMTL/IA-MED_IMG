@@ -22,59 +22,7 @@ import albumentations as A
 
 from CheXpert2.dataloaders.MongoDB import MongoDB
 from CheXpert2 import names
-
-
-
-def get_LUT_value(data, window, level):
-    """Apply the RGB Look-Up Table for the given
-       data and window/level value."""
-
-    return np.piecewise(data,
-                        [data <= (level - 0.5 - (window - 1) / 2),
-                         data > (level - 0.5 + (window - 1) / 2)],
-                        [0, 255, lambda data: ((data - (level - 0.5)) /
-                                               (window - 1) + 0.5) * (255 - 0)])
-
-
-def crop_coords(img):
-    """
-    Crop ROI from image.
-    """
-    # Otsu's thresholding after Gaussian filtering
-    blur = cv.GaussianBlur(img, (5, 5), 0)
-    _, breast_mask = cv.threshold(blur, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-
-    cnts, _ = cv.findContours(breast_mask.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    cnt = max(cnts, key=cv.contourArea)
-    x, y, w, h = cv.boundingRect(cnt)
-    return (x, y, w, h)
-
-
-def truncation_normalization(img):
-    """
-    Clip and normalize pixels in the breast ROI.
-    @img : numpy array image
-    return: numpy array of the normalized image
-    """
-    Pmin = np.percentile(img[img != 0], 5)
-    Pmax = np.percentile(img[img != 0], 99)
-    truncated = np.clip(img, Pmin, Pmax)
-    normalized = (truncated - Pmin) / (Pmax - Pmin)
-    normalized[img == 0] = 0
-    return normalized
-
-
-def clahe(img, clip):
-    """
-    Image enhancement.
-    @img : numpy array image
-    @clip : float, clip limit for CLAHE algorithm
-    return: numpy array of the enhanced image
-    """
-    clahe = cv.createCLAHE(clipLimit=clip)
-    cl = clahe.apply(np.array(img * 255, dtype=np.uint8))
-    return cl
-
+from CheXpert2.custom_utils import truncation_normalization,clahe,get_LUT_value, crop_coords
 
 class CXRLoader(Dataset):
     """
@@ -83,27 +31,48 @@ class CXRLoader(Dataset):
 
     def __init__(
             self,
-            split="Train",
-            img_dir="data",
-            img_size=240,
-            prob=None,
-            intensity=0,
-            label_smoothing=0,
-            channels=1,
-            use_frontal=False,
-            datasets=None,
-            debug=False
-    ):
+            split:          str = "Train",
+            img_dir:        str = "data",
+            img_size:       int = 240,
+            prob:           [float] = [1,0.5,1,1,1],
+            label_smoothing:float = 0,
+            channels:       int = 1,
+            use_frontal:    bool = False,
+            datasets:       [str] = None,
+            debug:          bool = False
+    ) -> Dataset :
+        """
+
+        Args:
+            split: Whether this will be the training, validation or test set
+            img_dir: The root directory of the images
+            img_size: The size of the images
+            prob: A list of probabilities for each image transformation. By default, the transformations are all always applied
+            label_smoothing: A float to add to the labels to smooth them. E.g for 0.05 absent : 0.05, present : 0.95
+            channels: The number of channel of the images. Either 1 or 3
+            use_frontal: Boolean whether to use only frontal images. Default-False
+            datasets: A list of datasets to use. Default-None, which means all datasets
+            debug: Whether to use the debug configuration to be able to run locally
+        Returns :
+            Dataset
+        """
+
+        # ----- Assertion to validate inputs ---------------------------------------------
+        assert datasets is not None, "You must specify the datasets to use"
+        assert 224<=img_size<=1000, "Image size must be between 224 and 1000"
+        assert 0<=label_smoothing<=1, "Label smoothing must be between 0 and 1"
+        assert channels in [1,3], "Channels must be either 1 or 3"
+        assert split in ["Train", "Valid", "Test"], "Split must be either Train, Valid or Test"
+        assert len(prob) == 5, f"Probabilities must be a list of 5 floats. Currently is {len(prob)}"
+        for pro in prob :
+            assert 0<=pro<=1, "Probabilities must be between 0 and 1"
 
         # ----- Variable definition ------------------------------------------------------
-
-        assert datasets is not None, "You must specify the datasets to use"
         self.classes = names
         self.img_dir = img_dir
         self.annotation_files = {}
         self.label_smoothing = label_smoothing
         self.prob = prob if prob else [0, ] * 6
-        self.intensity = intensity
         self.img_size = img_size
         self.channels = channels
         self.split = split
@@ -126,8 +95,7 @@ class CXRLoader(Dataset):
         self.files["Path"] = paths
         self.files["Frontal/Lateral"] = frontal_lateral
 
-        self.read_img = lambda idx: self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],
-                                                            views=self.files.iloc[idx]['Frontal/Lateral'])
+        self.read_img = lambda idx: self.read_img_from_disk(paths=self.files.iloc[idx]['Path'])
         self.preprocess = self.get_preprocess(channels)
         self.weights = self.samples_weights()
 
@@ -138,25 +106,31 @@ class CXRLoader(Dataset):
 
     @staticmethod
     def get_transform(prob):  # for transform that would require pil images
+        """
+        Get the transformation to apply to the images
+        Args:
+            prob: The probabilities of applying each transformation
+
+        Returns: A function that will apply the transformation with such probability
+
+        """
         return A.Compose(
             [
 
                 A.augmentations.geometric.transforms.Affine(scale=(0.85, 1.15), translate_percent=(0.15, 0.15),
                                                             rotate=(-25, 25), shear=None, cval=0, keep_ratio=True,
-                                                            p=prob[1]),
+                                                            p=prob[0]),
 
-                A.augmentations.HorizontalFlip(p=prob[2]),
-                A.augmentations.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, always_apply=False,
-                                                       p=prob[3]),
+                A.augmentations.HorizontalFlip(p=prob[1]),
+                A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
+                                                       p=prob[2]),
                 A.GridDistortion(num_steps=5, distort_limit=0.3, interpolation=1, border_mode=0, value=None,
-                                 mask_value=None, always_apply=False, p=prob[4]),
+                                 mask_value=None, always_apply=False, p=prob[3]),
 
-                A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None, p=prob[5],
+                A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None, p=prob[4],
                                    border_mode=cv.BORDER_CONSTANT),
 
-                # A.augmentations.transforms.RandomGamma()
-                # A.augmentations.PixelDropout(dropout_prob=0.05,p=0.5),
-                # gaussian blur?
+
             ]
         )
 
@@ -170,7 +144,7 @@ class CXRLoader(Dataset):
 
         vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
 
-        # we will use the  U-Ones method to convert the vector to a probability vector TODO : explore other method
+        # we will use the  U-Ones method to convert the vector to a probability vector
         # source : https://arxiv.org/pdf/1911.06475.pdf
         labels = np.zeros((len(vector),))
         labels[vector == 1] = 1 - label_smoothing
@@ -179,7 +153,7 @@ class CXRLoader(Dataset):
         if self.split == "Train":
             labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
         else:
-            labels[vector == -1] = 1  # we only output binary for validation #TODO : verify that
+            labels[vector == -1] = 1  # we only output binary for validation
 
         labels = torch.from_numpy(labels)
         labels[-1] = 1 - labels[-1]  # lets predict the presence of a disease instead of the absence
@@ -220,16 +194,34 @@ class CXRLoader(Dataset):
 
         return weights
 
-    def step(self, idxs, pseudo_labels):  # moving avg ; not yet fully implemented
+    def step(self, idxs, pseudo_labels):
+        """
+        This function is used to update the labels of the training dataset based on the pseudo labels generated by the model.
+        It updates it in a moving average fashion, with a momentum of 0.999
+        Args:
+            idxs: The indexes of the images to update
+            pseudo_labels: The label generated by the model
 
+        Returns: None
+
+        """
         labels = self.files.loc[idxs, self.classes].to_numpy()
         new_labels = 0.999 * labels + 0.001 * pseudo_labels
         self.files.loc[idxs, self.classes] = new_labels
 
-    def read_img_from_disk(self, paths, views):
+    def read_img_from_disk(self, paths) :
+        """
+        This function reads the images from disk associated with an exams and returns them as a numpy array
+        It also applies the preprocessing function to the images. For now it will load up to 2 images per exam
+        Args:
+            paths: A list of paths associated with the images for a specific exam
 
-        images = torch.zeros((2*self.channels,self.img_size, self.img_size))
-        for i, path in enumerate(np.random.permutation(paths)):
+        Returns: A numpy array of shape (channel,self.img_size,self.img_size)
+
+        """
+
+        images = np.zeros((self.img_size, self.img_size,2*self.channels))
+        for i, path in enumerate(np.random.permutation(paths)) :
             # images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
 
             # img = cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE)
@@ -237,6 +229,7 @@ class CXRLoader(Dataset):
             # with open(f"{self.img_dir}{path}", 'rb') as f:
             #     img = np.asarray(Image.open(f))
             #
+
             img = cv.resize(iio.v3.imread(f"{self.img_dir}{path}"), (int(self.img_size * 1.2), int(self.img_size * 1.2)))
 
             # h, w = image.shape
@@ -246,8 +239,11 @@ class CXRLoader(Dataset):
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-            (x, y, w, h) = crop_coords(img)
-            img_cropped = img[y:y + h, x:x + w]
+            #(x, y, w, h) = crop_coords(img)
+
+            h,w= img.shape
+
+            img_cropped = img[int(0.1*h):int(0.9*h), int(0.1*w):int(0.9*w)]
             img_normalized = truncation_normalization(img_cropped)
 
 
@@ -256,16 +252,16 @@ class CXRLoader(Dataset):
                 cl2 = clahe(img_normalized, 2.0)
                 img_final = cv.merge((np.array(img_normalized * 255, dtype=np.uint8), cl1, cl2))
                 img_final = cv.resize(img_final, (int(self.img_size), int(self.img_size)))
-                if self.split.lower() == "train" :
-                    img_final = self.transform(image=img_final)["image"]
-                images[i * 3:(i + 1) * 3,:,:] = self.preprocess(img_final)
+
             else :
-                img_final = cv.resize(np.array(img_normalized * 255, dtype=np.uint8), (int(self.img_size), int(self.img_size)))
-                if self.split.lower() == "train":
-                    img_final = self.transform(image=img_final)["image"]
-                images[i,:, :] = self.preprocess(img_final)
+                img_final = cv.resize(np.array(img_normalized * 255, dtype=np.uint8), (int(self.img_size), int(self.img_size)))[:,:,None]
 
 
+            if self.split.lower() == "train":
+                img_final = self.transform(image=img_final)["image"]
+
+
+            images[:, :,i * self.channels:(i + 1) * self.channels] = img_final[:, :, :self.channels]
             if i == 1:
                 break
 
@@ -275,6 +271,9 @@ class CXRLoader(Dataset):
     def get_preprocess(channels):
         """
         Pre-processing for the model . This WILL be applied before inference
+
+        Args:
+            channels: The number of channels of the images. Either 1 or 3
         """
         if channels == 1:
             normalize = transforms.Normalize(mean=[0.449], std=[0.226])
@@ -289,22 +288,29 @@ class CXRLoader(Dataset):
                 normalize,
             ]
         )
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) :
 
         images = self.read_img(idx)
-        assert not torch.isnan(images).any()
+        h,w,c = images.shape
+
+        tensor_images =torch.zeros((c,h,w))
+        for i in range(0,2) :
+            image = images[:,:,i*self.channels:(i+1)*self.channels]
+            tensor_images[i*self.channels:(i+1)*self.channels,:,:] =self.preprocess(image)
+
+        assert not torch.isnan(tensor_images).any()
         label = self.get_label(idx)
 
-        return images, label.float(), idx
+        return tensor_images.float(), label.float(), idx
 
 
 if __name__ == "__main__":
 
     img_dir = os.environ["img_dir"]
-    train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
+    train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=[0,0,0,0,0], label_smoothing=0,
                       channels=3, datasets=["ChexPert"],debug=True)
-    valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      channels=3, datasets=["ChexPert"],debug=True)
+    valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[0,0,0,0,0], label_smoothing=0,
+                      channels=1, datasets=["ChexPert"],debug=True)
     print(len(train))
     print(len(valid))
     i = 0

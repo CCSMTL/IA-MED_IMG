@@ -152,8 +152,8 @@ def main() :
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
 
-        train_datasets=["ChexPert"],
-        val_datasets = ["ChexPert"],#,"vinBigData"],
+        train_datasets=["ChexPert","PadChest","MimicCXR","CIUSSS"],
+        val_datasets = ["ChexPert","vinBigData"],
         config=config,
         device=device
     )

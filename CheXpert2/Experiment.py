@@ -241,7 +241,6 @@ class Experiment:
             img_dir=img_dir,
             img_size=config["img_size"],
             prob=config["augment_prob"],
-            intensity=config["augment_intensity"],
             label_smoothing=config["label_smoothing"],
             channels=config["channels"],
             use_frontal=config["use_frontal"],
@@ -252,18 +251,13 @@ class Experiment:
                 split="Valid",
                 img_dir=img_dir,
                 img_size=config["img_size"],
-                prob=[0,0,0,0,0,0,0],
-                intensity=0,
+                prob=[0,0,0,0,0],
                 label_smoothing=0,
                 channels=config["channels"],
                 use_frontal=config["use_frontal"],
                 datasets=val_datasets,
                 debug=config["debug"]
         )
-        num_positives = train_dataset.count
-        num_negatives = len(train_dataset) - num_positives
-        #thresholds    =  num_positives / num_negatives
-
         thresholds = np.zeros((self.num_classes)) + 0.5
         metric = Metrics(num_classes=self.num_classes, names=names, threshold=thresholds)
         self.metrics = metric.metrics()
@@ -276,18 +270,16 @@ class Experiment:
 
 
         if config["debug"]:
-            num_samples = 50_000
+            num_samples = 50
         else:
             num_samples = 50_000
 
 
-        # if train_dataset.weights is not None:
-        #     samples_weights = np.ones_like(train_dataset.weights)
-        #     sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
-        #                                                              num_samples=min(num_samples, len(train_dataset)))
-        # else:
-        sampler = torch.utils.data.SubsetRandomSampler(
-            list(range(len(train_dataset)))[0:min(num_samples, len(train_dataset))], generator=None)
+
+        samples_weights = np.ones_like(train_dataset.weights)
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
+                                                                 num_samples=min(num_samples, len(train_dataset)))
+
 
         if dist.is_initialized():
             sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))

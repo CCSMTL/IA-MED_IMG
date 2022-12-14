@@ -53,21 +53,13 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0,0,0,0,0,0],
+        default=[0,0,0,0,0],
         type=float,
         nargs="+",
         required=False,
         help="the probability of an augmentation. Between 0 and 1",
     )
-    parser.add_argument(
-        "--augment_intensity",
-        default=0.1,
-        const="all",
-        type=float,
-        nargs="?",
-        required=False,
-        help="The intensity of the data augmentation.Between 0 and 1. Default is 0.1",
-    )
+
     parser.add_argument(
         "--label_smoothing",
         default=0,
@@ -140,15 +132,7 @@ def init_parser():
         required=False,
         help="The batch size to use. If > max_batch_size,gradient accumulation will be used",
     )
-    parser.add_argument(
-        "--accumulate",
-        default=1,
-        const="all",
-        type=int,
-        nargs="?",
-        required=False,
-        help="The number of epoch to accumulate gradient. Choose anything >0",
-    )
+
     parser.add_argument(
         "--num_worker",
         default=int(os.cpu_count() / 4),

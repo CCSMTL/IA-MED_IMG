@@ -47,7 +47,7 @@ def test_train():
     experiment = Experiment(
         f"{debug_config['model']}", names=names, tag=None, config=debug_config, epoch_max=1, patience=1
     )
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    device = "cpu"#"cuda:0" if torch.cuda.is_available() else "cpu"
 
     model = CNN(debug_config["model"], len(names),
                 pretrained=debug_config["pretrained"], channels=debug_config["channels"])

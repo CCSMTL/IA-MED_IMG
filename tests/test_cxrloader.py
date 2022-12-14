@@ -25,14 +25,31 @@ try :
 except :
     img_dir = ""
 
-def test_dataloader_get_item():
+def test_dataloader_get_item_1channel():
 
     train = CXRLoader(
             split="Train",
             img_dir = img_dir,
             img_size=224,
             datasets=["ChexPert"],
-            debug=True
+            debug=True,
+            channels=1
+            )
+    print(len(train))
+    images, label,idx = train[4]
+    frontal = images[0,:,:]
+    assert frontal.shape == (224,224)
+    assert label.shape == (len(names),)
+
+def test_dataloader_get_item_3channel():
+
+    train = CXRLoader(
+            split="Train",
+            img_dir = img_dir,
+            img_size=224,
+            datasets=["ChexPert"],
+            debug=True,
+            channels=3
             )
     print(len(train))
     images, label,idx = train[4]
