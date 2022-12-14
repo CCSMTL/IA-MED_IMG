@@ -53,7 +53,7 @@ class Metrics:
 
         pred2 = self.convert(pred)
 
-        pred2 = np.where(pred2 > 0.7, 1, 0)
+        pred2 = np.where(pred2 > 0.5, 1, 0)
 
         f1=f1_score(
             true, pred2, zero_division=0, average=None
@@ -112,6 +112,7 @@ class Metrics:
         return outAUROC
 
     def computeAUROC(self, true, pred):
+        print(true.shape)
         fpr = dict()
         tpr = dict()
         outAUROC = dict()
@@ -128,7 +129,7 @@ class Metrics:
             # except :
             #     auroc=0
             try :
-                auroc = roc_auc_score(true[:, i], pred[:, i],average="weighted")
+                auroc = roc_auc_score(true[:, i], pred[:, i],average="macro")
             except ValueError:
                 auroc = 0
             outAUROC[self.names[i]] = auroc
@@ -143,6 +144,7 @@ class Metrics:
     def metrics(self):
         dict = {
             "auc": self.computeAUROC,
+            "auc_weighted": self.computeAUROC_weighted,
             "f1": self.f1,
             "recall": self.recall,
             "precision": self.precision,

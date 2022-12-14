@@ -26,12 +26,14 @@ except :
     img_dir = ""
 
 def test_dataloader_get_item():
-    os.environ["DEBUG"] = "True"
+
     train = CXRLoader(
             split="Train",
             img_dir = img_dir,
             img_size=224,
-            datasets=["ChexPert"])
+            datasets=["ChexPert"],
+            debug=True
+            )
     print(len(train))
     images, label,idx = train[4]
     frontal = images[0,:,:]
@@ -40,7 +42,7 @@ def test_dataloader_get_item():
 
 
 def test_dataloader_transform():
-    os.environ["DEBUG"] = "True"
+
     transform = CXRLoader.get_transform([0.2, ] * 6)
     # testing outputs
     x = np.random.randint(0, 255, (224,224,1), dtype=np.uint8)
@@ -50,26 +52,12 @@ def test_dataloader_transform():
 
         assert x.shape == img2.shape
 
-
-def test_dataloader_advanced_transform():
-    # testing outputs
-    os.environ["DEBUG"] = "True"
-    img = torch.randint(0, 255, (16, 3, 224, 224), dtype=torch.uint8)
-    transform = CXRLoader.get_advanced_transform([0.2, ] * 5, 0.1)
-    label = torch.randint(0, 2, (16, 14), dtype=torch.float32)
-    for i in range(5):
-        img2, label2 = transform((img, label))
-
-        assert img2.shape == img.shape, "images are not the same shape!"
-        assert label2.shape[1] == 14
-
-
 def test_dataloader_sampler():
-    os.environ["DEBUG"] = "False"
-    train = CXRLoader("Train",datasets=["ChexPert"])
+
+    train = CXRLoader("Train",datasets=["ChexPert"],debug=True,img_dir=img_dir)
     assert len(train.weights) == len(train)
 
 
 if __name__ == "__main__":
     test_dataloader_transform()
-    test_dataloader_advanced_transform()
+

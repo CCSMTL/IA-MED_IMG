@@ -16,6 +16,20 @@ from CheXpert2.training.train import main
 from CheXpert2 import names,debug_config
 
 def test_train():
+    #-------- proxy config ---------------------------
+    import urllib
+    proxy = urllib.request.ProxyHandler(
+        {
+            "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+            "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
+        }
+    )
+    os.environ["HTTPS_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    os.environ["HTTP_PROXY"] = "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
+    # construct a new opener using your proxy settings
+    opener = urllib.request.build_opener(proxy)
+    # install the openen on the module-level
+    urllib.request.install_opener(opener)
     verbose=5
     logging.basicConfig(filename='RADIA.log', level=verbose * 10)
     try:
@@ -25,7 +39,7 @@ def test_train():
 
     #torch.cuda.is_available = lambda: False
     #os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    os.environ["DEBUG"] = "True"
+
     os.environ["WANDB_MODE"] = "offline"
 
 
@@ -35,8 +49,8 @@ def test_train():
     )
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    model = CNN(debug_config["model"], len(names), img_size=debug_config["img_size"], freeze_backbone=debug_config["freeze"],
-                pretrained=debug_config["pretrained"], channels=debug_config["channels"], pretraining=debug_config["pretraining"])
+    model = CNN(debug_config["model"], len(names),
+                pretrained=debug_config["pretrained"], channels=debug_config["channels"])
 
     experiment.compile(
         model=model,

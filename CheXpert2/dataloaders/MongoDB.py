@@ -8,11 +8,12 @@ import urllib
 from CheXpert2 import names
 import logging
 class MongoDB:
-    def __init__(self, address, port, collectionnames,use_frontal=False,img_dir=""):
+    def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False):
         self.use_frontal = use_frontal
         self.names = names + ["Path", "collection", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
-        if os.environ["DEBUG"] != "True" :
+        self.debug = debug
+        if not debug :
             self.client = pymongo.MongoClient(address, port)
             self.db_public = self.client["Public_Images"]
 
@@ -26,10 +27,6 @@ class MongoDB:
 
             for collectionname in collectionnames:
                 assert collectionname in self.db_public.list_collection_names()
-
-
-
-
 
             for name in collectionnames:
                 self.data.append(self.db_public[name])
@@ -57,7 +54,8 @@ class MongoDB:
             if len(results) > 0:
 
                 data=pd.DataFrame(results)
-
+                if "Exam ID" not in data.columns:
+                    data["Exam ID"] = data["Patient ID"]
                 #data = data[self.names + ["Path"]]
                 data["collection"] = collection.name
                 #data[self.names] = data[self.names].astype(np.int32)
@@ -81,7 +79,7 @@ class MongoDB:
     def dataset(self, datasetname, classnames):
         assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
 
-        if os.environ["DEBUG"]=="True" :
+        if self.debug :
             df = self.load_offline(datasetname)
         else :
             df = self.load_online(datasetname)
@@ -100,17 +98,17 @@ class MongoDB:
 if __name__ == "__main__":
     import yaml
 
-    os.environ["DEBUG"] = "True"
+    os.environ["DEBUG"] = "False"
     from CheXpert2 import names
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert"])
+    db = MongoDB("10.128.107.212", 27017, ["vinBigData"])
     print("database initialized")
-    train = db.dataset("Train", [])
-    print("training dataset loaded")
+    #train = db.dataset("Train", [])
+    #print("training dataset loaded")
     valid = db.dataset("Valid", [])
     print("validation dataset loaded")
     valid.iloc[0:100].to_csv("valid.csv")
     # valid = valid[names]
-    print(len(train),len(valid))
+    #print(len(train),len(valid))

@@ -21,14 +21,14 @@ urllib.request.install_opener(opener)
 
 def test_cnn_grayscale():
     os.environ["DEBUG"] = "True"
-    x = torch.randn((2, 1, 320, 320))
+    x = torch.randn((2, 2, 320, 320))
     cnn = CNN("convnext_tiny", 14, channels=1)
     y = cnn(x)  # test forward loop
 
 
 def test_cnn_RGB():
     os.environ["DEBUG"] = "True"
-    x = torch.randn((2, 3, 320, 320))
+    x = torch.randn((2, 6, 320, 320))
 
 
     cnn = CNN("convnext_tiny", 14, channels=3)

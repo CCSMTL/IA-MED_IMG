@@ -14,12 +14,12 @@ from CheXpert2.Experiment import Experiment
 from CheXpert2 import debug_config
 from CheXpert2.models.CNN import CNN
 os.environ["WANDB_MODE"] = "offline"
-experiment = Experiment(directory="/debug", names=np.arange(0, 13).astype(str))
+experiment = Experiment(directory="/debug", names=np.arange(0, 13).astype(str),config=debug_config)
 
 def test_experiment_compile():
-    os.environ["DEBUG"]="True"
+
     experiment.compile(
-        model=CNN("convnext_tiny", num_classes=13, img_size=224, freeze_backbone=False, pretrained=False, channels=3),
+        model=CNN("convnext_tiny", num_classes=13, pretrained=False, channels=3),
         optimizer="AdamW",
         criterion="BCEWithLogitsLoss",
         train_datasets=["ChexPert"],
@@ -30,17 +30,17 @@ def test_experiment_compile():
 
 
 def test_experiment_log_metric():
-    os.environ["DEBUG"] = "True"
+
     experiment.log_metric("auc", {"banana": 0})
 
 
 def test_experiment_log_metrics():
-    os.environ["DEBUG"] = "True"
+
     experiment.log_metrics({"apple": 3})
 
 
 def test_experiment_next_epoch():
-    os.environ["DEBUG"] = "True"
+
     experiment.next_epoch(val_loss=0)
 
 

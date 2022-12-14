@@ -65,7 +65,7 @@ class Experiment:
         self.patience = patience
         self.rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         self.names = names
-
+        self.debug = config["debug"]
         # create directory if doesnt existe
         path = pathlib.Path(self.weight_dir)
         path.mkdir(parents=True, exist_ok=True)
@@ -75,7 +75,13 @@ class Experiment:
         self.verbose=verbose
 
 
-    def next_epoch(self, val_loss):
+    def next_epoch(self, val_loss: torch.Tensor) -> None:
+        """
+        save the model's weights if the val_loss is lower than the last lowest values.
+        Also controls the patience for early stopping
+        @param val_loss: The val loss we want to minimize
+        @return: None
+        """
         if self.rank == 0 :
             if val_loss < self.best_loss or self.epoch == 0:
                 self.best_loss = val_loss
@@ -99,6 +105,12 @@ class Experiment:
 
 
     def log_metric(self, metric_name : str, value, epoch=None):
+        """
+        save the metric on WandB and in metrics_results
+        @param metric_name: The name of the metric
+        @param value: The value associated with the specified metric we want to log
+        @param epoch: The current epoch
+        """
         if self.rank == 0 :
             if epoch is not None:
                 wandb.log({metric_name: value, "epoch": epoch})
@@ -107,13 +119,23 @@ class Experiment:
             self.metrics_results[metric_name] = value
 
     def log_metrics(self, metrics : dict, epoch=None) :
+        """
+        Save the metrics on WandB and in metrics_results
+        @param metrics: A dictionnary of metrics we want to log
+        @param epoch: the current epoch
+        @return: None
+        """
         if self.rank == 0 :
             metrics["epoch"] = epoch
             wandb.log(metrics)
             self.metrics_results = self.metrics_results | metrics
 
-    def save_weights(self):
-        if self.rank == 0 and os.environ["DEBUG"] == "False" :
+    def save_weights(self) :
+        """
+        Saves the current weights of the model
+        @return: None
+        """
+        if self.rank == 0 and not self.debug :
             if dist.is_initialized() :
                 torch.save(self.model.module.state_dict(), f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
                 wandb.save(f"{self.weight_dir}/{self.model.module.backbone._get_name()}.pt")
@@ -121,16 +143,29 @@ class Experiment:
                 torch.save(self.model.state_dict(), f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
                 wandb.save(f"{self.weight_dir}/{self.model.backbone._get_name()}.pt")
 
-    def summarize(self):
+    def summarize(self) :
+        """
+        Save the current metrics results to the summary variable
+        @return:
+        """
         self.summary = self.metrics_results
 
 
-    def watch(self, model):
+    def watch(self, model) :
+        """
+        Register the model with Weight&Biases
+        @param model:
+        @return: None
+        """
         if self.rank == 0 :
             wandb.watch(model)
 
-    def end(self, results):
-
+    def end(self, results) :
+        """
+        End the training by producing a few graphs of the results
+        @param results: Numpy array of the outputs and corresponding labels
+        @return:
+        """
         for key,value in self.summary.items():
             wandb.run.summary[key] = value
         if self.rank == 0 :
@@ -210,7 +245,8 @@ class Experiment:
             label_smoothing=config["label_smoothing"],
             channels=config["channels"],
             use_frontal=config["use_frontal"],
-            datasets=train_datasets
+            datasets=train_datasets,
+            debug = config["debug"]
         )
         val_dataset=CXRLoader(
                 split="Valid",
@@ -221,7 +257,8 @@ class Experiment:
                 label_smoothing=0,
                 channels=config["channels"],
                 use_frontal=config["use_frontal"],
-                datasets=val_datasets
+                datasets=val_datasets,
+                debug=config["debug"]
         )
         num_positives = train_dataset.count
         num_negatives = len(train_dataset) - num_positives
@@ -236,19 +273,21 @@ class Experiment:
         if logging :
             logging.debug(f"Loaded {len(train_dataset)} exams for training")
             logging.debug(f"Loaded {len(val_dataset)} exams for validation")
-        if os.environ["DEBUG"] == "False":
+
+
+        if config["debug"]:
             num_samples = 50_000
         else:
-            num_samples = 10
+            num_samples = 50_000
 
 
-        if train_dataset.weights is not None:
-            samples_weights = np.ones_like(train_dataset.weights)
-            sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
-                                                                     num_samples=min(num_samples, len(train_dataset)))
-        else:
-            sampler = torch.utils.data.SubsetRandomSampler(
-                list(range(len(train_dataset)))[0:min(num_samples, len(train_dataset))], generator=None)
+        # if train_dataset.weights is not None:
+        #     samples_weights = np.ones_like(train_dataset.weights)
+        #     sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
+        #                                                              num_samples=min(num_samples, len(train_dataset)))
+        # else:
+        sampler = torch.utils.data.SubsetRandomSampler(
+            list(range(len(train_dataset)))[0:min(num_samples, len(train_dataset))], generator=None)
 
         if dist.is_initialized():
             sampler = torch.utils.data.DistributedSampler(SequentialSampler(sampler))

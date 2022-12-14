@@ -18,7 +18,7 @@ from CheXpert2.custom_utils import set_parameter_requires_grad
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
-from CheXpert2.training.training import training
+
 from CheXpert2 import names
 
 #from libauc.losses import AUCM_MultiLabel
@@ -29,7 +29,8 @@ torch.autograd.set_detect_anomaly(False)
 torch.autograd.profiler.profile(False)
 torch.autograd.profiler.emit_nvtx(False)
 torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.enabled = False
+torch.backends.cudnn.enabled = True
+torch.set_float32_matmul_precision('high')
 try:
     os.environ["img_dir"] = os.environ["img_dir"]
 except:
@@ -109,10 +110,15 @@ def main() :
 
     # -----------model initialisation------------------------------
 
-    model = CNN(config["model"], num_classes, img_size=config["img_size"], freeze_backbone=config["freeze"],
-                pretrained=config["pretrained"], channels=config["channels"], drop_rate=config["drop_rate"],
-                global_pool=config["global_pool"])
-
+    model = CNN(
+        config["model"],
+        num_classes,
+        pretrained=config["pretrained"],
+        channels=config["channels"],
+        drop_rate=config["drop_rate"],
+        global_pool=config["global_pool"]
+    )
+    #model = torch.compile(model,mode="max-autotune",dynamic=True)
     # send model to gpu
 
 
@@ -123,7 +129,7 @@ def main() :
 
         experiment.compile(
             model,
-            optimizer="Adam",
+            optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
             train_datasets=["ChexPert","PadChest"],
             val_datasets=["ChexPert"],
@@ -145,20 +151,22 @@ def main() :
         model=model,
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
+
         train_datasets=["ChexPert"],
-        val_datasets = ["ChexPert"],
+        val_datasets = ["ChexPert"],#,"vinBigData"],
         config=config,
         device=device
     )
 
     #Libauc : not working for now
+    # from libauc.losses import AUCM_MultiLabel
+    # from libauc.optimizers import PESG
     # config.update({"lr": 0.1}, allow_val_change=True)
     # loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
-    #                        imratio=(np.array(experiment.training_loader.dataset.count) / len(
-    #                            experiment.training_loader.dataset)).tolist())
-    # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
-    #experiment.train(optimizer=PESG(model, loss_fn=loss, device=device,lr=config["lr"],margin=1,epoch_decay=(2e-3),weight_decay=(1e-5)) , criterion=criterion)
-    #criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
+    #                        imratio=np.array(experiment.training_loader.dataset.count).tolist())
+    # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs+1e-10), preds)
+    # results = experiment.train(optimizer=PESG(model,a=loss.a,b=loss.b,alpha=loss.alpha,imratio=np.array(experiment.training_loader.dataset.count).tolist(), device=device,lr=config["lr"],margin=1,weight_decay=0) , criterion=criterion,val_criterion=loss)
+    # #criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
     results = experiment.train()#criterion=criterion)
     experiment.end(results)
 

@@ -15,21 +15,14 @@ import numpy as np
 import torch
 
 import logging
-
+import imageio as iio
 from torch.utils.data import Dataset
 from torchvision import transforms
 import albumentations as A
-from CheXpert2 import custom_Transforms
+
 from CheXpert2.dataloaders.MongoDB import MongoDB
 from CheXpert2 import names
 
-
-# classes = [
-#     "Cardiomegaly","Emphysema","Effusion","Lung Opacity",
-#     "Lung Lesion"",Pleural Effusion","Pleural Other","Fracture",
-#     "Consolidation","Hernia","Infiltration","Mass","Nodule","Atelectasis",
-#     "Pneumothorax","Pleural_Thickening","Fibrosis","Edema","Enlarged Cardiomediastinum",
-#     "Opacity","Lesion","Normal"
 
 
 def get_LUT_value(data, window, level):
@@ -99,6 +92,7 @@ class CXRLoader(Dataset):
             channels=1,
             use_frontal=False,
             datasets=None,
+            debug=False
     ):
 
         # ----- Variable definition ------------------------------------------------------
@@ -117,12 +111,11 @@ class CXRLoader(Dataset):
         # ----- Transform definition ------------------------------------------------------
 
         self.transform = self.get_transform(self.prob)
-        self.advanced_transform = self.get_advanced_transform(self.prob, intensity)
 
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []  # ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets, use_frontal=use_frontal,img_dir=img_dir).dataset(split,
+        self.files = MongoDB("10.128.107.212", 27017, datasets, use_frontal=use_frontal,img_dir=img_dir,debug=debug).dataset(split,
                                                                                                  classnames=classnames)
 
         self.files[self.classes] = self.files[self.classes].astype(int)
@@ -135,7 +128,7 @@ class CXRLoader(Dataset):
 
         self.read_img = lambda idx: self.read_img_from_disk(paths=self.files.iloc[idx]['Path'],
                                                             views=self.files.iloc[idx]['Frontal/Lateral'])
-
+        self.preprocess = self.get_preprocess(channels)
         self.weights = self.samples_weights()
 
         self.files.reset_index(inplace=True)
@@ -148,8 +141,8 @@ class CXRLoader(Dataset):
         return A.Compose(
             [
 
-                A.augmentations.geometric.transforms.Affine(scale=(0.95, 1.05), translate_percent=(0.05, 0.05),
-                                                            rotate=(-15, 15), shear=None, cval=0, keep_ratio=True,
+                A.augmentations.geometric.transforms.Affine(scale=(0.85, 1.15), translate_percent=(0.15, 0.15),
+                                                            rotate=(-25, 25), shear=None, cval=0, keep_ratio=True,
                                                             p=prob[1]),
 
                 A.augmentations.HorizontalFlip(p=prob[2]),
@@ -167,16 +160,7 @@ class CXRLoader(Dataset):
             ]
         )
 
-    @staticmethod
-    def get_advanced_transform(prob, intensity):
-        return transforms.Compose(
-            [  # advanced/custom
-                #    custom_Transforms.RandAugment(prob=prob[0], N=N, M=M),  # p=0.5 by default
-                custom_Transforms.Mixing(prob[0], intensity),
-                #    custom_Transforms.CutMix(prob[2], intensity),
 
-            ]
-        )
 
     def get_label(self, idx):
         """
@@ -239,20 +223,21 @@ class CXRLoader(Dataset):
     def step(self, idxs, pseudo_labels):  # moving avg ; not yet fully implemented
 
         labels = self.files.loc[idxs, self.classes].to_numpy()
-        new_labels = 0.9 * labels + 0.1 * pseudo_labels
+        new_labels = 0.999 * labels + 0.001 * pseudo_labels
         self.files.loc[idxs, self.classes] = new_labels
 
     def read_img_from_disk(self, paths, views):
 
-        images = np.zeros((2, self.img_size, self.img_size), dtype=np.uint8)
+        images = torch.zeros((2*self.channels,self.img_size, self.img_size))
         for i, path in enumerate(np.random.permutation(paths)):
             # images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
 
             # img = cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE)
-            from PIL import Image
-            with open(f"{self.img_dir}{path}", 'rb') as f:
-                img = np.asarray(Image.open(f))
-                img = cv.resize(img, (int(self.img_size * 3), int(self.img_size * 3)))
+            # from PIL import Image
+            # with open(f"{self.img_dir}{path}", 'rb') as f:
+            #     img = np.asarray(Image.open(f))
+            #
+            img = cv.resize(iio.v3.imread(f"{self.img_dir}{path}"), (int(self.img_size * 1.2), int(self.img_size * 1.2)))
 
             # h, w = image.shape
 
@@ -265,41 +250,61 @@ class CXRLoader(Dataset):
             img_cropped = img[y:y + h, x:x + w]
             img_normalized = truncation_normalization(img_cropped)
 
-            cl1 = clahe(img_normalized, 1.0)
-            # cl2 = clahe(img_normalized, 2.0)
-            # img_final = cv.merge((np.array(img_normalized * 255, dtype=np.uint8), cl1, cl2))
-            images[i, :, :] = cv.resize(cl2, (int(self.img_size), int(self.img_size)))
+
+            if self.channels==3 :
+                cl1 = clahe(img_normalized, 1.0)
+                cl2 = clahe(img_normalized, 2.0)
+                img_final = cv.merge((np.array(img_normalized * 255, dtype=np.uint8), cl1, cl2))
+                img_final = cv.resize(img_final, (int(self.img_size), int(self.img_size)))
+                if self.split.lower() == "train" :
+                    img_final = self.transform(image=img_final)["image"]
+                images[i * 3:(i + 1) * 3,:,:] = self.preprocess(img_final)
+            else :
+                img_final = cv.resize(np.array(img_normalized * 255, dtype=np.uint8), (int(self.img_size), int(self.img_size)))
+                if self.split.lower() == "train":
+                    img_final = self.transform(image=img_final)["image"]
+                images[i,:, :] = self.preprocess(img_final)
+
 
             if i == 1:
                 break
 
         return images
 
+    @staticmethod
+    def get_preprocess(channels):
+        """
+        Pre-processing for the model . This WILL be applied before inference
+        """
+        if channels == 1:
+            normalize = transforms.Normalize(mean=[0.449], std=[0.226])
+        else:
+            normalize = transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+        return transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.ConvertImageDtype(torch.float32),
+                normalize,
+            ]
+        )
     def __getitem__(self, idx):
 
         images = self.read_img(idx)
-
+        assert not torch.isnan(images).any()
         label = self.get_label(idx)
-
-        if self.split == "Train":
-            for i, image in enumerate(images):
-                images[i, :, :] = self.transform(image=image)["image"]
-
-        images = torch.tensor(
-            images,
-            dtype=torch.uint8,
-        )
 
         return images, label.float(), idx
 
 
 if __name__ == "__main__":
-    os.environ["DEBUG"] = "True"
+
     img_dir = os.environ["img_dir"]
     train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      channels=3, datasets=["ChexPert"])
+                      channels=3, datasets=["ChexPert"],debug=True)
     valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=None, intensity=0, label_smoothing=0,
-                      channels=3, datasets=["ChexPert"])
+                      channels=3, datasets=["ChexPert"],debug=True)
     print(len(train))
     print(len(valid))
     i = 0
