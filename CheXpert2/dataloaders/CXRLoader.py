@@ -230,35 +230,33 @@ class CXRLoader(Dataset):
             #     img = np.asarray(Image.open(f))
             #
 
-            img = cv.resize(iio.v3.imread(f"{self.img_dir}{path}"), (int(self.img_size * 1.2), int(self.img_size * 1.2)))
-
-            # h, w = image.shape
-
-            # crop_img = image[int(0.2 * h):int(0.8 * h), int(0.2 * w):int(0.8 * w)]
-            # images[i, :, :] = cv.resize(crop_img, (self.img_size, self.img_size))
+            img = iio.v3.imread(f"{self.img_dir}{path}")
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-            #(x, y, w, h) = crop_coords(img)
+            h, w = img.shape
+            img_cropped = cv.resize(img[int(0.1 * h):int(0.9 * h), int(0.1 * w):int(0.9 * w)], (self.img_size,self.img_size))
 
-            h,w= img.shape
 
-            img_cropped = img[int(0.1*h):int(0.9*h), int(0.1*w):int(0.9*w)]
-            img_normalized = truncation_normalization(img_cropped)
+            if self.split.lower() == "train":
+                img_cropped = self.transform(image=img_cropped)["image"]
 
+            #img_normalized = truncation_normalization(img_cropped)
+
+            img_normalized = (img_cropped - np.min(img_cropped)) / (np.max(img_cropped) - np.min(img_cropped))
 
             if self.channels==3 :
                 cl1 = clahe(img_normalized, 1.0)
                 cl2 = clahe(img_normalized, 2.0)
-                img_final = cv.merge((np.array(img_normalized * 255, dtype=np.uint8), cl1, cl2))
-                img_final = cv.resize(img_final, (int(self.img_size), int(self.img_size)))
+                img_final = np.transpose(np.array([img_normalized, cl1, cl2]),(1,2,0))
+
 
             else :
-                img_final = cv.resize(np.array(img_normalized * 255, dtype=np.uint8), (int(self.img_size), int(self.img_size)))[:,:,None]
+                cl1 = clahe(img_normalized, 1.0)
+                img_final = cl1[:,:,None]
 
 
-            if self.split.lower() == "train":
-                img_final = self.transform(image=img_final)["image"]
+
 
 
             images[:, :,i * self.channels:(i + 1) * self.channels] = img_final[:, :, :self.channels]
@@ -290,7 +288,8 @@ class CXRLoader(Dataset):
         )
     def __getitem__(self, idx) :
 
-        images = self.read_img(idx)
+        images = self.read_img(idx)/255
+        print("cxrloader :", np.max(images), np.min(images))
         h,w,c = images.shape
 
         tensor_images =torch.zeros((c,h,w))
