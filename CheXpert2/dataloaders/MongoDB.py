@@ -90,7 +90,7 @@ class MongoDB:
         df.fillna(0, inplace=True)
 
         df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"]].replace(-1,1).max(axis=1)
-        df["Air"]     = df[["Emphysema","Pneumothorax","Pleural Other"]].replace(-1,1).max(axis=1)
+        df["Air"]     = df[["Emphysema","Pneumothorax"]].replace(-1,1).max(axis=1)
         df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
