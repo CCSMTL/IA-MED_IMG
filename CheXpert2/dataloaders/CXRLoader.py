@@ -84,8 +84,7 @@ class CXRLoader(Dataset):
         # ------- Caching & Reading -----------------------------------------------------------
         classnames = []  # ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets, use_frontal=use_frontal,img_dir=img_dir,debug=debug).dataset(split,
-                                                                                                 classnames=classnames)
+        self.files = MongoDB("10.128.107.212", 27017, datasets, use_frontal=use_frontal,img_dir=img_dir,debug=debug).dataset(split)
 
         self.files[self.classes] = self.files[self.classes].astype(int)
 

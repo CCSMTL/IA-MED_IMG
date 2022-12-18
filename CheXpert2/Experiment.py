@@ -270,7 +270,7 @@ class Experiment:
 
 
         if config["debug"]:
-            num_samples = 5_000
+            num_samples = 50
         else:
             num_samples = 50_000
 

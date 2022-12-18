@@ -126,7 +126,7 @@ def main() :
     # send model to gpu
 
 
-    print("The model has now been successfully loaded into memory")
+    logging.info("The model has now been successfully loaded into memory")
 
     #------------pre-training--------------------------------------
     if config["pretraining"] != 0:
@@ -144,26 +144,38 @@ def main() :
         model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
         model = model.to(device)
 
+    # ------------training--------------------------------------
+
     # setting up for the training
     experiment = Experiment(
         f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=5
     )
 
 
-    #------------training--------------------------------------
+
     experiment.compile(
         model=model,
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
+<<<<<<< HEAD
 
         train_datasets=["ChexPert","CIUSSS","MimicCxrJpg","PadChest"],
         val_datasets = ["ChexPert","vinBigData"],
+=======
+        train_datasets=["ChexPert"],
+        val_datasets = ["ChexPert"],
+>>>>>>> c4ed70a7a193f78f75e21a5511d7160cf3c2400e
         config=config,
         device=device
     )
 
 
+<<<<<<< HEAD
     results = experiment.train()#criterion=criterion)
+=======
+
+    results = experiment.train()
+>>>>>>> c4ed70a7a193f78f75e21a5511d7160cf3c2400e
     experiment.end(results)
 
 
