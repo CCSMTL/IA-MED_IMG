@@ -37,11 +37,12 @@ def training_loop(
             outputs = model(images)
             loss = criterion(outputs, labels)
 
-            assert not torch.isnan(outputs).any(),print(outputs)
+            #assert not torch.isnan(outputs).any(),print(outputs)
 
 
 
         scaler.scale(loss).backward()
+
         #Unscales the gradients of optimizer's assigned params in-place
         scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
@@ -53,7 +54,7 @@ def training_loop(
         scaler.update()
         scheduler.step()
         loader.iterable.dataset.step(idx,outputs.detach().cpu().numpy())
-        running_loss += loss.detach()
+        running_loss += torch.nan_to_num(loss.detach(),0)
         # ending loop
 
         #loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
@@ -98,15 +99,14 @@ def validation_loop(model, loader, criterion, device, autocast):
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast):
             outputs = model(images)
-            assert not torch.isnan(outputs).any()
+            loss = criterion(outputs.float(), labels.float())
 
-        loss = criterion(outputs.float(), labels.float())
-
-        running_loss += loss.detach()
         outputs = outputs.detach().cpu().squeeze()
+        assert not torch.isnan(outputs).any(),print(outputs)
+        running_loss += loss.detach()
+
         results[1] = torch.cat((results[1], outputs), dim=0)
-        results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),
-                               dim=0)  # round to 0 or 1 in case of label smoothing
+        results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),dim=0)  # round to 0 or 1
 
         del (
             images,

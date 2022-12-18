@@ -99,7 +99,6 @@ def init_parser():
     parser.add_argument(
         "--weight_decay",
         default=0.01,
-        const="all",
         type=float,
         nargs="?",
         required=False,
@@ -225,6 +224,14 @@ def init_parser():
 
         required=False,
         help="the type of pooling to effectuate before the classifier",
+    )
+
+    parser.add_argument(
+        "--hierarchical",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        required=False,
+        help="Whether to use the hierarchical inference",
     )
 
     return parser

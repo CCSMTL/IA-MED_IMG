@@ -14,7 +14,7 @@ class MongoDB:
         self.debug = debug
 
         if debug :
-            assert collectionnames == ["ChexPert"]
+            assert collectionnames == ["ChexPert"],f"{collectionnames} is not available offline"
             return
 
         self.client = pymongo.MongoClient(address, port)

@@ -144,7 +144,7 @@ class Metrics:
     def metrics(self):
         dict = {
             "auc": self.computeAUROC,
-            "auc_weighted": self.computeAUROC_weighted,
+        #    "auc_weighted": self.computeAUROC_weighted,
             "f1": self.f1,
             "recall": self.recall,
             "precision": self.precision,
