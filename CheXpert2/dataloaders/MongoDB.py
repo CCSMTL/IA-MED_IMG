@@ -8,21 +8,25 @@ from CheXpert2 import names
 class MongoDB:
     def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False) :
 
+
+
+        #-------- variable definition ---------------------------
         self.use_frontal = use_frontal
-        self.names = names + ["Path", "collection", "Exam ID", "Frontal/Lateral"]
+        self.names = names + ["Path", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
         self.debug = debug
 
-        if debug :
+        if debug : #if debug is true, we are not using the database
+            self.load_data = self.load_offline
             assert collectionnames == ["ChexPert"],f"{collectionnames} is not available offline"
             return
 
+        #-------- database connection ---------------------------
         self.client = pymongo.MongoClient(address, port)
         self.db_public = self.client["Public_Images"]
-
         self.data = []
         self.collectionnames = collectionnames
-
+        self.load_data = self.load_online
         if "CIUSSS" in collectionnames :
             self.db_CIUSSS = self.client["CIUSSS"]
             self.data.append(self.db_CIUSSS["images"])
@@ -36,8 +40,11 @@ class MongoDB:
 
 
 
-    def load_online(self,datasetname):
-        if datasetname=="Test" :
+    def load_online(self,datasetname) :
+
+        # -------- load data from database ---------------------------
+
+        if datasetname=="Test" : #for testing we specified the subset of the CIUSSS collection
             self.data= [self .db_CIUSSS["test"]]
         train_dataset = [pd.DataFrame([],columns=self.names)]
         query = {datasetname: 1}
@@ -59,19 +66,21 @@ class MongoDB:
                     data["Exam ID"] = data["Patient ID"]
 
 
-                #data = data[self.names + ["Path"]]
-                data["collection"] = collection.name
-                #data[self.names] = data[self.names].astype(np.int32)
+
                 for column in self.names :
                     if column not in data.columns :
+                        logging.critical(f"Column {column} not found in the database for collection {collection}")
                         data[column] = 0
+
+
                 data["Patient ID"] = data["Patient ID"].astype(str)
                 data["Exam ID"] = data["Exam ID"].astype(str)
                 data.set_index("Patient ID")
                 train_dataset.append(data)
 
         if len(train_dataset) > 1:
-            df = reduce(lambda left, right: pd.merge(left, right,on=self.names, how='outer'), train_dataset)
+            #df = reduce(lambda left, right: pd.append(left, right,on=self.names, how='inner'), train_dataset)
+            df = pd.concat(train_dataset,ignore_index=True)
         else:
             raise Exception("No data found")
 
@@ -79,18 +88,16 @@ class MongoDB:
     def load_offline(self,datasetname):
         data = pd.read_csv(f"{self.img_dir}/data/ChexPert.csv")
         return data[data[datasetname]==1]
-    def dataset(self, datasetname, classnames):
+    def dataset(self, datasetname):
         assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
 
-        if self.debug :
-            df = self.load_offline(datasetname)
-        else :
-            df = self.load_online(datasetname)
+
+        df = self.load_data(datasetname)
         #set up parent class
         df.fillna(0, inplace=True)
 
         df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"]].replace(-1,1).max(axis=1)
-        df["Air"]     = df[["Emphysema","Pneumothorax","Pleural Other"]].replace(-1,1).max(axis=1)
+        df["Air"]     = df[["Emphysema","Pneumothorax"]].replace(-1,1).max(axis=1)
         df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
@@ -108,10 +115,11 @@ if __name__ == "__main__":
 
     db = MongoDB("10.128.107.212", 27017, ["vinBigData"])
     print("database initialized")
-    #train = db.dataset("Train", [])
+    train = MongoDB("10.128.107.212", 27017, ["ChexPert","CIUSSS","PadChest"]).dataset("Train")
     #print("training dataset loaded")
-    valid = db.dataset("Valid", [])
+    valid = db.dataset("Valid")
     print("validation dataset loaded")
+    train.iloc[0:100].to_csv("train.csv")
     valid.iloc[0:100].to_csv("valid.csv")
     # valid = valid[names]
     #print(len(train),len(valid))

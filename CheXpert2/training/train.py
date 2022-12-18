@@ -126,7 +126,7 @@ def main() :
     # send model to gpu
 
 
-    print("The model has now been successfully loaded into memory")
+    logging.info("The model has now been successfully loaded into memory")
 
     #------------pre-training--------------------------------------
     if config["pretraining"] != 0:
@@ -144,34 +144,28 @@ def main() :
         model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
         model = model.to(device)
 
+    # ------------training--------------------------------------
+
     # setting up for the training
     experiment = Experiment(
         f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=5
     )
 
 
-    #------------training--------------------------------------
+
     experiment.compile(
         model=model,
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
-
         train_datasets=["ChexPert"],
         val_datasets = ["ChexPert"],
         config=config,
         device=device
     )
 
-    #Libauc : not working for now
-    from libauc.losses import AUCM_MultiLabel
-    from libauc.optimizers import PESG
-    #config.update({"lr": 0.0001}, allow_val_change=True)
-    loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
-                           imratio=np.array(experiment.training_loader.dataset.count).tolist())
-    criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
-    results = experiment.train(optimizer=PESG(model,a=loss.a,b=loss.b,alpha=loss.alpha,imratio=np.array(experiment.training_loader.dataset.count).tolist(), device=device,lr=config["lr"],margin=1,weight_decay=config["weight_decay"]) , criterion=criterion,val_criterion=loss)
-    #criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
-    #results = experiment.train()#criterion=criterion)
+
+
+    results = experiment.train()
     experiment.end(results)
 
 
