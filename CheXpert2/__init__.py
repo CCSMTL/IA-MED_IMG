@@ -1,9 +1,9 @@
 
 #nc: 15
 
-#names = [ "Cardiomegaly", "Edema","Consolidation", "Atelectasis", "Pleural Effusion","No Finding"]
+names = [ "Cardiomegaly", "Edema","Consolidation", "Atelectasis", "Pleural Effusion","No Finding"]
 
-names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pleural Other","No Finding"]
+#names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pleural Other","No Finding"]
 
 debug_config = {
         "model": "densenet121",
@@ -11,7 +11,6 @@ debug_config = {
         "img_size": 224,
         "num_worker": 0,
         "augment_prob" : [1,1,1,1,1],
-        "augment_intensity": 0.2,
         "cache": False,
         "clip_norm": 1,
         "label_smoothing": 0.05,

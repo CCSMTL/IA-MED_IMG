@@ -163,15 +163,15 @@ def main() :
     )
 
     #Libauc : not working for now
-    # from libauc.losses import AUCM_MultiLabel
-    # from libauc.optimizers import PESG
-    # config.update({"lr": 0.1}, allow_val_change=True)
-    # loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
-    #                        imratio=np.array(experiment.training_loader.dataset.count).tolist())
-    # criterion = lambda outputs, preds: loss(torch.sigmoid(outputs+1e-10), preds)
-    # results = experiment.train(optimizer=PESG(model,a=loss.a,b=loss.b,alpha=loss.alpha,imratio=np.array(experiment.training_loader.dataset.count).tolist(), device=device,lr=config["lr"],margin=1,weight_decay=0) , criterion=criterion,val_criterion=loss)
-    # #criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
-    results = experiment.train()#criterion=criterion)
+    from libauc.losses import AUCM_MultiLabel
+    from libauc.optimizers import PESG
+    #config.update({"lr": 0.0001}, allow_val_change=True)
+    loss = AUCM_MultiLabel(device=device, num_classes=num_classes,
+                           imratio=np.array(experiment.training_loader.dataset.count).tolist())
+    criterion = lambda outputs, preds: loss(torch.sigmoid(outputs), preds)
+    results = experiment.train(optimizer=PESG(model,a=loss.a,b=loss.b,alpha=loss.alpha,imratio=np.array(experiment.training_loader.dataset.count).tolist(), device=device,lr=config["lr"],margin=1,weight_decay=config["weight_decay"]) , criterion=criterion,val_criterion=loss)
+    #criterion = lambda outputs, preds: torch.nn.functional.binary_cross_entropy(torch.sigmoid(outputs), preds)
+    #results = experiment.train()#criterion=criterion)
     experiment.end(results)
 
 

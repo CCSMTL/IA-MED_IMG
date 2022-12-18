@@ -99,7 +99,6 @@ def init_parser():
     parser.add_argument(
         "--weight_decay",
         default=0.01,
-        const="all",
         type=float,
         nargs="?",
         required=False,

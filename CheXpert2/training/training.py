@@ -44,11 +44,11 @@ def training_loop(
         scaler.scale(loss).backward()
 
         #Unscales the gradients of optimizer's assigned params in-place
-        #scaler.unscale_(optimizer)
+        scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-        # torch.nn.utils.clip_grad_norm_(
-        #     model.parameters(), clip_norm
-        # )
+        torch.nn.utils.clip_grad_norm_(
+            model.parameters(), clip_norm
+        )
 
         scaler.step(optimizer)
         scaler.update()
@@ -101,12 +101,12 @@ def validation_loop(model, loader, criterion, device, autocast):
             outputs = model(images)
             loss = criterion(outputs.float(), labels.float())
 
+        outputs = outputs.detach().cpu().squeeze()
         assert not torch.isnan(outputs).any(),print(outputs)
         running_loss += loss.detach()
-        outputs = outputs.detach().cpu().squeeze()
+
         results[1] = torch.cat((results[1], outputs), dim=0)
-        results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),
-                               dim=0)  # round to 0 or 1 in case of label smoothing
+        results[0] = torch.cat((results[0], labels.cpu().round(decimals=0)),dim=0)  # round to 0 or 1
 
         del (
             images,
