@@ -227,4 +227,12 @@ def init_parser():
         help="the type of pooling to effectuate before the classifier",
     )
 
+    parser.add_argument(
+        "--hierarchical",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        required=False,
+        help="Whether to use the hierarchical inference",
+    )
+
     return parser

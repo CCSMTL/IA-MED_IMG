@@ -57,8 +57,9 @@ class CNN(torch.nn.Module):
 
         for i in range(0,2) :
             image = images[:,i*self.channels:(i+1)*self.channels,:,:]
+            if not torch.round(torch.min(image),decimals=2)==torch.round(torch.mean(image),decimals=2) : #if the image is not empty
 
-            outputs+=self.backbone(image)
+                outputs += self.backbone(image)
 
         if not self.training :
             outputs = torch.sigmoid(outputs)

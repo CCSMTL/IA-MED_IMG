@@ -1,5 +1,7 @@
 # ------python import------------------------------------
 import os
+
+
 import urllib
 import warnings
 
@@ -25,12 +27,13 @@ from CheXpert2 import names
 #from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-torch.autograd.set_detect_anomaly(False)
-torch.autograd.profiler.profile(False)
-torch.autograd.profiler.emit_nvtx(False)
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.enabled = True
-torch.set_float32_matmul_precision('high')
+#torch.autograd.set_detect_anomaly(False)
+#torch.autograd.profiler.profile(False)
+#torch.autograd.profiler.emit_nvtx(False)
+#torch.backends.cudnn.benchmark = False
+#torch.backends.cudnn.enabled = True
+#torch.set_float32_matmul_precision('high')
+
 try:
     os.environ["img_dir"] = os.environ["img_dir"]
 except:
@@ -116,9 +119,10 @@ def main() :
         pretrained=config["pretrained"],
         channels=config["channels"],
         drop_rate=config["drop_rate"],
-        global_pool=config["global_pool"]
+        global_pool=config["global_pool"],
+        hierarchical=config["hierarchical"]
     )
-    #model = torch.compile(model,mode="max-autotune",dynamic=True)
+    #model = torch.compile(model)
     # send model to gpu
 
 
@@ -131,7 +135,7 @@ def main() :
             model,
             optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
-            train_datasets=["ChexPert","PadChest"],
+            train_datasets=["ChexPert"],
             val_datasets=["ChexPert"],
             config=config,
             device=device
@@ -152,8 +156,8 @@ def main() :
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
 
-        train_datasets=["ChexPert","PadChest","MimicCXR","CIUSSS"],
-        val_datasets = ["ChexPert","vinBigData"],
+        train_datasets=["ChexPert"],
+        val_datasets = ["ChexPert"],
         config=config,
         device=device
     )

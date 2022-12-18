@@ -289,7 +289,7 @@ class CXRLoader(Dataset):
     def __getitem__(self, idx) :
 
         images = self.read_img(idx)/255
-        print("cxrloader :", np.max(images), np.min(images))
+
         h,w,c = images.shape
 
         tensor_images =torch.zeros((c,h,w))

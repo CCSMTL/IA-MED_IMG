@@ -37,23 +37,24 @@ def training_loop(
             outputs = model(images)
             loss = criterion(outputs, labels)
 
-            assert not torch.isnan(outputs).any(),print(outputs)
+            #assert not torch.isnan(outputs).any(),print(outputs)
 
 
 
         scaler.scale(loss).backward()
+
         #Unscales the gradients of optimizer's assigned params in-place
-        scaler.unscale_(optimizer)
+        #scaler.unscale_(optimizer)
         # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-        torch.nn.utils.clip_grad_norm_(
-            model.parameters(), clip_norm
-        )
+        # torch.nn.utils.clip_grad_norm_(
+        #     model.parameters(), clip_norm
+        # )
 
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
         loader.iterable.dataset.step(idx,outputs.detach().cpu().numpy())
-        running_loss += loss.detach()
+        running_loss += torch.nan_to_num(loss.detach(),0)
         # ending loop
 
         #loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
@@ -98,10 +99,9 @@ def validation_loop(model, loader, criterion, device, autocast):
         # forward + backward + optimize
         with torch.cuda.amp.autocast(enabled=autocast):
             outputs = model(images)
-            assert not torch.isnan(outputs).any()
+            loss = criterion(outputs.float(), labels.float())
 
-        loss = criterion(outputs.float(), labels.float())
-
+        assert not torch.isnan(outputs).any(),print(outputs)
         running_loss += loss.detach()
         outputs = outputs.detach().cpu().squeeze()
         results[1] = torch.cat((results[1], outputs), dim=0)
