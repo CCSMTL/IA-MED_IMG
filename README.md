@@ -54,6 +54,9 @@ pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca -r requirement.txt
 ```
 ## Proxy help
 ```
+sudo apt-get  -o Acquire::http::proxy=http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 install <package>
+
+
 export HTTP_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 export HTTPS_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 
@@ -148,10 +151,7 @@ data_api/data_organizer.py
 ## Test
 The test can be found in the folder tests.
 Run them by executing
-```
-pytest -v test.py 
-```
-or run them all
+
 ```
 pytest -v ./tests
 ```
@@ -177,58 +177,67 @@ the pull request is allowed to move forward.
 
 # File structure
 ````
-.
+..
+├── .gitignore
+├── .pytest-deps
 ├── CheXpert2
 │   ├── Experiment.py
 │   ├── Metrics.py
 │   ├── Parser.py
 │   ├── Transforms.py
 │   ├── __init__.py
-│   ├── custom_Transforms.py
 │   ├── custom_utils.py
 │   ├── data analysis
-│   │   ├── clustering.py
-│   │   └── temp.py
+│   │   └── clustering.py
 │   ├── data_API
+│   │   ├── create_test_set.py
 │   │   ├── data_analysis.py
 │   │   ├── data_downloader_chestXray.py
 │   │   ├── data_organizer.py
 │   │   ├── download.sh
 │   │   └── links.txt
+│   ├── data_exploration.ipynb
 │   ├── data_visualization.py
 │   ├── dataloaders
 │   │   ├── CXRLoader.py
-│   │   ├── MongoDB.py
-│   │   └── test.csv
+│   │   └── MongoDB.py
 │   ├── inference
 │   │   ├── __init__.py
 │   │   ├── detect.py
 │   │   ├── inference.ipynb
-│   │   └── test.csv
+│   │   └── utils.py
 │   ├── models
 │   │   ├── CNN.py
 │   │   ├── Ensemble.py
 │   │   ├── Unet.py
+│   │   ├── pylon.py
 │   │   └── teacher_learning.py
+│   ├── reproducing_libauc.ipynb
 │   ├── requirements.txt
 │   ├── results_visualization.py
 │   ├── run.sh
+│   ├── sanity_check.ipynb
 │   └── training
+│       ├── Loss.py
 │       ├── __init__.py
 │       ├── multi_gpu_train.py
 │       ├── train.py
 │       └── training.py
 ├── Pipfile
-├── RADIA.log
 ├── README.md
 ├── azure-pipelines.yml
 ├── data
 │   ├── chexnet_results.csv
 │   └── data_table.csv
-├── grouped_data.csv
+├── plots
+│   ├── Confusion Matrix.png
+│   ├── Most_Frequented_Classes111.png
+│   ├── chords_chexpert.png
+│   ├── chords_mongodb.png
+│   ├── histogram_chexpert.png
+│   └── histogram_mongodb.png
 ├── requirements_dev.txt
 ├── setup.py
-├── test.csv
 ├── tests
 │   ├── __init__.py
 │   ├── data_test
@@ -237,14 +246,59 @@ the pull request is allowed to move forward.
 │   │   │       ├── patient64541
 │   │   │       │   └── study1
 │   │   │       │       └── view1_frontal.jpg
-                    ....
+│   │   │       ├── patient64542
+│   │   │       │   └── study1
+│   │   │       │       ├── view1_frontal.jpg
+│   │   │       │       └── view2_lateral.jpg
+│   │   │       ├── patient64543
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64544
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64545
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64546
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64547
+│   │   │       │   └── study1
+│   │   │       │       ├── view1_frontal.jpg
+│   │   │       │       ├── view2_frontal.jpg
+│   │   │       │       └── view3_lateral.jpg
+│   │   │       ├── patient64548
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64549
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       └── patient64550
+│   │   │           └── study1
+│   │   │               └── view1_frontal.jpg
 │   │   ├── data.yaml
 │   │   ├── images
 │   │   │   ├── 00027725_000.png
-                    ....
+│   │   │   ├── 00027725_001.png
+│   │   │   ├── 00027725_002.png
+│   │   │   ├── 00027725_003.png
+│   │   │   ├── 00027725_004.png
+│   │   │   ├── 00027725_005.png
+│   │   │   ├── 00027725_006.png
+│   │   │   ├── 00027725_007.png
+│   │   │   ├── 00027725_008.png
+│   │   │   └── 00027725_009.png
 │   │   ├── labels
 │   │   │   ├── 00027725_000.txt
-                    ....
+│   │   │   ├── 00027725_001.txt
+│   │   │   ├── 00027725_002.txt
+│   │   │   ├── 00027725_003.txt
+│   │   │   ├── 00027725_004.txt
+│   │   │   ├── 00027725_005.txt
+│   │   │   ├── 00027725_006.txt
+│   │   │   ├── 00027725_007.txt
+│   │   │   ├── 00027725_008.txt
+│   │   │   └── 00027725_009.txt
 │   │   ├── sampler_weights.txt
 │   │   ├── train.csv
 │   │   └── valid.csv
@@ -255,8 +309,8 @@ the pull request is allowed to move forward.
 │   ├── test_cnn.py
 │   ├── test_cxrloader.py
 │   └── test_train.py
-├── valid.csv
 └── visualization.py
+
 
 
 ````

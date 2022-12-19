@@ -157,25 +157,14 @@ def main() :
         model=model,
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
-<<<<<<< HEAD
-
         train_datasets=["ChexPert","CIUSSS","MimicCxrJpg","PadChest"],
-        val_datasets = ["ChexPert","vinBigData"],
-=======
-        train_datasets=["ChexPert"],
-        val_datasets = ["ChexPert"],
->>>>>>> c4ed70a7a193f78f75e21a5511d7160cf3c2400e
+        val_datasets = ["ChexPert","vinBigData","MimicCxrJpg"],
         config=config,
         device=device
     )
 
 
-<<<<<<< HEAD
-    results = experiment.train()#criterion=criterion)
-=======
-
     results = experiment.train()
->>>>>>> c4ed70a7a193f78f75e21a5511d7160cf3c2400e
     experiment.end(results)
 
 

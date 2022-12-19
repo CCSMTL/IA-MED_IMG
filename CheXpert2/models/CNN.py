@@ -4,6 +4,9 @@ import torch
 from torchvision import transforms
 from CheXpert2.custom_utils import channels321
 import timm
+from CheXpert2 import names,hierarchy
+
+
 
 class CNN(torch.nn.Module):
     def __init__(self,
@@ -48,7 +51,11 @@ class CNN(torch.nn.Module):
         self.backbone=backbone
 
         self.hierarchical = hierarchical
+        self.hierarchy = {}
 
+        for parent,children in hierarchy.items() :
+            self.hierarchy[names.index(parent)] = [names.index(child) for child in children]
+        self.names = names
 
     def forward(self,images):
         outputs = torch.zeros((images.shape[0], self.num_classes)).to(images.device)
@@ -66,21 +73,12 @@ class CNN(torch.nn.Module):
 
             if self.hierarchical :
                 # using conditional probability
+                for parent_class, children in  self.hierarchy.items() :
+                    prob_parent = outputs[:,parent_class]
+                    outputs[:,children] = outputs[:,children] * prob_parent[:,None]
+
 
                 prob_sick = outputs[:, -1]
-                prob_opacity = outputs[:, 0]
-                prob_air = outputs[:, 1]
-                prob_liquid = outputs[:, 2]
-
-                # probability of opacity children given opacity
-                outputs[:, [4, 7, 8, 12, 14]] = outputs[:, [4, 7, 8, 12, 14]] * prob_opacity[:, None]
-
-                # prob of air children given air
-                outputs[:, [5, 9, 16]] = outputs[:, [5, 9, 16]] * prob_air[:, None]
-
-                # prob of liquid children given liquid
-                outputs[:, [6, 10]] = outputs[:, [6, 10]] * prob_liquid[:, None]
-
                 outputs[:,0:-1] = outputs[:,0:-1] * prob_sick[:, None]
 
 
@@ -92,5 +90,5 @@ class CNN(torch.nn.Module):
 if __name__ == "__main__":  # for debugging purpose
     x = torch.zeros((2, 2, 320, 320))
     for name in ["densenet121", "resnet18"]:
-        cnn = CNN(name, 14,channels=1)
+        cnn = CNN(name, len(names),channels=1)
         y = cnn(x)  # test forward loop

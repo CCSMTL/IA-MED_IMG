@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["vinBigData"])
+    db = MongoDB("10.128.107.212", 27017, ["ChexPert","vinBigData"])
     print("database initialized")
     train = MongoDB("10.128.107.212", 27017, ["ChexPert","CIUSSS","PadChest"]).dataset("Train")
     #print("training dataset loaded")

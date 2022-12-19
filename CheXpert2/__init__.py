@@ -3,8 +3,29 @@
 
 #names = [ "Cardiomegaly", "Edema","Consolidation", "Atelectasis", "Pleural Effusion","No Finding"]
 
+
 #names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","Pleural Other","No Finding"]
-names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
+
+#names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
+
+names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Infiltration","Mass","No Finding"]
+
+
+#parents classes for hierarchical classification :
+
+
+# hierarchy = {
+#         "Opacity" : ["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"],
+#         "Air" : ["Emphysema","Pneumothorax"],
+#         "Liquid" : ["Edema","Pleural Effusion"]
+# }
+
+hierarchy = {
+        "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],
+        "Air" : ["Pneumothorax"],
+        "Liquid" : ["Edema","Pleural Effusion"]
+}
+
 
 
 debug_config = {
