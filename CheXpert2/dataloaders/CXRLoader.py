@@ -228,8 +228,12 @@ class CXRLoader(Dataset):
             # with open(f"{self.img_dir}{path}", 'rb') as f:
             #     img = np.asarray(Image.open(f))
             #
+            try :
+                img = iio.v3.imread(f"{self.img_dir}{path}")
 
-            img = iio.v3.imread(f"{self.img_dir}{path}")
+            except :
+                logging.critical(f"Could not read image {path}")
+                img = np.zeros((self.img_size, self.img_size))
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
