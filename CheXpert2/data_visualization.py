@@ -7,13 +7,14 @@ Created on 2022-06-28$
 """
 import os
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from mne_connectivity.viz import plot_connectivity_circle
 from CheXpert2.dataloaders.MongoDB import MongoDB
 
-from CheXpert2 import names
-
+#from CheXpert2 import names
+names = ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
 
 
 def chord_chexpert(data):
@@ -32,8 +33,9 @@ def chord_chexpert(data):
 
     np.fill_diagonal(conn,0)
     #conn = conn / np.sum(conn) #normalize
-    fig, axes = plot_connectivity_circle(conn, data.columns)
-    fig.savefig("chords_mongodb_vinbig+chexpert_valid")
+    fig, axes = plot_connectivity_circle(conn, data.columns,facecolor='white', textcolor='black',fontsize_names=16,colormap="hot_r")
+
+    fig.savefig("chords_ciusss_train")
     #plt.title("Correlation map between diseases in chexnet")
     #fig.show()
 
@@ -68,11 +70,26 @@ def histogram_chexpert(data):
     )
 
     fig.show()
-    fig.write_image("histogram_mongodb_vinbig+chexpert_valid.png")
+    fig.write_image("histogram_ciusss_train.png")
 
+
+def data_count(data) :
+    print(names[:-1])
+    data.replace(-1, 1, inplace=True)
+    count = data[names[:-1]].values.sum(axis=1)
+    plt.figure()
+    print(count.shape)
+    counts, bins = np.histogram(count)
+    plt.hist(bins[:-1], bins=np.arange(0,11)-0.5,weights=counts)
+    plt.yscale("log")
+    plt.xlabel("Number of pathologies per label")
+    plt.ylabel("Count")
+    plt.title("Number of pathologies per patient")
+    plt.savefig("disease_count.png")
 
 
 if __name__ == "__main__":
-    data = MongoDB("10.128.107.212", 27017, ["vinBigData","ChexPert","MimicCxrJpg"]).dataset("Valid")
-    chord_chexpert(data)
-    histogram_chexpert(data)
+    data = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Train")
+    #chord_chexpert(data)
+    #histogram_chexpert(data)
+    data_count(data)

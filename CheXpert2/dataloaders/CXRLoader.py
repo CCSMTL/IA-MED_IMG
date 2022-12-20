@@ -311,7 +311,7 @@ if __name__ == "__main__":
     img_dir = os.environ["img_dir"]
     train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=[0,0,0,0,0], label_smoothing=0,
                       channels=3, datasets=["ChexPert"],debug=True)
-    valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[0,0,0,0,0], label_smoothing=0,
+    valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
                       channels=1, datasets=["ChexPert"],debug=True)
     print(len(train))
     print(len(valid))
