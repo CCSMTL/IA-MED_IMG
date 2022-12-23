@@ -4,14 +4,16 @@
 % Preamble
 \documentclass[11pt]{article}
 
+\usepackage{geometry}
+\geometry{margin=1in}
 % Packages
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{subcaption}
-
-%\usepackage{biblatex}
-\usepackage[backend=bibtex]{biblatex}
+\usepackage{subfigure}
+\usepackage{biblatex}
+%\usepackage[backend=biber]{biblatex}
 
 \usepackage{blindtext}%section management
 \usepackage{xcolor} %color management
@@ -21,6 +23,10 @@
 \usepackage[utf8]{inputenc} % Pour les accents
 \usepackage[english]{babel}  % Language hyphenation and typographical rules
 \usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage{amsfonts}
+
+\addbibresource{reference.bib}
 % Document
 \begin{document}
 
@@ -38,68 +44,107 @@ We will therefore need to be careful not only to rely on a basic loss for things
 have the best model in more than the over-represented categories. We could, for example, ponder the loss with different weights
 by classes
 
-\addbibresource{reference.bib}
 
-\begin{figure}
+
+\begin{figure}[h]
      \centering
-     \begin{subfigure}[b]{\textwidth}
+     \begin{subfigure}[b]{0.45\linewidth}
          \centering
-         \includegraphics[width=\textwidth]{plots/histogram_ciusss_train}
-         \caption{Training}
-
+         \includegraphics[width=\linewidth]{plots/histogram_ciusss_train}
+         \caption{ChexPert's training dataset}
+         \vspace{4ex}
+         \label{fig:histogram_ciusss_train}
      \end{subfigure}
      \hfill
-     \begin{subfigure}[b]{\textwidth}
+     \begin{subfigure}[b]{0.45\linewidth}
          \centering
-         \includegraphics[width=\textwidth]{plots/histogram_ciusss_valid}
-         \caption{Validation}
+         \includegraphics[width=\linewidth]{plots/histogram_ciusss_valid}
+         \caption{ChexPert's validation dataset}
+         \vspace{4ex}
+         \label{fig:histogram_ciusss_valid}
+     \end{subfigure}
 
+
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/histogram_chexpert_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:histogram_chexpert_train}
      \end{subfigure}
      \hfill
-     \caption{Histogram for the different labels present in the CIUSSS dataset}
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/histogram_chexpert_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:histogram_chexpert_valid}
+     \end{subfigure}
 
-     \label{fig:hist_ciusss}
+     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+
 \end{figure}
+
+
 
     Another important thing to look at could be the correlation between diseases, to identify potential biases in the data.
 
-\begin{figure}
-     \centering
-     \begin{subfigure}[b]{\textwidth}
-         \centering
-         \includegraphics[width=0.75\textwidth]{plots/chords_ciusss_train.png}
-         \caption{Training}
-         \label{fig:y equals x}
-     \end{subfigure}
-     \hfill
-     \begin{subfigure}[b]{\textwidth}
-         \centering
-         \includegraphics[width=0.75\textwidth]{plots/chords_ciusss_valid.png}
-         \caption{Validation}
-         \label{fig:correlation_ciusss}
-     \end{subfigure}
-     \hfill
 
-        \caption{Correlation between diseases for the training and validation dataasets gathered from the CIUSSS}
-        \label{fig:three graphs}
+\begin{figure}[!h]
+     \centering
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_ciusss_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:chords_ciusss_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_ciusss_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:chords_ciusss_valid}
+     \end{subfigure}
+
+
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_chexpert_train}
+         \caption{CheXpert's training dataset}
+         \vspace{4ex}
+         \label{fig:chords_chexpert_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_chexpert_valid}
+         \caption{CheXpert's validation dataset}
+         \vspace{4ex}
+         \label{fig:chords_chexpert_valid}
+     \end{subfigure}
+
+     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
 
 \end{figure}
 
 
-    We can see that the correlation between diseases is not very high. This is good, as it means that the data is not biased
+    Looking at the Chexpert's correlation graph (see \ref{fig:chords_chexpert_train} and \ref{fig:chords_chexpert_valid}), we can see that the correlation between diseases is quite high. This is slightly worrying, as it means that the data could be biased
     towards a specific disease. We can also see that the correlation is higher in the validation dataset than in the training
     dataset. This is expected, as the validation dataset is smaller and therefore more likely to have a higher correlation
     between diseases.
 
-    We can also look at the correlation between diseases and the age of the patient. We can see that the correlation is not
-    very high, which is good. This means that the data is not biased towards a specific age group. We can also see that the
-    correlation is higher in the validation dataset than in the training dataset. This is expected, as the validation dataset
-    is smaller and therefore more likely to have a higher correlation between diseases and age.
+%    We can also look at the correlation between diseases and the age of the patient. We can see that the correlation is not
+%    very high, which is good. This means that the data is not biased towards a specific age group. We can also see that the
+%    correlation is higher in the validation dataset than in the training dataset. This is expected, as the validation dataset
+%    is smaller and therefore more likely to have a higher correlation between diseases and age.
 
-    As can be seen in the data, while there exists some correlation between the different pathologies, the only notable link
-    are between the parent class (opacity, air and liquid), which only serve to regroup specific pathologies together and are therefore
-    expected to have a strong correlation.
+    However, when we look at the CIUSSS's correlation graph (see \ref{fig:chords_ciusss_train} and \ref{fig:chords_ciusss_valid}), we observe a way lower correlation level between pathologies.
+    It might also be due to a difference in the population but this explanation does not seem quite likely
 
+    Assuming the preponderance of diseases is the same between the population visiting the Stanford's hospital and
+    the CIUSSS CCSMTL, we are left to assume that the quality of the data is different from the Stanford dataset. Whether it is better or worst is to verify.
 
 
     \section{Preparing the data}
@@ -130,12 +175,43 @@ by classes
 
     %As can be seen here \ref{figure}, the usage of clahe vs only min-max normalization did result in a slight improvement
 
-\begin{figure}
 
+\begin{figure}[!h]
      \centering
-     \includegraphics[width=\textwidth]{plots/disease_count_log}
-     \caption{Histogram of classes per image for the CIUSSS training dataset}
-     \label{fig:classes_per_image}
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_ciusss_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:count_ciusss_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_ciusss_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:count_ciusss_valid}
+     \end{subfigure}
+
+
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_chexpert_train}
+         \caption{CheXpert's training dataset}
+         \vspace{4ex}
+         \label{fig:count_chexpert_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_chexpert_valid}
+         \caption{CheXpert's validation dataset}
+         \vspace{4ex}
+         \label{fig:count_chexpert_valid}
+     \end{subfigure}
+
+     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
 
 \end{figure}
 
@@ -191,7 +267,7 @@ by classes
     \begin{figure}[h]
 
          \centering
-         \includegraphics[width=0.5 \textwidth]{plots/densenet_figure}
+         \includegraphics[width=0.8 \textwidth]{plots/densenet_figure}
          \caption{Figure 1 from the densenet paper \cite{densenet}. It shows how the layers are all interconnected}
          \label{fig:densenet_figure}
 
@@ -213,7 +289,7 @@ by classes
 \begin{figure}[h]
 
      \centering
-     \includegraphics[width=0.5 \textwidth]{plots/convnext_graph}
+     \includegraphics[width=0.8 \textwidth]{plots/convnext_graph}
      \caption{Figure 2 from the ConvNeXt paper \cite{convnext}. It details the different improvement made to the
      resnet architecture and the gain in performance obtained following each modification.}
      \label{fig:convnext}
@@ -228,19 +304,131 @@ by classes
         It replaced densenet as the "default" convolutionnal model
 
 
-    \subsection{Model 3 : EfficientNet \cite{efficientnet}}
+    \subsection{Model 3 : EfficientNet \cite{efficientnet} and YOLO \cite{yolo}}
 
-        T
+
+\begin{figure}[h]
+
+     \centering
+     \includegraphics[width=0.8 \textwidth]{plots/efficientnet}
+     \caption{Figure 2 from the ConvNeXt paper \cite{efficientnet}. It shows the different approach that deep learning
+     model can take to model scaling, compared to their version.}
+     \label{fig:efficientnet}
+
+\end{figure}
+
+    EfficientNet was another model improving on the basic building blocks of CNN, in order to improve the efficiency (see \ref{fig:efficientnet}). While it is
+    not the best one, this approach has led to further development. Such improvement came in the form of the You Only Look Once (YOLO) object detection
+    model, which quickly became a SOTA model. Further improvement have allowed this model to keep its position as one of the best pretrained model publicly available.
 
     \subsection{Model 4 : Deit \& Transformers \cite{deit} \cite{image16x16}}
 
 
+        \begin{figure}[h!]
+
+             \centering
+             \includegraphics[width=0.8 \textwidth]{plots/transformer}
+             \caption{Figure 1 from the An image is worth 16x16 words paper \cite{image16x16}. It shows the general approach of an image transformer.}
+             \label{fig:transformer}
+
+        \end{figure}
+
+        Transformers are a new revolution in deep learning. First developped to deal with natural language processing (NLP),
+        they were later introduced in image models, successfully improving on CNN's. While CNN still keep a few key
+        elements on their side(they usually perform better to extract local information in an image), transformers split the image in blocks,
+        treating them as different element of a sequence (see \ref{fig:transformer}). Among other things, this allows them to better extract global feature present in an image.
+
+        Later, the facebook research team improved on this general idea by pre-training the model on a similar, but different task, a now
+        common approach when using transformers. This allowed them to achieve a greater accuracy in the ImageNet competiton than previous models.
+    
 
     \section{Training}
 
+
+    \subsection{Loss function}
+        To train a classification model with a multilabel output, we use the Binary Cross Entropy. We therefore treat
+        each class as a binary classification problem.
+
+        To account for our dataset imbalance, we will also use weights for the positive example of a class ($P_c$), and weights for the specific classes ($w_c$) such that the loss will be
+
+        \begin{equation}
+            L = \frac{1}{N}\sum_{n=0}^N -w_n[p_c y_n log(\sigma(x_n)+(1-y_n) log(1-\sigma(x_n)))]
+        \end{equation}
+
+    \subsection{Optimizer}
+
+        Multiple optimizer exists, building on one another . While none is perfect, or definitely better than another, AdamW \footnote{See https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html or \cite{adamw}} is oftenly use as it tends
+        to converge rapidly, thus allowing for far smaller training time.
+
+        AdamW is a slightly modified version of the optimizer Adam (which itself is a modified version of AdaGrad and RMSProp), and fixed an error in the L2 regularization from the original implementation.
+
+        AdamW is also chosen as it has demonstrated its abilities to converge easily with the default hyperparameters. This also allows to diminish the needs for finicky hyperparameters tuning.
+
+
+    \subsection{Experiment Tracking}
+        To track our experience, we used Weight\&Biases\footnote{www.wandb.ai}
+
+    \subsection{Metrics}
+        In any unbalanced dataset, the accuracy won't be enough to determine the performance of a classifier.
+        We therefore decided to look into the Area Under the Roc Curve (AUC-ROC) \footnote{https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5}
+        and the F1-score\footnote{https://towardsdatascience.com/the-f1-score-bec2bbc38aa6}.
+
+        While the F1-score does allow to evaluate the performance of our classifier, it requires to first assign a class
+        to our model's output. This in turn require to preset a threshold, which, without the results first, will usually be arbitrarily
+        chosen to be 0.5.
+
+
+    \subsection{Classification Head}
+
+        While we use a pretrained model for our feature extraction, leaving us little to change on that side, the classification head is usually a simple fully connected
+        layer, allowing us some leniency if we were to want to change it. However, such modification are usually not required for a simple classification model . However , as we switch
+        from  classification to object detection, we might want to change this later.
+
+        For now, we might mostly just want to work with the dropout parameter. DropOut is a useful technique to avoid overfitting and increase model
+        generalization \footnote{https://towardsdatascience.com/dropout-in-neural-networks-47a162d621d9}
+
+    \subsection{Tips and Tricks}
+
+    \begin{enumerate}
+        \item label-smoothing : A common use technique of adding or removing a small value (e.g 0.1) from the label in
+        order to smooth out the gradient (e.g $0\xrightarrow{}0.1$ , $1\xrightarrow{}0.9$ )
+
+        \item batch size : Always use a multiple of 2
+
+        \item Clip-Norm : The weight of the model might sometimes grow larger and larger leading to overflow and
+        infinite/Nan values! To avoid this, the gradient's norm might be clipped at a maximum value (e.g 1)
+
+    \end{enumerate}
+
     \section{Preliminary Results}
 
+        \subsection{Reproducing CheXpert baseline}
 
+            While we do not have access to the hidden test set from CheXpert, we still have access to their validation dataset. However,
+            as can be seen in \ref{fig:histogram_chexpert_valid}, three classes are not available in the validation dataset. We will therefore have to
+            limit our comparison to the classes present in the validation dataset , and to keep in mind our results will
+            most likely be higher than they would be on the test set. However, to keep things simple, we will not proceed to model ensembling as this
+            will simply put a high computational cost for a simple verification step.
+
+                Doing so , we can see our results in \ref{table:CheXpert_baseline}
+
+
+            
+
+        \subsection{Reproducing the CheXpert competition's results}
+
+
+            \subsubsection{DeepAUC \cite{DeepAUC}}
+
+
+            \subsubsection{Hierarchical Learning \cite{hierarchical}}
+
+
+            \subsubsection{JFHealthcare - Pyramidal Pooling \cite{jfhealthcare}}
+
+
+
+        \subsection{Results on the CIUSSS dataset}
 
 
 
@@ -248,10 +436,17 @@ by classes
 
 
 
+
+
+    \section{Building a new dataset}
+
+
+
     \newpage
     % REFERENCES
     {
     \small
+
     \printbibliography
     }
 \end{document}

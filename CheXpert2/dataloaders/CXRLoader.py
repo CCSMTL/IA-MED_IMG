@@ -243,19 +243,23 @@ class CXRLoader(Dataset):
 
             if self.split.lower() == "train":
                 img_cropped = self.transform(image=img_cropped)["image"]
+                cl1 = img_cropped
+
+            else :
+                cl1 = clahe(img_cropped, 2.0)
 
             #img_normalized = truncation_normalization(img_cropped)
 
-            img_normalized = (img_cropped - np.min(img_cropped)) / (np.max(img_cropped) - np.min(img_cropped))
-
+            #img_normalized = (img_cropped - np.min(img_cropped)) / (np.max(img_cropped) - np.min(img_cropped))
+            img_normalized = img_cropped
             if self.channels==3 :
-                cl1 = clahe(img_normalized, 1.0)
-                cl2 = clahe(img_normalized, 2.0)
+
+                cl2 = clahe(img_normalized, 4.0)
                 img_final = np.transpose(np.array([img_normalized, cl1, cl2]),(1,2,0))
 
 
             else :
-                cl1 = clahe(img_normalized, 1.0)
+
                 img_final = cl1[:,:,None]
 
 
@@ -309,15 +313,20 @@ class CXRLoader(Dataset):
 if __name__ == "__main__":
 
     img_dir = os.environ["img_dir"]
-    train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=[0,0,0,0,0], label_smoothing=0,
+    train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
                       channels=3, datasets=["ChexPert"],debug=True)
     valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
                       channels=1, datasets=["ChexPert"],debug=True)
     print(len(train))
     print(len(valid))
     i = 0
+    import time
+
+    start = time.time()
     for dataset in [train, valid]:
         for image, label, idx in dataset:
             i += 1
             if i == 100:
                 break
+
+    print("time : ",time.time()-start)

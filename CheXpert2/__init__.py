@@ -5,8 +5,9 @@
 
 #names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
 
-names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Infiltration","Mass","No Finding"]
+#names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Infiltration","Mass","No Finding"]
 
+names = ["Cardiomegaly", "Pleural Other", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia" , "Consolidation", "Edema" , "Fracture" , "No Finding"]
 
 #parents classes for hierarchical classification :
 
@@ -17,12 +18,13 @@ names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolid
 #         "Liquid" : ["Edema","Pleural Effusion"]
 # }
 
-hierarchy = {
-        "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],
-        "Air" : ["Pneumothorax"],
-        "Liquid" : ["Edema","Pleural Effusion"]
-}
+# hierarchy = {
+#         "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],
+#         "Air" : ["Pneumothorax"],
+#         "Liquid" : ["Edema","Pleural Effusion"]
+# }
 
+hierarchy = {}
 
 debug_config = {
         "model": "densenet121",
