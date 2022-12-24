@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import pymongo
 import logging
-from CheXpert2 import names
+from CheXpert2 import names,hierarchy
 class MongoDB:
     def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False) :
 
@@ -96,9 +96,8 @@ class MongoDB:
         #set up parent class
         df.fillna(0, inplace=True)
 
-        df["Opacity"] = df[["Consolidation","Atelectasis","Mass","Nodule","Lung Lesion"]].replace(-1,1).max(axis=1)
-        df["Air"]     = df[["Emphysema","Pneumothorax"]].replace(-1,1).max(axis=1)
-        df["Liquid"]  = df[["Edema","Pleural Effusion"]].replace(-1, 1).max(axis=1)
+        for parent,children in hierarchy.items() :
+            df[parent] = df[children].replace(-1,1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
         #df.to_csv("test.csv",sep=" ")

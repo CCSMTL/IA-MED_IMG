@@ -5,7 +5,7 @@ from torchvision import transforms
 from CheXpert2.custom_utils import channels321
 import timm
 from CheXpert2 import names,hierarchy
-
+import logging
 
 
 class CNN(torch.nn.Module):
@@ -31,31 +31,39 @@ class CNN(torch.nn.Module):
         """
         super().__init__()
 
-        self.channels = channels
-        # if "yolo" in backbone_name:
-        #     backbone = torch.hub.load('ultralytics/yolov5', "_create",
-        #                               f'{backbone_name}-cls.pt')  # ,classes=num_classes,channels=channels)
-        #     classifier = list(backbone.named_modules())[-1]
-        #     # setattr(backbone,classifier[0],torch.nn.Linear(classifier[1].in_features,num_classes,bias=True))
-        #     channels321(backbone)
-        #     self.classifier = torch.nn.Linear(classifier[1].out_features, num_classes, bias=True)
-        # else :
-        assert backbone_name in timm.list_models()
-        backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
-                                     num_classes=num_classes,drop_rate=drop_rate,global_pool=global_pool)
+
+        if "yolo" in backbone_name:
+            raise NotImplementedError("The Yolo model is not functionnal for now.")
+            backbone = torch.hub.load('ultralytics/yolov5', "_create",
+                                      f'{backbone_name}-cls.pt',device="cpu")  # ,classes=num_classes,channels=channels)
+
+            classifier = list(backbone.named_modules())[-1]
+            #
+            if channels == 1 :
+                channels321(backbone)
+
+            setattr(backbone, classifier[0], torch.nn.Linear(classifier[1].in_features, num_classes, bias=True,device="cpu"))
+        else :
+            assert backbone_name in timm.list_models(),print("This model is not supported")
+            backbone = timm.create_model(backbone_name, pretrained=pretrained, in_chans=channels,
+                                         num_classes=num_classes,drop_rate=drop_rate,global_pool=global_pool)
 
 
 
-        self.num_classes = num_classes
 
-        self.backbone=backbone
 
-        self.hierarchical = hierarchical
-        self.hierarchy = {}
+        self.channels       = channels
+        self.names          = names
+        self.num_classes    = num_classes
+        self.backbone       = backbone
 
-        for parent,children in hierarchy.items() :
-            self.hierarchy[names.index(parent)] = [names.index(child) for child in children]
-        self.names = names
+        self.hierarchical   = hierarchical
+
+        if self.hierarchical :
+            self.hierarchy = {}
+            for parent,children in hierarchy.items() :
+                self.hierarchy[names.index(parent)] = [names.index(child) for child in children]
+
 
     def forward(self,images):
         outputs = torch.zeros((images.shape[0], self.num_classes)).to(images.device)
@@ -63,12 +71,17 @@ class CNN(torch.nn.Module):
 
 
         for i in range(0,2) :
+            #iterate through the two images for one patient
             image = images[:,i*self.channels:(i+1)*self.channels,:,:]
-            if not torch.round(torch.min(image),decimals=2)==torch.round(torch.mean(image),decimals=2) : #if the image is not empty
 
-                outputs += self.backbone(image)
+            #if not torch.round(torch.min(image),decimals=2)==torch.round(torch.mean(image),decimals=2) : #if the image is not empty
+            outputs += self.backbone(image)
+
+
+
 
         if not self.training :
+            #we apply the sigmoid function if in the inference phase
             outputs = torch.sigmoid(outputs)
 
             if self.hierarchical :
@@ -76,7 +89,6 @@ class CNN(torch.nn.Module):
                 for parent_class, children in  self.hierarchy.items() :
                     prob_parent = outputs[:,parent_class]
                     outputs[:,children] = outputs[:,children] * prob_parent[:,None]
-
 
                 prob_sick = outputs[:, -1]
                 outputs[:,0:-1] = outputs[:,0:-1] * prob_sick[:, None]
@@ -89,6 +101,6 @@ class CNN(torch.nn.Module):
 
 if __name__ == "__main__":  # for debugging purpose
     x = torch.zeros((2, 2, 320, 320))
-    for name in ["densenet121", "resnet18"]:
+    for name in ["densenet121", "resnet18","convnext_small"]:
         cnn = CNN(name, len(names),channels=1)
         y = cnn(x)  # test forward loop

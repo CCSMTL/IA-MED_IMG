@@ -1,0 +1,452 @@
+%! Author = joeda
+%! Date = 2022-12-19
+
+% Preamble
+\documentclass[11pt]{article}
+
+\usepackage{geometry}
+\geometry{margin=1in}
+% Packages
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{subfigure}
+\usepackage{biblatex}
+%\usepackage[backend=biber]{biblatex}
+
+\usepackage{blindtext}%section management
+\usepackage{xcolor} %color management
+
+\newcommand\myworries[1]{\textcolor{red}{#1}}
+
+\usepackage[utf8]{inputenc} % Pour les accents
+\usepackage[english]{babel}  % Language hyphenation and typographical rules
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage{amsfonts}
+
+\addbibresource{reference.bib}
+% Document
+\begin{document}
+
+\section{Data Analysis}
+
+    The first step of any ML project is to analyse the data available to us. We will already split our data between
+    training and validation just to simplify our analysis here.
+
+    First, our private data from CIUSSS. We will first look at the distribution of the classes. As we can see in
+\ref{fig:hist_ciusss}, the classes are not balanced. We will need to take this into account when training our model.
+
+
+While we tried to provide a minimum of examples for each class in the validation dataset, we still observe a class imbalance.
+We will therefore need to be careful not only to rely on a basic loss for things like a hyperparameter search if we want to
+have the best model in more than the over-represented categories. We could, for example, ponder the loss with different weights
+by classes
+
+
+
+\begin{figure}[h]
+     \centering
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/histogram_ciusss_train}
+         \caption{ChexPert's training dataset}
+         \vspace{4ex}
+         \label{fig:histogram_ciusss_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/histogram_ciusss_valid}
+         \caption{ChexPert's validation dataset}
+         \vspace{4ex}
+         \label{fig:histogram_ciusss_valid}
+     \end{subfigure}
+
+
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/histogram_chexpert_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:histogram_chexpert_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/histogram_chexpert_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:histogram_chexpert_valid}
+     \end{subfigure}
+
+     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+
+\end{figure}
+
+
+
+    Another important thing to look at could be the correlation between diseases, to identify potential biases in the data.
+
+
+\begin{figure}[!h]
+     \centering
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_ciusss_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:chords_ciusss_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_ciusss_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:chords_ciusss_valid}
+     \end{subfigure}
+
+
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_chexpert_train}
+         \caption{CheXpert's training dataset}
+         \vspace{4ex}
+         \label{fig:chords_chexpert_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/chords_chexpert_valid}
+         \caption{CheXpert's validation dataset}
+         \vspace{4ex}
+         \label{fig:chords_chexpert_valid}
+     \end{subfigure}
+
+     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+
+\end{figure}
+
+
+    Looking at the Chexpert's correlation graph (see \ref{fig:chords_chexpert_train} and \ref{fig:chords_chexpert_valid}), we can see that the correlation between diseases is quite high. This is slightly worrying, as it means that the data could be biased
+    towards a specific disease. We can also see that the correlation is higher in the validation dataset than in the training
+    dataset. This is expected, as the validation dataset is smaller and therefore more likely to have a higher correlation
+    between diseases.
+
+%    We can also look at the correlation between diseases and the age of the patient. We can see that the correlation is not
+%    very high, which is good. This means that the data is not biased towards a specific age group. We can also see that the
+%    correlation is higher in the validation dataset than in the training dataset. This is expected, as the validation dataset
+%    is smaller and therefore more likely to have a higher correlation between diseases and age.
+
+    However, when we look at the CIUSSS's correlation graph (see \ref{fig:chords_ciusss_train} and \ref{fig:chords_ciusss_valid}), we observe a way lower correlation level between pathologies.
+    It might also be due to a difference in the population but this explanation does not seem quite likely
+
+    Assuming the preponderance of diseases is the same between the population visiting the Stanford's hospital and
+    the CIUSSS CCSMTL, we are left to assume that the quality of the data is different from the Stanford dataset. Whether it is better or worst is to verify.
+
+
+    \section{Preparing the data}
+
+
+
+    Before sending our data into an ML algorithm , we need to think about the preprocessing that we can apply on it to facilitate
+    the learning process. For our use case, with deep learning models, it is typical to split this step in two part : augmentations
+    and normalization.
+
+
+    For data augmentations, we used a combination of random horizontal flipping of the image, as the lungs are symmetrical,color jittering, to add random noise
+    in the images, affine transformation (see albumentation's documentation \footnote{https://albumentations.ai/docs/api_reference/augmentations/geometric/transforms/}), and a mix of griddistortion and Elastic transformation to simulate a greater
+    variance in the shape of the specified pathologies. All the augmentations were done with Albumentations, as to avoid making mistakes
+    by writing our own\cite{albumentations}.
+
+    Data augmentation such as this serves two purposes. The first one is to allow the model to generalize better, as it is given
+    a wider variety of examples (albeit partially synthetic examples) . The second purpose is to avoid overfitting as the model will
+    have a harder time simply memorizing the examples instead of actually learning the desired characteristic within the image.
+
+    The second step, normalization, serves to assure that the distribution of the image stay within a specified norm. It is typical
+    to bring the images values between 0 and 1, and , if using a pretrained model as it is our case, to normalize the data
+    according to the specified mean and standard deviation value of the images used to pretrain the model (in our case ImageNet).
+
+    It is also possible to use histogram equalization. This method will normalize image with respect to local values instead of the global maximum and minimum.
+    Improving on this idea we used the Contrast Limited Adaptive Histogram Equalization \footnote{see https://towardsdatascience.com/clahe-and-thresholding-in-python-3bf690303e40}
+    to further improve the normalization of our images. We hope this will help with the cross-generalization of our model on the different datasets.
+
+    %As can be seen here \ref{figure}, the usage of clahe vs only min-max normalization did result in a slight improvement
+
+
+\begin{figure}[!h]
+     \centering
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_ciusss_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:count_ciusss_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_ciusss_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:count_ciusss_valid}
+     \end{subfigure}
+
+
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_chexpert_train}
+         \caption{CheXpert's training dataset}
+         \vspace{4ex}
+         \label{fig:count_chexpert_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/disease_count_chexpert_valid}
+         \caption{CheXpert's validation dataset}
+         \vspace{4ex}
+         \label{fig:count_chexpert_valid}
+     \end{subfigure}
+
+     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+
+\end{figure}
+
+    Now come the tricky part where we get in the wood inside of getting out. While the data processing described earlier
+    is accurate, it is also general and do not reflect the specificty of our data! Two main problem arise.
+
+    Firstly, as mentionned earlier, the data is unbalanced! While typically , we would simply undersample the over-represented
+    categories or the opposite, oversample the under-represented classes, it is not an option here. Looking closely at the data \ref{fig:classes_per_image},
+    we can see our problem is not a simple classification, but a multilabel classification tasks where more than one class might be present
+    in the input! We also see that we have a lot of images with no pathology at all. This is a problem as it means that the model will be biased toward answering no pathology are present. We therefore need to undersample this category!
+
+
+
+    To resolve this , we can try some version of undersampling to partially mitigate the imbalance, but a better solution exists. We can assign each positive example
+    of a class with a weight, therefore increasing the importance of the positive examples of the under-represented classes. This is
+    done by using the class weights parameter of the loss function. This is a good solution, but it is not perfect of course as one class might have a higher preponderance in the loss
+    function.
+
+    To mitigate this, we could use a weighted loss function, which will weight the loss of each class according to the class weights. This could be interesting as a future improvement.
+
+
+    Secondly, our data does not come in the form of a simple image. The input is composed of multiple images present in the patient file for a specific exam, typically between 1 and 4 images. While a RNN could be use to deal
+    with a sequence of image, no such model exist for medical imaging. Instead, we will use a CNN to process each image independently, and combine the output with a simple addition before applying the sigmoid activation function.
+
+    To further simplify the model, we also explored two other option
+
+    \subsection{Option 1 : Only use 1 frontal image}
+        Our first attempt was to use only one frontal image per patient. This is a simple solution, but it is not optimal as it does not take into account the other images present in the patient file.
+        However, we quickly realize that this was not a good idea as the model was underperforming with some specific pathologies. This was most
+        likely due to these pathologies having been identified through the other images present in the patient file, and especially the lateral images.
+        Further investigation confirmed our hypothesis, as some pathologies like pleural effusion were mostly confirmed by the lateral images.
+
+    \subsection{Option 2 : Use two different set of weights for the feature extraction of frontal vs lateral images}
+
+        To ensure the model learned in an optimal manner from both lateral and frontal images, we tried to use two different set of weights for the feature extraction of frontal vs lateral images. This however
+        effectively double the number of parameters to train, and led to a significant increase in the model capacity and overfitting. This option was therefore also rejected.
+
+        % link to document?
+    Finally , we opted to use two of the images present in the patient file, and to combine the output of the CNN with a simple addition before applying the sigmoid activation function. This is a simple solution, but it is not optimal as it does not take into account the other images present in the patient file.
+    It however will help simplify training as the model will almost always have the same number of input images (2, more rarely 1), and will also help with the generalization of the model as it will be trained on a wider variety of images.
+
+    To undersample the empty images, we will ponder them with a weight of 0.1, and the other images with a weight of 1. This will effectively leave us with a dataset containing the equivalent of only about 20 000 empty images.
+
+
+
+
+
+    \section{Model architecture}
+
+    \subsection{Model 1 : DenseNet \cite{densenet}}
+
+
+    \begin{figure}[h]
+
+         \centering
+         \includegraphics[width=0.8 \textwidth]{plots/densenet_figure}
+         \caption{Figure 1 from the densenet paper \cite{densenet}. It shows how the layers are all interconnected}
+         \label{fig:densenet_figure}
+
+    \end{figure}
+
+        The densenet model is a CNN model that is composed of dense blocks. Each dense block is composed of a series of convolutional layers,
+        each of which is connected to all the previous layers in the block (see \ref{fig:densenet_figure}). This allows the model to learn features at different scales, and to
+        combine them in a more efficient manner. The model is also composed of a transition layer, which is used to reduce the number of feature maps
+        and to control the growth of the model. The model is also composed of a classifier, which is composed of a global average pooling layer and a fully connected layer.
+
+
+
+        This model released in 2018 improved on ResNet with its dense blocks, and was the state of the art for a while. The stanford team working on ChexNet found it was the best model available to achieve the highest AUC on CXR images \cite{chexnet}.
+
+
+    \subsection{Model 2 : ConvNeXt \cite{convnext}}
+
+
+\begin{figure}[h]
+
+     \centering
+     \includegraphics[width=0.8 \textwidth]{plots/convnext_graph}
+     \caption{Figure 2 from the ConvNeXt paper \cite{convnext}. It details the different improvement made to the
+     resnet architecture and the gain in performance obtained following each modification.}
+     \label{fig:convnext}
+
+\end{figure}
+
+        The ConvNeXt model is another CNN model, this time released in 2020 and improving on the default Resnet architecture once again.
+        They gradually implemented many of the features of vision transformers in order to "modernize" the typical CNN architecture. In doing sp,
+        they created an architecture which outperformed many SOTA models on the ImageNet competititon.
+
+        The details of these modifications can be seen in the figure \ref{fig:convnext}, which is taken from their paper.
+        It replaced densenet as the "default" convolutionnal model
+
+
+    \subsection{Model 3 : EfficientNet \cite{efficientnet} and YOLO \cite{yolo}}
+
+
+\begin{figure}[h]
+
+     \centering
+     \includegraphics[width=0.8 \textwidth]{plots/efficientnet}
+     \caption{Figure 2 from the ConvNeXt paper \cite{efficientnet}. It shows the different approach that deep learning
+     model can take to model scaling, compared to their version.}
+     \label{fig:efficientnet}
+
+\end{figure}
+
+    EfficientNet was another model improving on the basic building blocks of CNN, in order to improve the efficiency (see \ref{fig:efficientnet}). While it is
+    not the best one, this approach has led to further development. Such improvement came in the form of the You Only Look Once (YOLO) object detection
+    model, which quickly became a SOTA model. Further improvement have allowed this model to keep its position as one of the best pretrained model publicly available.
+
+    \subsection{Model 4 : Deit \& Transformers \cite{deit} \cite{image16x16}}
+
+
+        \begin{figure}[h!]
+
+             \centering
+             \includegraphics[width=0.8 \textwidth]{plots/transformer}
+             \caption{Figure 1 from the An image is worth 16x16 words paper \cite{image16x16}. It shows the general approach of an image transformer.}
+             \label{fig:transformer}
+
+        \end{figure}
+
+        Transformers are a new revolution in deep learning. First developped to deal with natural language processing (NLP),
+        they were later introduced in image models, successfully improving on CNN's. While CNN still keep a few key
+        elements on their side(they usually perform better to extract local information in an image), transformers split the image in blocks,
+        treating them as different element of a sequence (see \ref{fig:transformer}). Among other things, this allows them to better extract global feature present in an image.
+
+        Later, the facebook research team improved on this general idea by pre-training the model on a similar, but different task, a now
+        common approach when using transformers. This allowed them to achieve a greater accuracy in the ImageNet competiton than previous models.
+    
+
+    \section{Training}
+
+
+    \subsection{Loss function}
+        To train a classification model with a multilabel output, we use the Binary Cross Entropy. We therefore treat
+        each class as a binary classification problem.
+
+        To account for our dataset imbalance, we will also use weights for the positive example of a class ($P_c$), and weights for the specific classes ($w_c$) such that the loss will be
+
+        \begin{equation}
+            L = \frac{1}{N}\sum_{n=0}^N -w_n[p_c y_n log(\sigma(x_n)+(1-y_n) log(1-\sigma(x_n)))]
+        \end{equation}
+
+    \subsection{Optimizer}
+
+        Multiple optimizer exists, building on one another . While none is perfect, or definitely better than another, AdamW \footnote{See https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html or \cite{adamw}} is oftenly use as it tends
+        to converge rapidly, thus allowing for far smaller training time.
+
+        AdamW is a slightly modified version of the optimizer Adam (which itself is a modified version of AdaGrad and RMSProp), and fixed an error in the L2 regularization from the original implementation.
+
+        AdamW is also chosen as it has demonstrated its abilities to converge easily with the default hyperparameters. This also allows to diminish the needs for finicky hyperparameters tuning.
+
+
+    \subsection{Experiment Tracking}
+        To track our experience, we used Weight\&Biases\footnote{www.wandb.ai}
+
+    \subsection{Metrics}
+        In any unbalanced dataset, the accuracy won't be enough to determine the performance of a classifier.
+        We therefore decided to look into the Area Under the Roc Curve (AUC-ROC) \footnote{https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5}
+        and the F1-score\footnote{https://towardsdatascience.com/the-f1-score-bec2bbc38aa6}.
+
+        While the F1-score does allow to evaluate the performance of our classifier, it requires to first assign a class
+        to our model's output. This in turn require to preset a threshold, which, without the results first, will usually be arbitrarily
+        chosen to be 0.5.
+
+
+    \subsection{Classification Head}
+
+        While we use a pretrained model for our feature extraction, leaving us little to change on that side, the classification head is usually a simple fully connected
+        layer, allowing us some leniency if we were to want to change it. However, such modification are usually not required for a simple classification model . However , as we switch
+        from  classification to object detection, we might want to change this later.
+
+        For now, we might mostly just want to work with the dropout parameter. DropOut is a useful technique to avoid overfitting and increase model
+        generalization \footnote{https://towardsdatascience.com/dropout-in-neural-networks-47a162d621d9}
+
+    \subsection{Tips and Tricks}
+
+    \begin{enumerate}
+        \item label-smoothing : A common use technique of adding or removing a small value (e.g 0.1) from the label in
+        order to smooth out the gradient (e.g $0\xrightarrow{}0.1$ , $1\xrightarrow{}0.9$ )
+
+        \item batch size : Always use a multiple of 2
+
+        \item Clip-Norm : The weight of the model might sometimes grow larger and larger leading to overflow and
+        infinite/Nan values! To avoid this, the gradient's norm might be clipped at a maximum value (e.g 1)
+
+    \end{enumerate}
+
+    \section{Preliminary Results}
+
+        \subsection{Reproducing CheXpert baseline}
+
+            While we do not have access to the hidden test set from CheXpert, we still have access to their validation dataset. However,
+            as can be seen in \ref{fig:histogram_chexpert_valid}, three classes are not available in the validation dataset. We will therefore have to
+            limit our comparison to the classes present in the validation dataset , and to keep in mind our results will
+            most likely be higher than they would be on the test set. However, to keep things simple, we will not proceed to model ensembling as this
+            will simply put a high computational cost for a simple verification step.
+
+                Doing so , we can see our results in \ref{table:CheXpert_baseline}
+
+
+            
+
+        \subsection{Reproducing the CheXpert competition's results}
+
+
+            \subsubsection{DeepAUC \cite{DeepAUC}}
+
+
+            \subsubsection{Hierarchical Learning \cite{hierarchical}}
+
+
+            \subsubsection{JFHealthcare - Pyramidal Pooling \cite{jfhealthcare}}
+
+
+
+        \subsection{Results on the CIUSSS dataset}
+
+
+
+    \section{Analysis of the results}
+
+
+
+
+
+    \section{Building a new dataset}
+
+
+
+    \newpage
+    % REFERENCES
+    {
+    \small
+
+    \printbibliography
+    }
+\end{document}

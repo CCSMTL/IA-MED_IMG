@@ -2,7 +2,7 @@ import numpy as np
 import sklearn.metrics
 import timm.utils.metrics
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc,f1_score,recall_score,precision_score
+from sklearn.metrics import roc_curve, auc,f1_score,recall_score,precision_score,matthews_corrcoef
 import logging
 from libauc.metrics import roc_auc_score
 class Metrics:
@@ -82,34 +82,6 @@ class Metrics:
             results_dict[name] = item
         return results_dict
 
-    def computeAUROC_weighted(self, true, pred):
-        fpr = dict()
-        tpr = dict()
-        outAUROC = dict()
-        classCount = pred.shape[1]
-        for i in range(classCount):
-
-            # fpr[i], tpr[i], thresholds = roc_curve(true[:, i], pred[:, i],pos_label=1)
-            #
-            # threshold = thresholds[np.argmax(tpr[i] - fpr[i])]
-            # logging.info(f"threshold {self.names[i]} : ",threshold)
-            # self.thresholds[i] =threshold
-            # try :
-            #     auroc =  auc(fpr[i], tpr[i])
-            # except :
-            #     auroc=0
-            try :
-                auroc = roc_auc_score(true[:, i], pred[:, i],average="weighted")
-            except ValueError:
-                auroc = 0
-            outAUROC[self.names[i]] = auroc
-            if np.isnan(outAUROC[self.names[i]]):
-                outAUROC[self.names[i]] = 0
-
-        outAUROC["mean"] = np.mean(list(outAUROC.values()))
-
-
-        return outAUROC
 
     def computeAUROC(self, true, pred):
         print(true.shape)
@@ -141,12 +113,17 @@ class Metrics:
 
         return outAUROC
 
+    def mmc(self,true,pred):
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
+        results = matthews_corrcoef(true,pred)
+        return results
     def metrics(self):
         dict = {
             "auc": self.computeAUROC,
-        #    "auc_weighted": self.computeAUROC_weighted,
             "f1": self.f1,
             "recall": self.recall,
+        #    "MMC" : self.mmc, TODO : Fix MMC for multi-label
             "precision": self.precision,
             "accuracy": self.accuracy,
 

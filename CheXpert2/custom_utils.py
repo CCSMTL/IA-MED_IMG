@@ -155,7 +155,7 @@ def clahe(img, clip):
     @clip : float, clip limit for CLAHE algorithm
     return: numpy array of the enhanced image
     """
-    clahe = cv.createCLAHE(clipLimit=clip)
-    cl = clahe.apply(np.array(img * 255, dtype=np.uint8))
+    clahe = cv.createCLAHE(clipLimit=clip,tileGridSize=(8,8))
+    cl = clahe.apply(np.array(img, dtype=np.uint8))
     return cl
 
