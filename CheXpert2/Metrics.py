@@ -114,16 +114,16 @@ class Metrics:
         return outAUROC
 
     def mmc(self,true,pred):
-
+        pred = self.convert(pred)
+        pred = np.where(pred > 0.5, 1, 0)
         results = matthews_corrcoef(true,pred)
         return results
     def metrics(self):
         dict = {
             "auc": self.computeAUROC,
-        #    "auc_weighted": self.computeAUROC_weighted,
             "f1": self.f1,
             "recall": self.recall,
-            "MMC" : self.mmc,
+        #    "MMC" : self.mmc, TODO : Fix MMC for multi-label
             "precision": self.precision,
             "accuracy": self.accuracy,
 
