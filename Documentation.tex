@@ -3,7 +3,7 @@
 
 % Preamble
 \documentclass[11pt]{article}
-
+\linespread{2}
 \usepackage{geometry}
 \geometry{margin=1in}
 % Packages
@@ -26,7 +26,11 @@
 \usepackage{hyperref}
 \usepackage{amsfonts}
 
-\addbibresource{reference.bib}
+
+\usepackage{booktabs}
+
+
+\addbibresource[backend=biber]{reference.bib}
 % Document
 \begin{document}
 
@@ -355,6 +359,15 @@ by classes
             L = \frac{1}{N}\sum_{n=0}^N -w_n[p_c y_n log(\sigma(x_n)+(1-y_n) log(1-\sigma(x_n)))]
         \end{equation}
 
+    \subsection{Learning Rate Scheduler}
+
+        We will use a learning rate scheduler to help the model converge faster. We will use a OneCycle learning rate \cite{onecyclelr}, which will
+        decrease the learning rate as the training progresses. This will help the model converge faster, and avoid overfitting.
+
+    \subsection{Early stopping}
+
+        Early stopping is a technique used to avoid overfitting. It consists of stopping the training when the validation loss starts to increase. We will
+        implement a patience mechanism so that the training will stop only if the validation loss has not improved for a certain number of epochs.
     \subsection{Optimizer}
 
         Multiple optimizer exists, building on one another . While none is perfect, or definitely better than another, AdamW \footnote{See https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html or \cite{adamw}} is oftenly use as it tends
@@ -366,8 +379,8 @@ by classes
 
 
     \subsection{Experiment Tracking}
-        To track our experience, we used Weight\&Biases\footnote{www.wandb.ai}
-
+        To track our experience, we used Weight\&Biases\footnote{www.wandb.ai} .This tool allows us to track the different hyperparameters,
+        the loss, the accuracy, and the model architecture. It also allows us to compare different runs, and to easily reproduce them.
     \subsection{Metrics}
         In any unbalanced dataset, the accuracy won't be enough to determine the performance of a classifier.
         We therefore decided to look into the Area Under the Roc Curve (AUC-ROC) \footnote{https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5}
@@ -397,6 +410,14 @@ by classes
 
         \item Clip-Norm : The weight of the model might sometimes grow larger and larger leading to overflow and
         infinite/Nan values! To avoid this, the gradient's norm might be clipped at a maximum value (e.g 1)
+        
+        \item Timm : The code use the timm library \cite{timm} in order to load a model, allowing
+        for an easy use of a multitude of pretrained model.
+
+
+        \item Input Channels : While models are pretrained to use 3 channels (RGB), we can use a single channel (e.g grayscale). This uses
+        only one of the convolution kernel at the first layer of the model, and thus reduce the number of parameters to train. However, it might require more training
+        as it will affect the input of all the other layers of the model.
 
     \end{enumerate}
 
@@ -410,25 +431,152 @@ by classes
             most likely be higher than they would be on the test set. However, to keep things simple, we will not proceed to model ensembling as this
             will simply put a high computational cost for a simple verification step.
 
-                Doing so , we can see our results in \ref{table:CheXpert_baseline}
+
+    Doing so , we can see our results in the figure\ref{fig:CheXpert_baseline}. While our results are slightly lower than
+    the values reported by the CheXpert team, we however achieve close enough value to be confident in our implementation.
+    However, only 5 classes were reported in the paper, and we have 11 classes. We will therefore have to compare our results with other sources.
+
+    If you paid attention up to this point, you will also have notice that CheXpert had 14 classes, and not exactly the same as we have!
+    This is due to a talk with our radiologist, where they identified some classes as being too similar to be useful, and we thus removed them. They also pointed they would like to have
+    more general labels, such as \"Air\", \"Liquid\" and \"Opacity\", which regroups other classes (see \ref{fig:pathologies_hierarchy}). This is something we will keep in mind for the future.
 
 
-            
+
+        \begin{figure}[h!]
+
+             \centering
+             \includegraphics[width=0.8 \textwidth]{plots/chexpert_baseline_blue+comparison}
+             \caption{Attempt at reproducing the chexpert baseline. Results for the baseline are taken from \cite{chexpert}}
+             \label{fig:CheXpert_baseline}
+
+        \end{figure}
+
+        To obtain these results, we used the following hyperparameters :
+
+        \begin{itemize}
+            \item backbone : convnext\_small
+            \item batch size : 64
+            \item learning rate : 1e-3
+            \item weight decay : 1e-2
+            \item dropout : 0.2
+            \item num\_samples\_per\_epoch : 50\_000
+            \item optimizer : AdamW
+            \item scheduler : OneCycle
+            \item patience : 5
+            \item label smoothing : 0
+            \item clip norm : 1
+            \item epoch : 50
+            \item channel : 1
+            \item augment prob 1 1 0.5 0 0 %TODO : ADD a description of this in data augment
+        \end{itemize}
+
+        The positive weights were calculated using the following formula : $pos\_weight = \frac{N_{neg}}{N_{pos}}$ where $N_{neg}$ is the number of negative samples, and $N_{pos}$ is the number of positive samples for a given class. Their value range
+        in between 1 and 95. The values are reported in the table \ref{table:pos_weight_chexpert}. I suspect that high values might scramble the loss for the batches containing the rare positive samples of that class. We might later want to cap
+        the maximum possible value of the positive weight to avoid this.
+
+
+
+        \begin{table}[h!]
+            \centering
+            \begin{tabular}{@{}lllll@{}}
+            \toprule
+            Classes          & & & & Weights \\ \midrule
+            Opacity          & & & & 1.97    \\
+            Air              & & & & 16.76   \\
+            Liquid           & & & & 1.16    \\
+            Cardiomegaly     & & & & 12.15   \\
+            Pleural Other    & & & & 94.76   \\
+            Pleural Effusion & & & & 3.07    \\
+            Pneumothorax     & & & & 21.06   \\
+            Lung Opacity     & & & & 1.68    \\
+            Atelectasis      & & & & 9.66    \\
+            Lung Lesion      & & & & 27.71   \\
+            Pneumonia        & & & & 50.26   \\
+            Consolidation    & & & & 33.28   \\
+            Edema            & & & & 6.11    \\
+            Fracture         & & & & 22.77   \\
+            No Finding       & & & & 6.58    \\ \bottomrule
+            \end{tabular}
+            \caption{Positive weights used for the loss , from the CheXpert dataset}
+            \label{table:pos_weight_chexpert}
+        \end{table}
+
+        For CheXpert, all the training examples were sampled with equal weights.
+
 
         \subsection{Reproducing the CheXpert competition's results}
+
+            The CheXpert dataset was released as part of a competition, where the goal was to achieve the best possible performance on the hidden test set. The competition was won by a team from Stanford, who achieved a score of 0.91 on the hidden test set. The results of the competition are reported in the table \ref{table:chexpert_competition_results}.
+            The metric used was the ROC-AUC. We will therefore use the same metric to compare our results with theirs. However , we also implemented the
+            F1-score (the harmonic mean of the precision and recall), which will make it easier to compare with the radiologist's performance
+            in order to convince them to use our model.
 
 
             \subsubsection{DeepAUC \cite{DeepAUC}}
 
+                Attempting to reproduce the results of DeepAUC \cite{DeepAUC} proved not to be possible. The snippet of code , provided by the author,
+                did not reproduce the results as expected. No pretrained model was also given. Attempt to use their loss function with our dataset also proved
+                to be unsuccessful. We therefore decided to not include their results in our comparison, and to not pursue this avenue.
 
             \subsubsection{Hierarchical Learning \cite{hierarchical}}
 
+                    The hierarchical learning method \cite{hierarchical} is a method that uses a hierarchy in between the different classes
+                    to more accurately predict them. Thansk to bayesian probabilities, we know that
 
-            \subsubsection{JFHealthcare - Pyramidal Pooling \cite{jfhealthcare}}
+                    \begin{equation}
+                        P(A|B) = \frac{P(A \cap B)}{P(B)} = \frac{P(B|A) P(A)}{P(B)}
+                    \end{equation}
 
+                    If we use the parent class as B, with the child class as A, we can therefore redefine
+                    the probability of the child class such that
+
+                    \begin{equation}
+                        P(Child|parent) = \frac{P(Child \cap parent)}{P(parent)} \approx P(parent|Child) P(Child)
+                    \end{equation}
+
+                    We could use P(Parent) as the prior probability of the parent class, as defined by the preponderance in the dataset. However, as I base myself of
+                    \cite{hierarchical}, I observe they did no such thing and I decided to not do it either. While this mean the probability given by the model might be based off an approximation,
+                    it also avoids having an additional bias in the model originating from the specific distribution of the training set. Further thought might however be given to this in order to evaluate the potential benefit of it.
+
+                    Since the classes we are interested in slightly differ from the ones used in \cite{hierarchical},
+                    we will have to adapt the hierarchy. The hierarchy used in \cite{hierarchical} is reported in the figure \ref{fig:hierarchical_learning_hierarchy}. We will use the same hierarchy, but with our classes instead of theirs.
+                    We will then compare with and without to see if the results improve.
+
+
+
+            \subsubsection{JFHealthcare - Probabilistic-CAM \cite{jfhealthcare}}
+
+            \begin{figure}[h!]
+
+                 \centering
+                 \includegraphics[width=0.8 \textwidth]{plots/jfhealthcare}
+                 \caption{The figure 1 from \cite{jfhealthcare}}
+                 \label{fig:jfhealthcare_probabilistic_cam}
+
+            \end{figure}
+
+            The JFHealthcare team \cite{jfhealthcare} used a probabilistic-CAM method to obtain their results.
+            The method is based on the idea that the model should be able to predict the probability of a class being
+            present in the image. The method is described in the figure \ref{fig:jfhealthcare_probabilistic_cam}.
+
+            They first start by proceeding as usual, applyng a feature extraction backbone, followed by a 1x1 convolutionnal layer.
+            They then apply a sigmoid activation function to the output of the fully connected layer, in order to obtain a probability between 0 and 1.
+
+            These classes probability are then used as the probability of a disease being present in each of the feature maps. The feature maps are then
+            weighted according to these probabilities using a weighted average pooling. This is then followed by a fully connected layer (with a sigmoid activation), which is used to output
+            the final prediction.
+
+
+            This adds two benefits . The first one is to enable a form of self-attention within the model which they have shown increase the accuracy of the model.
+            But further than that, it also allows for a better understanding of the model's decision. Indeed, the weighted class activation maps offer a more accurate way to visualize the model's decision and potential object location
+            within the image. This is especially useful for the radiologist, who might want to understand why the model made a certain decision.
 
 
         \subsection{Results on the CIUSSS dataset}
+
+
+            Following the results obtained earlier on CheXpert, we then tried applying some of the same technique, but this time using a validation dataset from the CIUSSS data.
+            For the training data, we tried to supplement the CIUSSS dataset with the CheXpert dataset, in order to increase the size of the dataset and improve the model's performance.
 
 
 
@@ -436,10 +584,100 @@ by classes
 
 
 
+    \section{Improvements and attempts}
+
+    \subsection{Moving Average Labels}
 
 
-    \section{Building a new dataset}
+    \section{Problem observed}
 
+    A multitude of problems slowed down the development of the model. We will try to cover the most
+    important ones here, and the lesson learned from them.
+
+
+    \subsection{Normalizing the data}
+
+        While the data was at first simply normalize by the mean and standard deviation of the ImageNet dataset.
+        However, we realized this was not enough . This easily led to unstability in the training process, and we had to further
+        normalize the input. The first attempt at this was with a min max normalization to rescale between 0 and 1, before applying the ImageNet's normalization
+        .While this solved the issue, we did try to further improve the normalization by using the CLAHE algorithm. This algorithm is used to improve the contrast of the image, and is often used in medical imaging.
+
+    \subsection{Verifying the data}
+            The data was not as cleaned as we would have liked. While the CheXpert validation dataset was validated by a team of three radiologist, our data
+            was simply annotated by a single radiologist's report, from which the labels were then automatically derived. This lead to a quite important source of error as radiologist's performance
+            is estimated to be between 0.4 and 0.6 \cite{radiologist_performance}. This is a quite important source of error, which is compounded
+            by the fact that the radiologist's report often contained many uncertainties that we had
+            to quantify with an automated labeler. The problem's come that no radiologist was available to verify the work of the labeler, and we had to rely on our interpretation of
+            the report to evaluate the performance of the rule-based labeler we developped.
+
+            While it usually would simply be solved by manually annotating a few examples and compare the results accrosss the manually labeled dataset
+            and the automatically labeled one, this was not possible in our case. Indeed, the nature of our medical dataset required an expert eye to verify the data,
+            and even then, radiologists often disagree on the label of a given image. This is why when working on medical data, it is important to have a team of specialist available to support the project.
+
+
+    \subsection{Drivers \& CUDA}
+
+        Many times did we had issues with our drivers. This happened because we were updating the packages as we were developping the project, and because we were working on parallel on more than one project
+        on the same machine. To rectify and avoid this, a simple solution is to use a virtual environment, which will allow us to have a clean environment for each project, and to avoid any conflict. Docker
+        is a good solution to provide such virtual environment.
+
+    \subsection{Multi-GPU training}
+
+        To train on multiple GPU, I first used the DataParallel module from PyTorch. However, this module is deprecated, and I therefore chose to switch to the DistributedDataParallel module. This module is more efficient, but it is also more complicated to use.
+        Just as to prove this point, it often break down, seemingly at random, and I had to restart the training process.
+
+        While in and of itself it would only be annoying, the real problem is that the training would not simply stop, but would not converge, leading to
+        wrong conclusion when trying to compare the results of the different models. It seems like the problem might arise from the synchronization of the
+        gradient between the batches on each GPU. You see, compared to data parallel, the distributed data parallel instead of splitting the model between the GPUs, it splits the data between the GPUs.
+        This means that the gradient are computed on each GPU, and then synchronized between the GPUs.
+
+        This is a problem that I have not been able to solve, and I have not been able to find any solution to it online. I have therefore decided to switch back to the DataParallel module, which is less efficient, but at least it works.
+
+
+    \subsection{Data augmentation}
+
+
+        At first, I tried to implement a few technique of data augmentation of my own, as the torchvision library does not provide a lot of data augmentation technique.
+        However, I quickly realized that the data augmentation technique I implemented were not as good as I wanted, being both not optimized enough and containing errors I would catch from time to time.
+
+        Later, I found the Albumentations library \cite{albumentations}, which is a library that provides a lot of data augmentation technique, and is very easy to use. I therefore decided to switch to this library, and it has proven to be a very good choice.
+        It allowed me to quickly and easily test a few different data augmentations without worrying about potential errors in my implementation.
+
+        However, it is not idiot-proof either. As I was working on the project, I later found a bug where my image input of format (C,H,W) was not being converted to (H,W,C) by the library, as it required, but was still processed, leading to disastrous images.
+
+        To avoid this step, a jupyter notebook was then used to verify the output of our dataloader at different step in order to verify the integrity of the image
+        throughout its pre-processing.
+
+    \subsection{Unitary Tests}
+
+            Based on the experience described above, I also decided to implement unitary testing in order to limit the errors
+            that could be introduced in the code. The master branch of the git repository was also linked to these unitary tets such that
+            any pull requests would first have to pass the tests before being merged into the branch. This is especially useful when working with a group,
+            but even when working alone it is a good way to ensure that the code is working as intended and catch unintentional errors.
+
+
+    \subsection{Unstability during training}
+
+    \subsubsection{Automatic Mixed Precision (AMP)}
+
+            To solve this problem, I tried to implement the automatic mixed precision (AMP) technique \cite{automatic_mixed_precision}. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
+            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size.
+
+            However, this technique is not without its problems. Indeed, it is not always easy to implement, and it is not always compatible with all the libraries used.
+            While this technique improved the training time vastly, it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
+
+            This is a problem that I have mostly solved by normalizing further the input vector but some underflowing might still occur. In these case, the training need to be done
+            again as the model will be corrupted (Nan values in the weights).
+
+
+    \subsubsection{Gradient's clipping}
+
+        While we already experienced some unstability before, we mostly tried to solve it by normalizing the input.
+        However, we still had some issues with the training process. To avoid overflowing gradients, we tried to use the gradient clipping technique \cite{gradient_clipping}.
+        This technique is a way to limit the gradient to a certain value, in order to avoid them from exploding.
+
+        By default, we set the maximum gradient norm to 1, but we also tried to set it to 2, and to 5. However, we found that the best results were obtained with a maximum gradient norm of 1.
+        This also serves as a way of regularizing the model, as it forces the gradient to be small, and therefore forces the model to learn slowly.
 
 
     \newpage
