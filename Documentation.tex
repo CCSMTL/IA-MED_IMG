@@ -3,7 +3,7 @@
 
 % Preamble
 \documentclass[11pt]{article}
-\linespread{2}
+%\linespread{2} %double interligne
 \usepackage{geometry}
 \geometry{margin=1in}
 % Packages
@@ -26,8 +26,8 @@
 \usepackage{hyperref}
 \usepackage{amsfonts}
 
-
-\usepackage{booktabs}
+\usepackage{float} % for figure placement
+\usepackage{booktabs} %for table
 
 
 \addbibresource[backend=biber]{reference.bib}
@@ -46,7 +46,8 @@
 While we tried to provide a minimum of examples for each class in the validation dataset, we still observe a class imbalance.
 We will therefore need to be careful not only to rely on a basic loss for things like a hyperparameter search if we want to
 have the best model in more than the over-represented categories. We could, for example, ponder the loss with different weights
-by classes
+by classes. We will also need to be careful when we will evaluate our model on the test set. We will need to use metrics that
+accurately capture the perforance on the model even with the imbalances present.
 
 
 
@@ -163,7 +164,16 @@ by classes
     For data augmentations, we used a combination of random horizontal flipping of the image, as the lungs are symmetrical,color jittering, to add random noise
     in the images, affine transformation (see albumentation's documentation \footnote{https://albumentations.ai/docs/api_reference/augmentations/geometric/transforms/}), and a mix of griddistortion and Elastic transformation to simulate a greater
     variance in the shape of the specified pathologies. All the augmentations were done with Albumentations, as to avoid making mistakes
-    by writing our own\cite{albumentations}.
+    by writing our own\cite{albumentations}. The detail of the augmentations :
+
+    \begin{itemize}
+        \item \textbf{Affine} : randomly apply affine transformations : translation, rotation, shear and scale with probobility $p_0$
+        \item \textbf{ColorJitter} : randomly change the brightness, contrast and saturation of the image with probability $p_1$
+        \item \textbf{HorizontalFlip} : randomly flip the image horizontally with probability $p_2$
+        \item \textbf{GridDistortion} : randomly apply grid distortion with probability $p_3$
+        \item \textbf{ElasticTransform} : randomly apply elastic transformation with probability $p_4$
+        \label{tab:augmentations}
+    \end{itemize}
 
     Data augmentation such as this serves two purposes. The first one is to allow the model to generalize better, as it is given
     a wider variety of examples (albeit partially synthetic examples) . The second purpose is to avoid overfitting as the model will
@@ -180,7 +190,7 @@ by classes
     %As can be seen here \ref{figure}, the usage of clahe vs only min-max normalization did result in a slight improvement
 
 
-\begin{figure}[!h]
+\begin{figure}[H]
      \centering
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
@@ -259,9 +269,9 @@ by classes
 
     To undersample the empty images, we will ponder them with a weight of 0.1, and the other images with a weight of 1. This will effectively leave us with a dataset containing the equivalent of only about 20 000 empty images.
 
+    \subsection{Dealing with uncertainty labels}
 
-
-
+        %TODO
 
     \section{Model architecture}
 
@@ -290,7 +300,7 @@ by classes
     \subsection{Model 2 : ConvNeXt \cite{convnext}}
 
 
-\begin{figure}[h]
+\begin{figure}[H]
 
      \centering
      \includegraphics[width=0.8 \textwidth]{plots/convnext_graph}
@@ -311,7 +321,7 @@ by classes
     \subsection{Model 3 : EfficientNet \cite{efficientnet} and YOLO \cite{yolo}}
 
 
-\begin{figure}[h]
+\begin{figure}[H]
 
      \centering
      \includegraphics[width=0.8 \textwidth]{plots/efficientnet}
@@ -344,7 +354,7 @@ by classes
 
         Later, the facebook research team improved on this general idea by pre-training the model on a similar, but different task, a now
         common approach when using transformers. This allowed them to achieve a greater accuracy in the ImageNet competiton than previous models.
-    
+
 
     \section{Training}
 
@@ -410,7 +420,7 @@ by classes
 
         \item Clip-Norm : The weight of the model might sometimes grow larger and larger leading to overflow and
         infinite/Nan values! To avoid this, the gradient's norm might be clipped at a maximum value (e.g 1)
-        
+
         \item Timm : The code use the timm library \cite{timm} in order to load a model, allowing
         for an easy use of a multitude of pretrained model.
 
@@ -422,86 +432,282 @@ by classes
     \end{enumerate}
 
     \section{Preliminary Results}
-
+        All these results for CheXpert can be found at : \url{https://wandb.ai/ccsmtl2/Chexpert?workspace=user-ccsmtl}
         \subsection{Reproducing CheXpert baseline}
-
             While we do not have access to the hidden test set from CheXpert, we still have access to their validation dataset. However,
             as can be seen in \ref{fig:histogram_chexpert_valid}, three classes are not available in the validation dataset. We will therefore have to
             limit our comparison to the classes present in the validation dataset , and to keep in mind our results will
             most likely be higher than they would be on the test set. However, to keep things simple, we will not proceed to model ensembling as this
             will simply put a high computational cost for a simple verification step.
 
-
-    Doing so , we can see our results in the figure\ref{fig:CheXpert_baseline}. While our results are slightly lower than
-    the values reported by the CheXpert team, we however achieve close enough value to be confident in our implementation.
-    However, only 5 classes were reported in the paper, and we have 11 classes. We will therefore have to compare our results with other sources.
-
-    If you paid attention up to this point, you will also have notice that CheXpert had 14 classes, and not exactly the same as we have!
-    This is due to a talk with our radiologist, where they identified some classes as being too similar to be useful, and we thus removed them. They also pointed they would like to have
-    more general labels, such as \"Air\", \"Liquid\" and \"Opacity\", which regroups other classes (see \ref{fig:pathologies_hierarchy}). This is something we will keep in mind for the future.
-
-
-
-        \begin{figure}[h!]
-
-             \centering
-             \includegraphics[width=0.8 \textwidth]{plots/chexpert_baseline_blue+comparison}
-             \caption{Attempt at reproducing the chexpert baseline. Results for the baseline are taken from \cite{chexpert}}
-             \label{fig:CheXpert_baseline}
-
-        \end{figure}
-
-        To obtain these results, we used the following hyperparameters :
-
-        \begin{itemize}
-            \item backbone : convnext\_small
-            \item batch size : 64
-            \item learning rate : 1e-3
-            \item weight decay : 1e-2
-            \item dropout : 0.2
-            \item num\_samples\_per\_epoch : 50\_000
-            \item optimizer : AdamW
-            \item scheduler : OneCycle
-            \item patience : 5
-            \item label smoothing : 0
-            \item clip norm : 1
-            \item epoch : 50
-            \item channel : 1
-            \item augment prob 1 1 0.5 0 0 %TODO : ADD a description of this in data augment
-        \end{itemize}
-
-        The positive weights were calculated using the following formula : $pos\_weight = \frac{N_{neg}}{N_{pos}}$ where $N_{neg}$ is the number of negative samples, and $N_{pos}$ is the number of positive samples for a given class. Their value range
+            We will also use positive weight to account for the imbalance of the dataset. The positive weights were calculated using the following formula : $pos\_weight = \frac{N_{neg}}{N_{pos}}$ where $N_{neg}$ is the number of negative samples, and $N_{pos}$ is the number of positive samples for a given class. Their value range
         in between 1 and 95. The values are reported in the table \ref{table:pos_weight_chexpert}. I suspect that high values might scramble the loss for the batches containing the rare positive samples of that class. We might later want to cap
         the maximum possible value of the positive weight to avoid this.
 
+            \begin{table}[h!]
+                \centering
+                \begin{tabular}{@{}lllll@{}}
+                \toprule
+                Classes          & & & & Weights \\ \midrule
+                Opacity          & & & & 1.97    \\
+                Air              & & & & 16.76   \\
+                Liquid           & & & & 1.16    \\
+                Cardiomegaly     & & & & 12.15   \\
+                Pleural Other    & & & & 94.76   \\
+                Pleural Effusion & & & & 3.07    \\
+                Pneumothorax     & & & & 21.06   \\
+                Lung Opacity     & & & & 1.68    \\
+                Atelectasis      & & & & 9.66    \\
+                Lung Lesion      & & & & 27.71   \\
+                Pneumonia        & & & & 50.26   \\
+                Consolidation    & & & & 33.28   \\
+                Edema            & & & & 6.11    \\
+                Fracture         & & & & 22.77   \\
+                No Finding       & & & & 6.58    \\ \bottomrule
+                \end{tabular}
+                \caption{Positive weights used for the loss , from the CheXpert dataset}
+                \label{table:pos_weight_chexpert}
+            \end{table}
 
 
-        \begin{table}[h!]
-            \centering
-            \begin{tabular}{@{}lllll@{}}
-            \toprule
-            Classes          & & & & Weights \\ \midrule
-            Opacity          & & & & 1.97    \\
-            Air              & & & & 16.76   \\
-            Liquid           & & & & 1.16    \\
-            Cardiomegaly     & & & & 12.15   \\
-            Pleural Other    & & & & 94.76   \\
-            Pleural Effusion & & & & 3.07    \\
-            Pneumothorax     & & & & 21.06   \\
-            Lung Opacity     & & & & 1.68    \\
-            Atelectasis      & & & & 9.66    \\
-            Lung Lesion      & & & & 27.71   \\
-            Pneumonia        & & & & 50.26   \\
-            Consolidation    & & & & 33.28   \\
-            Edema            & & & & 6.11    \\
-            Fracture         & & & & 22.77   \\
-            No Finding       & & & & 6.58    \\ \bottomrule
-            \end{tabular}
-            \caption{Positive weights used for the loss , from the CheXpert dataset}
-            \label{table:pos_weight_chexpert}
-        \end{table}
+            \subsubsection{First Attempt}
+            % with pos_weight
+                Using everything we describe so far, we obtain results as shown in \ref{fig:chexpert_results}.
+                While the model did learned a bit from the data, we are underperforming the baseline by a large margin.
+                We will therefore have to try to improve our model.
 
-        For CheXpert, all the training examples were sampled with equal weights.
+
+
+                \begin{figure}[H]
+                     \centering
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/chexpert_training_loss1}
+                         \caption{Training loss}
+                         \vspace{4ex}
+                         \label{fig:chexpert_training_loss1}
+                     \end{subfigure}
+                     \hfill
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/chexpert_validation_loss1}
+                         \caption{Validation loss}
+                         \vspace{4ex}
+                         \label{fig:chexpert_validation_loss1}
+                     \end{subfigure}
+                     \label{fig:chexpert_training_curve1}
+                     \caption{Training curves for our first attempt at reproducing the CheXpert baseline}
+                \end{figure}
+
+
+                Our second attempt will be at removing the positive weights. Currently, we are only using the weight in the training
+                loss. However, this multiplication factor could hide a potential overfit on the training set. Currently, however, it seems the opposite.
+                The training loss plateau at around 0.6, while the validation loss varies between 0.8 and 0.6. This would usually indicate that the model
+                is underfitting and need to have a bigger capacity.
+
+                Now looking at the f1-score and AUC \ref{fig:chexpert1_performance}, we can compare the performance of our model to the baseline. We can see that we are underperforming
+
+                \begin{table}[]
+                        \centering
+                        \begin{tabular}{@{}llllll@{}}
+                        \toprule
+                        \multicolumn{1}{c}{Classes} &
+                           &
+                          \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}AUC\\ CheXpert\end{tabular}} &
+                          \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}F1-Score\\ (Radiologist's \\ estimation)\end{tabular}} &
+                          \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}AUC\\ (Ours)\end{tabular}} &
+                          \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}F1-Score\\ (Ours)\end{tabular}} \\ \midrule
+                        Cardiomegaly     &  & 0.832 & 0.678  & 0.74 & 0.62 \\
+                        Pleural Effusion &  & 0.934 & 0.737  & 0.90 & 0.74 \\
+                        Pneumothorax     &  & N/A   & N/A  & 0.87 & 0.23 \\
+                        Lung Opacity     &  & N/A   & N/A  & 0.88 & 0.85 \\
+                        Atelectasis      &  & 0.858 & 0.692 & 0.71 & 0.63 \\
+                        Lung Lesion      &  & N/A   & N/A  & 0.26 & 0    \\
+                        Pneumonia        &  & N/A   & N/A  & 0.70 & 0.11 \\
+                        Consolidation    &  & 0.899 & 0.385  & 0.85 & 0.41 \\
+                        Edema            &  & 0.941 & 0.583  & 0.86 & 0.53 \\
+                        No Finding       &  & N/A   & N/A  & 0.84 & 0.93 \\ \bottomrule
+                        \end{tabular}
+                        \label{fig:chexpert1_performance}
+                        \caption{Performance of our first attempt at reproducing the CheXpert baseline. The estimation of the radiologist is the one provided by \cite{chexzero}}
+                \end{table}
+                While the  performance for the lung lesion and the pneumonia are not good, we can remember from figure \ref{fig:histogram_chexpert_valid} that these classes are barely present in the validation dataset (lung lesion only has one image). Ingoring those, we
+                find that, while comparing with the AUC, the model has underperformed, we did achieved interesting f1-score. We find that our model seems to perform similarly to a radiologist's on the classes we do have comparisons. This is a good sign, as it means that our model is learning something from the data.
+
+                While our results are slightly lower than the values reported by the CheXpert team, we however achieve close enough value to be confident in our implementation.
+                However, only 5 classes were reported in the paper, and we have 10 classes. We will therefore have to compare our results with other sources.
+
+                If you paid attention up to this point, you will also have notice that CheXpert had 14 classes, and not exactly the same as we have!
+                This is due to a talk with our radiologist, where they identified some classes as being too similar to be useful, and we thus removed them.
+
+
+                Rerunning the training without the positive weights, we can now more clearly see that the model is clearly overfitting.
+                We should therefore try to switch to model with smaller capacity, and to increase the data augmentation.
+
+
+            \subsubsection{Second Attempt}
+            % without pos_weight
+            
+                Without the positive weight, as suspected, we can clearly see the overfit of the model \ref{} . Our AUC does increase but
+                at the price of a diminished F1-score. This is most likely due to the fact that our model as a easier time learning
+                the distribution of positive and negative samples. While it helps avoid false positive, it also makes it harder to identify
+                the true positive.
+
+                Another interesting thing to remember is that the distribution of positive and negative samples between the training and validation
+                dataset is not the same! So while the model can achieve a low loss by simply providing negative answer at first,
+                it does not mean that it will be able to generalize to the validation dataset. This is one of the reason why we probably should continue to use
+                positive weights.
+                %include graphic
+
+                \begin{figure}[H]
+                     \centering
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/channel_comparison_f1}
+                         \caption{Average f1-score over all classes}
+                         \vspace{4ex}
+                         \label{fig:channel_comparison_f1}
+                     \end{subfigure}
+                     \hfill
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/channel_comparison_auc}
+                         \caption{Validation loss}
+                         \vspace{4ex}
+                         \label{fig:channel_comparison_auc}
+                     \end{subfigure}
+                     \label{fig:channel_comparison}
+                     \caption{Comparisons of the experiments results grouped by number of channels
+                         of the input images for the average AUC and f1-score. The curve are smoothed out to help the analysis, and the error bars are the min-max
+                         of the values.}
+                \end{figure}
+
+                \begin{figure}[H]
+                     \centering
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/model_comparison_f1}
+                         \caption{Training loss}
+                         \vspace{4ex}
+                         \label{fig:model_comparison_f1}
+                     \end{subfigure}
+                     \hfill
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/model_comparison_auc}
+                         \caption{Validation loss}
+                         \vspace{4ex}
+                         \label{fig:model_comparison_auc}
+                     \end{subfigure}
+                     \label{fig:model_comparison}
+                     \caption{Comparisons of the experiments results grouped by model.The curve are smoothed out to help the analysis, and the error bars are the min-max
+                         of the values.}
+                \end{figure}
+
+
+                \begin{figure}[H]
+                     \centering
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/chexpert_training_loss2}
+                         \caption{Training loss}
+                         \vspace{4ex}
+                         \label{fig:chexpert_training_loss2}
+                     \end{subfigure}
+                     \hfill
+                     \begin{subfigure}[b]{0.45\textwidth}
+                         \centering
+                         \includegraphics[width=\textwidth]{plots/chexpert_validation_loss2}
+                         \caption{Validation loss}
+                         \vspace{4ex}
+                         \label{fig:chexpert_validation_loss2}
+                     \end{subfigure}
+                     \label{fig:training_curves2}
+                     \caption{Training curves for oursecond attempt at reproducing the CheXpert baseline. The different runs are grouped by models.}
+                \end{figure}
+
+
+
+                We can now separate our results by the model choice to see which one is the best.As can be seen in the figure \ref{fig:training_curves2} and \ref{fig:model_comparison}, while the densenet model does learn from the data,
+                it still underfit while the convnext model is able to overfit our training data. This does seem to indicate that we need a more complex model than
+                the densenet. However, the convnext model is able to achieve a better AUC than Densenet. It means that while by itself, the training curves seem
+                to indicate an overfitting, since our f1 is still increasing, our model is learning to classify better. This means the difference in loss in between the training
+                and validation set is seemingly due to the difference in distribution of the two.
+
+                For our next experiment, we should therefore continue with the convnext model, and increase the data augmentation. Depending on those results,
+                we can later try to add different data augmentations technique or a larger version of the convnext model.
+
+                We can also consider to use the positive weight depending on whether we prefer optimizing the AUC or the F1-score. Future discussions with the radiologist
+                that will be using our model will help us decide which metric is the most important. In the meantime, I think it would be best to improve the F1-score as
+                it is the metric that is most similar to the radiologist's estimation. It will be more intuitive to have a model that has a threshold at 0.5, and that express
+                some uncertainty when the probability is between 0.4 and 0.6. This is not the case with the AUC, as it is a metric that gains points for being very close to 0 or 1.
+
+                Finally, we can see that while the validation loss is a bit chaotic, the training loss decrease while the f1-score is still increasing. This indicate
+                that the model is still learning from the data. We should therefore continue to train the model for a few more epochs. To do that, we should therefore increase the patience
+                to 10 or 20 epochs.
+
+
+                Just as we compared the performance by the choice of model, we can do the same to compare the performance of using 1 vs 3 channels. Doing so, we can observe
+                in the figure \ref{fig:channel_comparison} that the model with 3 channels is able to achieve a better AUC and F1-score. This is most likely due to the fact that the model is able to
+                extract more information as we did not simply reapeated the same information on the three channel, but instead concatenated the min-max normalized image, and two image treated
+                with the CLAHE algorithm, albeit with two different threshold (1 and 2).
+
+            \subsubsection{Third Attempt}
+            % Applying the lesson learned
+            Applying the lesson learned, I tested the convnext base model with the 3 channels, and with/without the positive weights. I also increased the patience to 20 epochs.
+            The results are shown in the figure \ref{fig:training_curves3} and \ref{fig:channel_comparison2}. We can see that the model with the positive weights is able to achieve a better AUC and F1-score.
+
+            \begin{figure}[H]
+                 \centering
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{plots/chexpert_training_loss3}
+                     \caption{Training loss}
+                     \vspace{4ex}
+                     \label{fig:chexpert_training_loss3}
+                 \end{subfigure}
+                 \hfill
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{plots/chexpert_validation_loss3}
+                     \caption{Validation loss}
+                     \vspace{4ex}
+                     \label{fig:chexpert_validation_loss3}
+                 \end{subfigure}
+                 \label{fig:training_curves3}
+                 \caption{Training curves for our third attempt at reproducing the CheXpert baseline. The different runs are grouped by use of positive weights.}
+
+            \end{figure}
+
+%            \begin{figure}[H]
+%
+%             \centering
+%             \includegraphics[width=0.5 \textwidth]{plots/chexpert_baseline_blue+comparison}
+%             \caption{Attempt at reproducing the chexpert baseline. Results for the baseline are taken from \cite{chexpert}}
+%             \label{fig:CheXpert_baseline}
+%
+%            \end{figure}
+
+            To obtain these results, we used the following hyper-parameters :
+
+            \begin{itemize}
+                \item backbone : convnext small
+                \item batch size : 64
+                \item learning rate : 1e-3
+                \item weight decay : 1e-2
+                \item dropout : 0.2
+                \item num samples per epoch : 50 000
+                \item optimizer : AdamW
+                \item scheduler : OneCycle
+                \item patience : 20
+                \item label smoothing : 0.1
+                \item clip norm : 1
+                \item epoch : 50
+                \item channel : 3
+                \item augment prob 1 1 0.5 1 1
+            \end{itemize}
+
+            For CheXpert, all the training examples were sampled with equal weights.
 
 
         \subsection{Reproducing the CheXpert competition's results}
@@ -512,41 +718,41 @@ by classes
             in order to convince them to use our model.
 
 
-            \subsubsection{DeepAUC \cite{DeepAUC}}
+        \subsubsection{DeepAUC \cite{DeepAUC}}
 
-                Attempting to reproduce the results of DeepAUC \cite{DeepAUC} proved not to be possible. The snippet of code , provided by the author,
-                did not reproduce the results as expected. No pretrained model was also given. Attempt to use their loss function with our dataset also proved
-                to be unsuccessful. We therefore decided to not include their results in our comparison, and to not pursue this avenue.
+            Attempting to reproduce the results of DeepAUC \cite{DeepAUC} proved not to be possible. The snippet of code , provided by the author,
+            did not reproduce the results as expected. No pretrained model was also given. Attempt to use their loss function with our dataset also proved
+            to be unsuccessful. We therefore decided to not include their results in our comparison, and to not pursue this avenue.
 
-            \subsubsection{Hierarchical Learning \cite{hierarchical}}
+        \subsubsection{Hierarchical Learning \cite{hierarchical}}
 
-                    The hierarchical learning method \cite{hierarchical} is a method that uses a hierarchy in between the different classes
-                    to more accurately predict them. Thansk to bayesian probabilities, we know that
+            The hierarchical learning method \cite{hierarchical} is a method that uses a hierarchy in between the different classes
+            to more accurately predict them. Thansk to bayesian probabilities, we know that
 
-                    \begin{equation}
-                        P(A|B) = \frac{P(A \cap B)}{P(B)} = \frac{P(B|A) P(A)}{P(B)}
-                    \end{equation}
+            \begin{equation}
+                P(A|B) = \frac{P(A \cap B)}{P(B)} = \frac{P(B|A) P(A)}{P(B)}
+            \end{equation}
 
-                    If we use the parent class as B, with the child class as A, we can therefore redefine
-                    the probability of the child class such that
+            If we use the parent class as B, with the child class as A, we can therefore redefine
+            the probability of the child class such that
 
-                    \begin{equation}
-                        P(Child|parent) = \frac{P(Child \cap parent)}{P(parent)} \approx P(parent|Child) P(Child)
-                    \end{equation}
+            \begin{equation}
+                P(Child|parent) = \frac{P(Child \cap parent)}{P(parent)} \approx P(parent|Child) P(Child)
+            \end{equation}
 
-                    We could use P(Parent) as the prior probability of the parent class, as defined by the preponderance in the dataset. However, as I base myself of
-                    \cite{hierarchical}, I observe they did no such thing and I decided to not do it either. While this mean the probability given by the model might be based off an approximation,
-                    it also avoids having an additional bias in the model originating from the specific distribution of the training set. Further thought might however be given to this in order to evaluate the potential benefit of it.
+            We could use P(Parent) as the prior probability of the parent class, as defined by the preponderance in the dataset. However, as I base myself of
+            \cite{hierarchical}, I observe they did no such thing and I decided to not do it either. While this mean the probability given by the model might be based off an approximation,
+            it also avoids having an additional bias in the model originating from the specific distribution of the training set. Further thought might however be given to this in order to evaluate the potential benefit of it.
 
-                    Since the classes we are interested in slightly differ from the ones used in \cite{hierarchical},
-                    we will have to adapt the hierarchy. The hierarchy used in \cite{hierarchical} is reported in the figure \ref{fig:hierarchical_learning_hierarchy}. We will use the same hierarchy, but with our classes instead of theirs.
-                    We will then compare with and without to see if the results improve.
+            Since the classes we are interested in slightly differ from the ones used in \cite{hierarchical},
+            we will have to adapt the hierarchy. The hierarchy used in \cite{hierarchical} is reported in the figure \ref{fig:hierarchical_learning_hierarchy}. We will use the same hierarchy, but with our classes instead of theirs.
+            We will then compare with and without to see if the results improve.
 
 
 
-            \subsubsection{JFHealthcare - Probabilistic-CAM \cite{jfhealthcare}}
+        \subsubsection{JFHealthcare - Probabilistic-CAM \cite{jfhealthcare}}
 
-            \begin{figure}[h!]
+            \begin{figure}[H]
 
                  \centering
                  \includegraphics[width=0.8 \textwidth]{plots/jfhealthcare}
@@ -680,6 +886,26 @@ by classes
         This also serves as a way of regularizing the model, as it forces the gradient to be small, and therefore forces the model to learn slowly.
 
 
+    \section{Deploying the model}
+
+        \subsection{Backend}
+
+            The backend of the application is written in Python, using the Flask framework. The backend is responsible for the communication between the frontend and the model.
+            It is also responsible for the preprocessing of the images, and for the prediction of the model.
+
+            The backend is deployed on a server, and is accessible through an API.
+
+        \subsection{Frontend}
+
+            The frontend of the application is written with the Dash framework \cite{dash}. This framework is a wrapper around the Flask framework, and allows to create a web application.
+
+            This web application is accessible through a web browser, and allows the user to upload an image, and to get the prediction of the model. It also allow to use a few example
+            preloaded in the server. This will allow us to easily display the capacity of the model, and to gather feedback from the user.
+
+            Please give the appropriate credit to the authors of the template use to developped the web application.\footnote{It was developped by the Dash team and is available
+            at \url{https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-image-processing}}
+
+            %Include images and description of the web application
     \newpage
     % REFERENCES
     {

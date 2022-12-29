@@ -10,6 +10,7 @@ import copy
 import os
 
 import cv2 as cv
+
 import numpy as np
 
 import torch
@@ -243,10 +244,10 @@ class CXRLoader(Dataset):
 
             if self.split.lower() == "train":
                 img_cropped = self.transform(image=img_cropped)["image"]
-                cl1 = img_cropped
 
-            else :
-                cl1 = clahe(img_cropped, 2.0)
+
+
+            cl1 = clahe(img_cropped, 2.0)
 
             #img_normalized = truncation_normalization(img_cropped)
 
