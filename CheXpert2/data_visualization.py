@@ -35,7 +35,7 @@ def chord_chexpert(data):
     #conn = conn / np.sum(conn) #normalize
     fig, axes = plot_connectivity_circle(conn, data.columns,facecolor='white', textcolor='black',fontsize_names=16,colormap="hot_r")
 
-    fig.savefig("chords_ciusss_valid")
+    fig.savefig("chords_chexpert_valid")
     #plt.title("Correlation map between diseases in chexnet")
     #fig.show()
 
@@ -70,7 +70,7 @@ def histogram_chexpert(data):
     )
 
     fig.show()
-    fig.write_image("histogram_ciusss_valid.png")
+    fig.write_image("histogram_chexpert_valid.png")
 
 
 def data_count(data) :
@@ -86,11 +86,11 @@ def data_count(data) :
     plt.xlabel("Number of pathologies per label")
     plt.ylabel("Count")
     plt.title("Number of pathologies per patient")
-    plt.savefig("disease_count_ciusss_valid.png")
+    plt.savefig("disease_count_chexpert_valid.png")
 
 
 if __name__ == "__main__":
-    data = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Valid")
+    data = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset("Valid")
     #data = pd.read_csv("/mnt/e/data/public_data/ChexPert/CheXpert-v1.0/valid.csv")
     data.fillna(0,inplace=True)
     chord_chexpert(data)

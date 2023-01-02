@@ -29,6 +29,8 @@
 \usepackage{float} % for figure placement
 \usepackage{booktabs} %for table
 
+\usepackage{multicol} % for multi-column itemize
+
 
 \addbibresource[backend=biber]{reference.bib}
 % Document
@@ -271,8 +273,25 @@ accurately capture the perforance on the model even with the imbalances present.
 
     \subsection{Dealing with uncertainty labels}
 
-        %TODO
 
+
+        Since the labels are derived from the radiologist's report, they often include uncertainties express with vocabulary such as \"might\",\"maybe\",\"possible\", etc.
+        This is a problem as it is not clear what the label should be. We therefore decided to assign a flag of -1 to all uncertain label (just as it was done with CheXpert). Following this paper \cite{hierarchical}, which tested different
+        ways of dealing with those uncertainty, we replaced uncertain label with a random label sampled uniformly between 0.5 and 0.85, as to imply the label is more likely present than absent if the radiologist
+        mentionned it as a possibility.
+
+        This will also act as a form of regularization, as a form of label smoothing \footnote{\url{https://towardsdatascience.com/what-is-label-smoothing-108debd7ef06}}, teaching the model to
+        be less overconfident about its prediction. By default, the cross entropy loss will try to minimize the distance between the predicted label and the true label. This is a problem as it will
+        put a pressure on the model to simply answer 0 or 1, without leaving much room for uncertainty. If we wish to interpret the
+        output of the model as a probability, we need to ensure the model is not overconfident about its prediction. Label smoothing will help with this, as it will teach the model to be less confident about its prediction.
+
+        This will help when communicating with the radiologists, as they will naturally try to interpret the output of the model as a probability. This will also help with the interpretability of the model, as it will
+        be easier to explain to the radiologists why the model was wrong, as it should be less confident about its prediction.
+
+        It is important to note that such uncertain label should not and are not in the validation set as to avoid having validation results that include a lot of noise, which would take away a lot of our trust
+        in the results.
+
+        Just as with the validation set, the test set should not contain any uncertainty either.
     \section{Model architecture}
 
     \subsection{Model 1 : DenseNet \cite{densenet}}
@@ -352,7 +371,7 @@ accurately capture the perforance on the model even with the imbalances present.
         elements on their side(they usually perform better to extract local information in an image), transformers split the image in blocks,
         treating them as different element of a sequence (see \ref{fig:transformer}). Among other things, this allows them to better extract global feature present in an image.
 
-        Later, the facebook research team improved on this general idea by pre-training the model on a similar, but different task, a now
+        Later, the facebook research team improved on this general idea by pretraining the model on a similar, but different task, a now
         common approach when using transformers. This allowed them to achieve a greater accuracy in the ImageNet competiton than previous models.
 
 
@@ -372,7 +391,8 @@ accurately capture the perforance on the model even with the imbalances present.
     \subsection{Learning Rate Scheduler}
 
         We will use a learning rate scheduler to help the model converge faster. We will use a OneCycle learning rate \cite{onecyclelr}, which will
-        decrease the learning rate as the training progresses. This will help the model converge faster, and avoid overfitting.
+        decrease the learning rate as the training progresses. This should help the model converge better, as it will first allow it to explore a more vast
+        parameter space, before allowing it to converge into a local minimum.
 
     \subsection{Early stopping}
 
@@ -380,7 +400,7 @@ accurately capture the perforance on the model even with the imbalances present.
         implement a patience mechanism so that the training will stop only if the validation loss has not improved for a certain number of epochs.
     \subsection{Optimizer}
 
-        Multiple optimizer exists, building on one another . While none is perfect, or definitely better than another, AdamW \footnote{See https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html or \cite{adamw}} is oftenly use as it tends
+        Multiple optimizer exists, building on one another . While none is perfect, or definitely better than another, AdamW \cite{adamw} \footnote{See \url{https://pytorch.org/docs/stable/generated/torch.optim.AdamW.html}} is oftenly use as it tends
         to converge rapidly, thus allowing for far smaller training time.
 
         AdamW is a slightly modified version of the optimizer Adam (which itself is a modified version of AdaGrad and RMSProp), and fixed an error in the L2 regularization from the original implementation.
@@ -389,12 +409,13 @@ accurately capture the perforance on the model even with the imbalances present.
 
 
     \subsection{Experiment Tracking}
-        To track our experience, we used Weight\&Biases\footnote{www.wandb.ai} .This tool allows us to track the different hyperparameters,
+        To track our experience, we used Weight\&Biases\footnote{\url{www.wandb.ai}} .This tool allows us to track the different hyperparameters,
         the loss, the accuracy, and the model architecture. It also allows us to compare different runs, and to easily reproduce them.
+
     \subsection{Metrics}
         In any unbalanced dataset, the accuracy won't be enough to determine the performance of a classifier.
-        We therefore decided to look into the Area Under the Roc Curve (AUC-ROC) \footnote{https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5}
-        and the F1-score\footnote{https://towardsdatascience.com/the-f1-score-bec2bbc38aa6}.
+        We therefore decided to look into the Area Under the Roc Curve (AUC-ROC) \footnote{\url{https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5}}
+        and the F1-score\footnote{\url{https://towardsdatascience.com/the-f1-score-bec2bbc38aa6}}.
 
         While the F1-score does allow to evaluate the performance of our classifier, it requires to first assign a class
         to our model's output. This in turn require to preset a threshold, which, without the results first, will usually be arbitrarily
@@ -408,7 +429,7 @@ accurately capture the perforance on the model even with the imbalances present.
         from  classification to object detection, we might want to change this later.
 
         For now, we might mostly just want to work with the dropout parameter. DropOut is a useful technique to avoid overfitting and increase model
-        generalization \footnote{https://towardsdatascience.com/dropout-in-neural-networks-47a162d621d9}
+        generalization \footnote{\url{https://towardsdatascience.com/dropout-in-neural-networks-47a162d621d9}}
 
     \subsection{Tips and Tricks}
 
@@ -443,6 +464,8 @@ accurately capture the perforance on the model even with the imbalances present.
             We will also use positive weight to account for the imbalance of the dataset. The positive weights were calculated using the following formula : $pos\_weight = \frac{N_{neg}}{N_{pos}}$ where $N_{neg}$ is the number of negative samples, and $N_{pos}$ is the number of positive samples for a given class. Their value range
         in between 1 and 95. The values are reported in the table \ref{table:pos_weight_chexpert}. I suspect that high values might scramble the loss for the batches containing the rare positive samples of that class. We might later want to cap
         the maximum possible value of the positive weight to avoid this.
+
+        While we use a weighted sampler for our dataset,for CheXpert, all the training examples were sampled with equal weights.
 
             \begin{table}[h!]
                 \centering
@@ -650,12 +673,13 @@ accurately capture the perforance on the model even with the imbalances present.
                 Just as we compared the performance by the choice of model, we can do the same to compare the performance of using 1 vs 3 channels. Doing so, we can observe
                 in the figure \ref{fig:channel_comparison} that the model with 3 channels is able to achieve a better AUC and F1-score. This is most likely due to the fact that the model is able to
                 extract more information as we did not simply reapeated the same information on the three channel, but instead concatenated the min-max normalized image, and two image treated
-                with the CLAHE algorithm, albeit with two different threshold (1 and 2).
+                with the CLAHE algorithm, albeit with two different threshold (2 and 4). But while it performs slightly better, it is not by a large margin, but it does increase the training time significantly
+                by putting a heavier load on the CPU. This is why we will continue to use the 1 channel model for the rest of the experiments, until we reach our final results.
 
             \subsubsection{Third Attempt}
             % Applying the lesson learned
-            Applying the lesson learned, I tested the convnext base model with the 3 channels, and with/without the positive weights. I also increased the patience to 20 epochs.
-            The results are shown in the figure \ref{fig:training_curves3} and \ref{fig:channel_comparison2}. We can see that the model with the positive weights is able to achieve a better AUC and F1-score.
+            Applying the lesson learned, I tested the convnext base model with the 1 channels, and with/without the positive weights. I also increased the patience to 20 epochs.
+            The results are shown in the figure \ref{fig:training_curves3} and \ref{fig:chexpert_results3}. We can see that the model with the positive weights is able to achieve a better AUC and F1-score.
 
             \begin{figure}[H]
                  \centering
@@ -675,39 +699,99 @@ accurately capture the perforance on the model even with the imbalances present.
                      \label{fig:chexpert_validation_loss3}
                  \end{subfigure}
                  \label{fig:training_curves3}
-                 \caption{Training curves for our third attempt at reproducing the CheXpert baseline. The different runs are grouped by use of positive weights.}
+                 \caption{Training curves for our third attempt at reproducing the CheXpert baseline}
 
             \end{figure}
 
-%            \begin{figure}[H]
-%
-%             \centering
-%             \includegraphics[width=0.5 \textwidth]{plots/chexpert_baseline_blue+comparison}
-%             \caption{Attempt at reproducing the chexpert baseline. Results for the baseline are taken from \cite{chexpert}}
-%             \label{fig:CheXpert_baseline}
-%
-%            \end{figure}
+            \begin{figure}[H]
+                 \centering
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{plots/chexpert_f1_3}
+                     \caption{Training loss}
+                     \vspace{4ex}
+                     \label{fig:chexpert_f1_3}
+                 \end{subfigure}
+                 \hfill
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{plots/chexpert_auc_3}
+                     \caption{Validation loss}
+                     \vspace{4ex}
+                     \label{fig:chexpert_auc_3}
+                 \end{subfigure}
+                 \label{fig:chexpert_results3}
+                 \caption{Metrics curves for our third attempt at reproducing the CheXpert baseline. The average values
+                 include classes with no positive labels in the validation set. It should therefore only be used qualitatively. The curves are smoothed
+                 out for an easier visualization.}
 
+            \end{figure}
+            \begin{table}[]
+            \centering
+            \begin{tabular}{llllll}
+            \hline
+            \multicolumn{1}{c}{Classes} &
+               &
+              \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}AUC\\ CheXpert\end{tabular}} &
+              \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}F1-Score\\ (Radiologist's \\ estimation)\end{tabular}} &
+              \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}AUC\\ (Ours)\end{tabular}} &
+              \multicolumn{1}{c}{\begin{tabular}[c]{@{}c@{}}F1-Score\\ (Ours)\end{tabular}} \\ \hline
+            Cardiomegaly     &  & 0.832 & 0.7  & 0.74 & 0.60  \\
+            Pleural Effusion &  & 0.934 & 0.7  & 0.90 & 0.65  \\
+            Pneumothorax     &  & N/A   & N/A  & 0.87 & 0.22  \\
+            Lung Opacity     &  & N/A   & N/A  & 0.88 & 0.834 \\
+            Atelectasis      &  & 0.858 & 0.68 & 0.67 & 0.47  \\
+            Lung Lesion      &  & N/A   & N/A  & 0.26 & 0.67  \\
+            Pneumonia        &  & N/A   & N/A  & 0.70 & 0     \\
+            Consolidation    &  & 0.899 & 0.4  & 0.75 & 0.45  \\
+            Edema            &  & 0.941 & 0.6  & 0.86 & 0.55  \\
+            No Finding       &  & N/A   & N/A  & 0.89 & 0.93  \\ \hline
+            \end{tabular}
+            \end{table}
             To obtain these results, we used the following hyper-parameters :
+            \begin{multicols}{2}
 
             \begin{itemize}
+                \centering %TODO : correct layout
                 \item backbone : convnext small
                 \item batch size : 64
-                \item learning rate : 1e-3
+                \item learning rate : 1e-4
                 \item weight decay : 1e-2
-                \item dropout : 0.2
+                \item dropout : 0
                 \item num samples per epoch : 50 000
                 \item optimizer : AdamW
                 \item scheduler : OneCycle
                 \item patience : 20
-                \item label smoothing : 0.1
+                \item label smoothing : 0
                 \item clip norm : 1
                 \item epoch : 50
                 \item channel : 3
-                \item augment prob 1 1 0.5 1 1
+                \item augment prob [ 1, 1, 0.5, 1, 1 ]
             \end{itemize}
+            \end{multicols}
+        \subsubsection{Lesson learned}
+            % What did we learn from this experiment?
+            The results of our last run was a bit of a deception. While we did manage to achieve a lower BCE loss than before,
+            we did not manage to improve the AUC and F1-score significantly. While we cannot know for certain , a few factor more
+            likely contributed to this. The first one is the three classes with low representation in the dataset. Since only randomly predicting
+            a few true positive greatly increase the average AUC and F1-score without improving really the model's ability to predict the true positive,
+            it biases our choice of model towards that one epoch which performed better in these unrepresentative categories.
+            In future runs, we should either remove these classes from our metrics calculation or from our model's prediction. This is why from now we will exclude fractures
+            and lung lesions as classes for our model.
 
-            For CheXpert, all the training examples were sampled with equal weights.
+
+
+            % The Cross entropy loss does not allow for a good comparison between the different models. We should use the AUC or the F1-score instead.
+            We also see that the Cross-Entropy does not allow for a good comparison between the different models, as it does not correlate well with the AUC and F1-score.
+            Ideally, a loss that allow to optimize more closely the AUC and F1-score would be better suited for this task. We will try and explore if such solution exists.
+            % The patience mechanism should be based on the f1-score instead of the loss.
+            Since our model's loss does not correlate well with the AUC and F1-score, we should use the F1-score as the metric to determine when to stop training. Our patience
+            will therefore from now on be based on our F1-score instead of the loss.
+            % The model with the positive weights is able to achieve a better AUC and F1-score.
+            % The model with 3 channels is able to achieve a better AUC and F1-score.
+            % The model with the convnext backbone is able to achieve a better AUC and F1-score.
+
+            Finally, lowering the learning rate, in combination with the usual OneCycle scheduler allowed the model to reach a lower training and validation loss.
 
 
         \subsection{Reproducing the CheXpert competition's results}
@@ -746,7 +830,9 @@ accurately capture the perforance on the model even with the imbalances present.
 
             Since the classes we are interested in slightly differ from the ones used in \cite{hierarchical},
             we will have to adapt the hierarchy. The hierarchy used in \cite{hierarchical} is reported in the figure \ref{fig:hierarchical_learning_hierarchy}. We will use the same hierarchy, but with our classes instead of theirs.
-            We will then compare with and without to see if the results improve.
+
+
+            They also used a pretraining phase, with only the case where the parent class is present. We will first try without this pretraining phase to see if it is necessary.
 
 
 
@@ -765,7 +851,7 @@ accurately capture the perforance on the model even with the imbalances present.
             The method is based on the idea that the model should be able to predict the probability of a class being
             present in the image. The method is described in the figure \ref{fig:jfhealthcare_probabilistic_cam}.
 
-            They first start by proceeding as usual, applyng a feature extraction backbone, followed by a 1x1 convolutionnal layer.
+            They first start by proceeding as usual, applying a feature extraction backbone, followed by a 1x1 convolutionnal layer.
             They then apply a sigmoid activation function to the output of the fully connected layer, in order to obtain a probability between 0 and 1.
 
             These classes probability are then used as the probability of a disease being present in each of the feature maps. The feature maps are then
@@ -786,7 +872,7 @@ accurately capture the perforance on the model even with the imbalances present.
 
 
 
-    \section{Analysis of the results}
+
 
 
 
@@ -906,6 +992,9 @@ accurately capture the perforance on the model even with the imbalances present.
             at \url{https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-image-processing}}
 
             %Include images and description of the web application
+
+        \subsection{Data Verification}
+            %Unet
     \newpage
     % REFERENCES
     {
