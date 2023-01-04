@@ -27,11 +27,11 @@ from CheXpert2 import names
 #from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-#torch.autograd.set_detect_anomaly(False)
+#torch.autograd.set_detect_anomaly(True)
 #torch.autograd.profiler.profile(False)
 #torch.autograd.profiler.emit_nvtx(False)
 #torch.backends.cudnn.benchmark = False
-#torch.backends.cudnn.enabled = True
+torch.backends.cudnn.enabled = False
 #torch.set_float32_matmul_precision('high')
 
 try:
@@ -82,7 +82,7 @@ def initialize_config(args):
 
     config = vars(args)
     experiment = Experiment(
-        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=5)
+        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=20)
     torch.set_num_threads(max(config["num_worker"],1))
 
     # ----------- load classes ----------------------------------------

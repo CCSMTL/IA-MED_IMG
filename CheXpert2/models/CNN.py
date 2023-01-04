@@ -56,6 +56,7 @@ class CNN(torch.nn.Module):
 
         self.final_convolution = torch.nn.Conv2d(in_channels = self.backbone.feature_info[-1]["num_chs"],out_channels=1, kernel_size=1, stride=1, padding=0, bias=True)
         self.fc = torch.nn.ModuleList([torch.nn.Linear(self.backbone.feature_info[-1]["num_chs"],1) for i in range(self.num_classes)])
+        self.dropout = torch.nn.Dropout(p=self.drop_rate)
     def load_backbone(self, path: str) -> None:
         """
         Load the backbone from a given path
@@ -108,6 +109,7 @@ class CNN(torch.nn.Module):
             feat = feat.flatten(start_dim=1)
 
             classifier = self.fc[i]
+            feat = self.dropout(feat)
             logit = classifier(feat)
 
             logits[:,i] = logit[:,0]

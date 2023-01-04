@@ -8,8 +8,14 @@
 #names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Infiltration","Mass","No Finding"]
 
 #names = ["Opacity","Air","Liquid","Cardiomegaly", "Pleural Other", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia" , "Consolidation", "Edema" , "Fracture" , "No Finding"]
-names = ["Cardiomegaly", "Pleural Other", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia" , "Consolidation", "Edema" , "Fracture" , "No Finding"]
-hierarchy = {}
+
+#Chexpert
+names = ["Enlarged Cardiomediastinum","Cardiomegaly", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia", "Consolidation", "Edema", "No Finding"]
+hierarchy = {
+        "Enlarged Cardiomediastinum" : ["Cardiomegaly"],
+        "Consolidation" : ["Pneumonia"],
+        "Lung Opacity"  : ["Edema","Consolidation","Pneumonia","Lung Lesion","Atelectasis"],
+}
 #parents classes for hierarchical classification :
 #
 #

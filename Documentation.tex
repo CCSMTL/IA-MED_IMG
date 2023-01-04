@@ -36,68 +36,194 @@
 % Document
 \begin{document}
 
-\section{Data Analysis}
 
-    The first step of any ML project is to analyse the data available to us. We will already split our data between
-    training and validation just to simplify our analysis here.
+    \section{Introduction}
 
-    First, our private data from CIUSSS. We will first look at the distribution of the classes. As we can see in
-\ref{fig:hist_ciusss}, the classes are not balanced. We will need to take this into account when training our model.
+    \subsection{CheXnet}
+
+        Our project is based on the recent development by a Stanford team on the CheXnet~\cite{chexnet}
+        and CheXpert~\cite{chexpert} project. These two projects had  one common goal : to develop an AI
+        able to help, or in time maybe even replace radiologists for the analysis of Chest X-Ray (CXR) images. Their
+        first project , CheXnet, was based on a deep learning model that was able to predict 14 different diseases
+        from a CXR image.
+        While they did manage some interesting results, many criticism arose from the medical community. One such
+        critic, the Dr. Lauren Oakden-Rayner, a radiologist and a Senior Research Fellow at the Australian Institute
+        for Machine Learning, did a deep dive into the project, going as far as having a back and forth with the
+        author to help them publish edited version of their paper. As these criticism were quite interesting and led
+        to the follow-up project, we will go over them in the next section.
 
 
-While we tried to provide a minimum of examples for each class in the validation dataset, we still observe a class imbalance.
-We will therefore need to be careful not only to rely on a basic loss for things like a hyperparameter search if we want to
-have the best model in more than the over-represented categories. We could, for example, ponder the loss with different weights
-by classes. We will also need to be careful when we will evaluate our model on the test set. We will need to use metrics that
-accurately capture the perforance on the model even with the imbalances present.
+    \subsection{Criticism}
+        Dr. Oakden-Rayner did a deep dive into the project, and before going into the CheXpert project, did a good
+        recapitulative of the issues with the CheXnet project \cite{chexpert_critic}. In her own word :
+        \begin{quote}
+            \begin{enumerate}
+
+                \item Variability: Lots of very similar cases, because there were many patients who had numerous studies (i.e.,
+                repeat ICU films). For example, while only 7\% of patients had more than 10 films, this still made up 45\% of the
+                        total dataset. This means that while the overall number of films in the dataset is impressive, the variability is equivalent to a much smaller dataset (we might call this the effective size of the dataset).
+                \item Labelling method: Labelled via natural language processing, which both has an error rate as a method, and an
+                        irreducible error due to the fact that reports don’t actually describe images very thoroughly.
+                \item Labelling quality: Labels didn’t seem to match images very well, on the order of 30-90\% error
+                rates for the various classes.
+                \item Label structure: Some of the labels were very difficult to interpret, with a range of labels that
+                describe pretty much the same visual appearances (like “consolidation”, “pneumonia”, “infiltration”).
+                \item Hidden stratification: Some of the labels contained clinically important subgroups (strata) that
+                were not labelled, for example the pneumothorax (collapsed lung) class didn’t distinguish between deadly untreated pneumothoraces and completely safe, well-treated pneumothoraces. These subsets seemed to lead to models that learned useless and potentially dangerous things, like only identifying treated pneumothoraces and missing untreated ones.
+                \item Documentation: The CXR14 paper, and the additional documentation (here), do not adequately
+                describe the data. It is unclear how the labels were defined, what the cohort characteristics are, or how the dataset could reliably be used.
+                \item Image quality: The images in the dataset have been downsampled (from 3000 x 2000 pixels to 1024 x
+                1024) as well as having heavily reduced the number of grey-levels (normally between 3 and 4 thousand, now only 255). This severely harms interpretation of many conditions. Of note, subtle pneumothoraces, small nodules, and retrocardiac opacities become nearly impossible to diagnose for a human expert.
+            \end{enumerate}
+        \end{quote}
+        The full detail of the criticism can be found in the blog post \cite{chexnet_critic}.
+
+    \subsection{CheXpert}
 
 
+        The second project, CheXpert, was based on the same model but with a larger dataset and a more precise analysis
+        of the diseases. While they kept the 14 original diseases, they mainly focus on 5 different diseases from a CXR image
+        (Atelectasis,Cardiomegaly, Consolidation,Edema and Pleural Effusion). It corrected a few of the criticsm
+        from the last project, and had a different goal. While the Stanford team focused on building the deep learning model
+        for the CheXnet project, which used publicly available data from the National Institute of Health (NIH),
+        which was criticised for being often mislabeled, this project focused on building a new dataset. They gathered
+        over 400 000 images from the Stanford hospital for the project, and while most label were derived from an
+        automated labeler (to convert the text annotation of the radiologists in the patient's file), which assigned
+        a positive, negative , or uncertain flag to each of the label for a given report. The validation
+        and test dataset reviewed by a panel of three radiologists to ensure the quality of the dataset.
+        This is a necessary steps as the evaluation of CXR images is a very
+        complex task, with not always a clear answer. In their CheXnet project, they evaluated the performance of
+        their radiologists to be at around 0.4 with the F1-score. This is a rather low score, and therefore explains
+        the need to have a validation/test set reviewed by a panel of radiologists.
 
-\begin{figure}[h]
-     \centering
-     \begin{subfigure}[b]{0.45\linewidth}
+        While most of the dataset was released, they kept the test set private to evaluate the performance of models
+        submitted to them for the CheXpert competition they created. This competition was launched in 2019 and is still
+        ongoing. At the moment of writing this report, the best model has an AUC of 0.93, a score achieved by both
+        the Big Data Institute\cite{hierarchical} and the Deep AUC maximization model \cite{DeepAUC}, which is a
+        very impressive score.
+
+
+    \subsection{Our project}
+
+        For our project, while we mostly worked with the CheXpert dataset, we also started building our own, using
+        data from the different hospitals covered by the CIUSSS Centre-Sud-de-l'Île-de-Montréal (CCSMTL)
+    \myworries{Cite?}. Sadly delays in the acquisition of the data and the lack of a clear protocol for the
+    processing of it meant that we were only able to start working on it by September.
+
+    we also had to deal with the fact that this data was not labelised yet. We received the image in the DICOM
+    format\myworries{cite} and had to convert them to a more usable format (jpeg). The images were linked with a text
+    report from the radiologist, which we had to convert to a label. Since our text were in french, and that most
+    ressources available were in english, we had to develop our own rule-based system to convert the text to a label.
+    This part of the project was done by another student, Maxime Fournier, and will therefore not be discussed in
+    details here. \myworries{Add in appendix?}
+
+    Once the data was ready, we separated the dataset into a training, validation and test set, with 300 patients per
+    classes in the validation set, and 300 (20 images per classes) in the test set.
+    We ensured there were no patient leakage between the different sets(a patient seen during training should not
+    have images present within the test or validations set), and we also sampled the images such that to ensure a
+    good representation of the different diseases in the dataset.
+
+    Sadly, the CCSMTL was not able to provide us with expertise in the form of radiologists to review the dataset, or
+    our conversion from text to label. We therefore had to rely solely on our interpretation of the text and the
+    opinion given by the one radiologist who initially reviewed the images. This is a major limitation of our dataset,
+    and might explain the poor performance of our model later on. At the moment of writting\footnote{2023-01-03}, we
+    were still waiting  for the CCSMTL to provide us with a second meeting with the radiologists, in order to
+    hopefully secure time to have them review and validate our test dataset \footnote{While it would be very
+    important to also have a validation dataset validated by radiologist, the CCSMTL was reluctant to try and provide
+    us with the ressources to do so.}
+
+
+    \section{Data Analysis}
+
+    The first step of any ML project is to analyse the data available to us. Let's start with the CheXpert dataset.
+    We will first look at the distribution of the classes. As we can see
+    in~\ref{fig:histogram_chexpert_train}, the dataset is not balanced. We will need to take this into account when
+    training our model. We also can see that the three least represented classes are under 10 000 images, which might
+    make it difficult to train a model that can accurately predict them. A good use of data augmentation techniques
+    will probably be necessary to train a model that can accurately predict these classes.
+
+    Now looking at the distribution of the classes in the validation set, we can see that the classes are more evenly
+    split. This is a good sign, as it means that the validation set will be a good representation of the performance
+    on the different classes. This is however not true for all classes, as Fracture has no images at all present in
+    the validation dataset. Four other classes also have less than 10 images present, which will make it difficult to
+    know for sure whether the model is able to predict them accurately. The results for those classes will most
+    likely need to be ignored.
+
+    For the CCSMTL dataset, we can see in the training dataset~\ref{fig:histogram_ciusss_train} that we have an even stronger imbalance than in the
+    CheXpert dataset. Images without any disease constitues almost 25\% of the dataset, with over 100 000 images
+    while some classes have less that 5000 images. We will have to correct for this while training, with strategies
+    such as weighting the loss, data augmentations and undersampling the classes with too many images.
+
+    In the validation dataset~\ref{fig:histogram_ciusss_train}, we did not simply randomly sampled the images, we can
+    see the distribution of images differs from the training dataset. However, an imbalance is still present, as some
+    disease might require more images than others to be accurately predicted or treated. However, we can see that we
+    still have a minimum of 300 images per classes, which should be enough to evaluate the performance of the model.
+    We should however stay weary of this imbalance, since if we simply used a loss (such as the cross entropy), to
+    see the performance of our model, the overrepresented classes might also be overrepresented in the loss, and thus
+    bias our choice of hyperparameters. To correct for this, we can use metrics that takes into account the imbalance
+    present in our dataset, such as the F1-score, or the AUC.~\cite{metrics}.
+\newpage
+    \begin{figure}[h!]
          \centering
-         \includegraphics[width=\linewidth]{plots/histogram_ciusss_train}
-         \caption{ChexPert's training dataset}
-         \vspace{4ex}
-         \label{fig:histogram_ciusss_train}
-     \end{subfigure}
-     \hfill
-     \begin{subfigure}[b]{0.45\linewidth}
-         \centering
-         \includegraphics[width=\linewidth]{plots/histogram_ciusss_valid}
-         \caption{ChexPert's validation dataset}
-         \vspace{4ex}
-         \label{fig:histogram_ciusss_valid}
-     \end{subfigure}
+         \begin{subfigure}[b]{0.48\linewidth}
+             \centering
+             \includegraphics[width=\linewidth]{plots/histogram_ciusss_train}
+             \caption{CIUSSS's training dataset}
+             \vspace{4ex}
+             \label{fig:histogram_ciusss_train}
+         \end{subfigure}
+         \hfill
+         \begin{subfigure}[b]{0.48\linewidth}
+             \centering
+             \includegraphics[width=\linewidth]{plots/histogram_ciusss_valid}
+             \caption{CIUSSS's validation dataset}
+             \vspace{4ex}
+             \label{fig:histogram_ciusss_valid}
+         \end{subfigure}
 
 
-     \begin{subfigure}[b]{0.45\linewidth}
-         \centering
-         \includegraphics[width=\linewidth]{plots/histogram_chexpert_train}
-         \caption{CIUSSS's training dataset}
-         \vspace{4ex}
-         \label{fig:histogram_chexpert_train}
-     \end{subfigure}
-     \hfill
-     \begin{subfigure}[b]{0.45\linewidth}
-         \centering
-         \includegraphics[width=\linewidth]{plots/histogram_chexpert_valid}
-         \caption{CIUSSS's validation dataset}
-         \vspace{4ex}
-         \label{fig:histogram_chexpert_valid}
-     \end{subfigure}
+         \begin{subfigure}[b]{0.48\linewidth}
+             \centering
+             \includegraphics[width=\linewidth]{plots/histogram_chexpert_train}
+             \caption{CheXpert's training dataset}
+             \vspace{4ex}
+             \label{fig:histogram_chexpert_train}
+         \end{subfigure}
+         \hfill
+         \begin{subfigure}[b]{0.48\linewidth}
+             \centering
+             \includegraphics[width=\linewidth]{plots/histogram_chexpert_valid}
+             \caption{CheXpert's validation dataset}
+             \vspace{4ex}
+             \label{fig:histogram_chexpert_valid}
+         \end{subfigure}
 
-     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
-
-\end{figure}
-
-
-
-    Another important thing to look at could be the correlation between diseases, to identify potential biases in the data.
+         \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+         \label{fig:histogram_classes}
+    \end{figure}
+\newpage
 
 
-\begin{figure}[!h]
+    Another important thing to look at could be the correlation between diseases, to identify potential biases in the
+    data. To account for uncertainty labels, we will simply replace the uncertainty labels by a positive label for
+    this analysis.
+
+    Looking at the Chexpert's correlation graph (see \ref{fig:chords_chexpert_train} and \ref{fig:chords_chexpert_valid}),
+    we can see that the correlation between diseases is quite high. This is slightly worrying, as it means that the data could be biased
+    towards a specific disease. We can also see that the correlation is higher in the validation dataset than in the training
+    dataset. This is expected, as the validation dataset is smaller and therefore more likely to have a higher correlation
+    between diseases.
+
+
+    However, when we look at the CIUSSS's correlation graph (see \ref{fig:chords_ciusss_train} and \ref{fig:chords_ciusss_valid}), we observe a way lower correlation level between pathologies.
+    It might also be due to a difference in the population but this explanation does not seem quite likely
+
+    Assuming the preponderance of diseases is the same between the population visiting the Stanford's hospital and
+    the CIUSSS CCSMTL, we are left to assume that the quality of the data is different from the Stanford dataset. Whether it is better or worst is to verify.
+
+
+\newpage
+\begin{figure}[h!]
      \centering
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
@@ -135,63 +261,7 @@ accurately capture the perforance on the model even with the imbalances present.
      \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
 
 \end{figure}
-
-
-    Looking at the Chexpert's correlation graph (see \ref{fig:chords_chexpert_train} and \ref{fig:chords_chexpert_valid}), we can see that the correlation between diseases is quite high. This is slightly worrying, as it means that the data could be biased
-    towards a specific disease. We can also see that the correlation is higher in the validation dataset than in the training
-    dataset. This is expected, as the validation dataset is smaller and therefore more likely to have a higher correlation
-    between diseases.
-
-%    We can also look at the correlation between diseases and the age of the patient. We can see that the correlation is not
-%    very high, which is good. This means that the data is not biased towards a specific age group. We can also see that the
-%    correlation is higher in the validation dataset than in the training dataset. This is expected, as the validation dataset
-%    is smaller and therefore more likely to have a higher correlation between diseases and age.
-
-    However, when we look at the CIUSSS's correlation graph (see \ref{fig:chords_ciusss_train} and \ref{fig:chords_ciusss_valid}), we observe a way lower correlation level between pathologies.
-    It might also be due to a difference in the population but this explanation does not seem quite likely
-
-    Assuming the preponderance of diseases is the same between the population visiting the Stanford's hospital and
-    the CIUSSS CCSMTL, we are left to assume that the quality of the data is different from the Stanford dataset. Whether it is better or worst is to verify.
-
-
-    \section{Preparing the data}
-
-
-
-    Before sending our data into an ML algorithm , we need to think about the preprocessing that we can apply on it to facilitate
-    the learning process. For our use case, with deep learning models, it is typical to split this step in two part : augmentations
-    and normalization.
-
-
-    For data augmentations, we used a combination of random horizontal flipping of the image, as the lungs are symmetrical,color jittering, to add random noise
-    in the images, affine transformation (see albumentation's documentation \footnote{https://albumentations.ai/docs/api_reference/augmentations/geometric/transforms/}), and a mix of griddistortion and Elastic transformation to simulate a greater
-    variance in the shape of the specified pathologies. All the augmentations were done with Albumentations, as to avoid making mistakes
-    by writing our own\cite{albumentations}. The detail of the augmentations :
-
-    \begin{itemize}
-        \item \textbf{Affine} : randomly apply affine transformations : translation, rotation, shear and scale with probobility $p_0$
-        \item \textbf{ColorJitter} : randomly change the brightness, contrast and saturation of the image with probability $p_1$
-        \item \textbf{HorizontalFlip} : randomly flip the image horizontally with probability $p_2$
-        \item \textbf{GridDistortion} : randomly apply grid distortion with probability $p_3$
-        \item \textbf{ElasticTransform} : randomly apply elastic transformation with probability $p_4$
-        \label{tab:augmentations}
-    \end{itemize}
-
-    Data augmentation such as this serves two purposes. The first one is to allow the model to generalize better, as it is given
-    a wider variety of examples (albeit partially synthetic examples) . The second purpose is to avoid overfitting as the model will
-    have a harder time simply memorizing the examples instead of actually learning the desired characteristic within the image.
-
-    The second step, normalization, serves to assure that the distribution of the image stay within a specified norm. It is typical
-    to bring the images values between 0 and 1, and , if using a pretrained model as it is our case, to normalize the data
-    according to the specified mean and standard deviation value of the images used to pretrain the model (in our case ImageNet).
-
-    It is also possible to use histogram equalization. This method will normalize image with respect to local values instead of the global maximum and minimum.
-    Improving on this idea we used the Contrast Limited Adaptive Histogram Equalization \footnote{see https://towardsdatascience.com/clahe-and-thresholding-in-python-3bf690303e40}
-    to further improve the normalization of our images. We hope this will help with the cross-generalization of our model on the different datasets.
-
-    %As can be seen here \ref{figure}, the usage of clahe vs only min-max normalization did result in a slight improvement
-
-
+\newpage
 \begin{figure}[H]
      \centering
      \begin{subfigure}[b]{0.45\linewidth}
@@ -226,30 +296,68 @@ accurately capture the perforance on the model even with the imbalances present.
          \vspace{4ex}
          \label{fig:count_chexpert_valid}
      \end{subfigure}
-
+    \label{fig:classes_per_image}
      \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
 
 \end{figure}
+    
+    \newpage
+\begin{figure}[H]
+     \centering
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/image_count_ciusss_train}
+         \caption{CIUSSS's training dataset}
+         \vspace{4ex}
+         \label{fig:count_image_ciusss_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/image_count_ciusss_valid}
+         \caption{CIUSSS's validation dataset}
+         \vspace{4ex}
+         \label{fig:count_image_ciusss_valid}
+     \end{subfigure}
 
-    Now come the tricky part where we get in the wood inside of getting out. While the data processing described earlier
-    is accurate, it is also general and do not reflect the specificty of our data! Two main problem arise.
 
-    Firstly, as mentionned earlier, the data is unbalanced! While typically , we would simply undersample the over-represented
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/image_count_chexpert_train}
+         \caption{CheXpert's training dataset}
+         \vspace{4ex}
+         \label{fig:count_image_chexpert_train}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.45\linewidth}
+         \centering
+         \includegraphics[width=\linewidth]{plots/image_count_chexpert_valid}
+         \caption{CheXpert's validation dataset}
+         \vspace{4ex}
+         \label{fig:count_image_chexpert_valid}
+     \end{subfigure}
+        \label{fig:images_per_patient}
+     \caption{Histogram for the number of images per patient present in the CIUSSS and CheXpert dataset}
+
+\end{figure}
+
+   
+
+    As mentionned earlier, the data is unbalanced! While typically , we would simply undersample the over-represented
     categories or the opposite, oversample the under-represented classes, it is not an option here. Looking closely at the data \ref{fig:classes_per_image},
     we can see our problem is not a simple classification, but a multilabel classification tasks where more than one class might be present
-    in the input! We also see that we have a lot of images with no pathology at all. This is a problem as it means that the model will be biased toward answering no pathology are present. We therefore need to undersample this category!
+    in the input. We also see that we have a lot of images with no pathology at all in the CCSMTL dataset. This is a 
+    problem as it means that the model will be biased toward answering no pathology are present. We therefore need 
+    to undersample this category!
 
 
 
-    To resolve this , we can try some version of undersampling to partially mitigate the imbalance, but a better solution exists. We can assign each positive example
-    of a class with a weight, therefore increasing the importance of the positive examples of the under-represented classes. This is
+    To resolve the imbalancy, we can also assign each positive example of a class with a weight, therefore increasing the importance of the positive examples of the under-represented classes. This is
     done by using the class weights parameter of the loss function. This is a good solution, but it is not perfect of course as one class might have a higher preponderance in the loss
     function.
-
-    To mitigate this, we could use a weighted loss function, which will weight the loss of each class according to the class weights. This could be interesting as a future improvement.
-
-
-    Secondly, our data does not come in the form of a simple image. The input is composed of multiple images present in the patient file for a specific exam, typically between 1 and 4 images. While a RNN could be use to deal
+    
+    Secondly, our data does not come in the form of a simple image. The input is composed of multiple images present 
+    in the patient file for a specific exam, typically between 1 and 4 images \ref{fig:images_per_patient}. While a RNN could be use to deal
     with a sequence of image, no such model exist for medical imaging. Instead, we will use a CNN to process each image independently, and combine the output with a simple addition before applying the sigmoid activation function.
 
     To further simplify the model, we also explored two other option
@@ -270,6 +378,56 @@ accurately capture the perforance on the model even with the imbalances present.
     It however will help simplify training as the model will almost always have the same number of input images (2, more rarely 1), and will also help with the generalization of the model as it will be trained on a wider variety of images.
 
     To undersample the empty images, we will ponder them with a weight of 0.1, and the other images with a weight of 1. This will effectively leave us with a dataset containing the equivalent of only about 20 000 empty images.
+
+
+    \section{Preparing the data}
+
+    \myworries{Should we talk about the conversion from DICOM to PNG?}
+
+    Before sending our data into a machine learning algorithm , we need to think about the preprocessing that we can
+    apply on it to facilitate the learning process. For our use case, with deep learning models, it is typical to
+    split this step in two part : augmentations and normalization.
+
+
+    For data augmentations, we used a combination of random horizontal flipping of the image, as the lungs are symmetrical,color jittering, to add random noise
+    in the images, affine transformation (see albumentation's documentation \footnote{https://albumentations.ai/docs/api_reference/augmentations/geometric/transforms/}), and a mix of griddistortion and Elastic transformation to simulate a greater
+    variance in the shape of the specified pathologies. All the augmentations were done with Albumentations, as to avoid making mistakes
+    by writing our own\cite{albumentations}. The detail of the augmentations :
+
+    \begin{itemize}
+        \item \textbf{Affine} : randomly apply affine transformations : translation, rotation, shear and scale with
+        probobility $p_0$. The translation is done with a maximum of 15\% of the image's width and height, the
+        rotation is done with a maximum of 25 degrees and a translation of up to 15\% is also done.
+        \item \textbf{ColorJitter} : randomly change the brightness, contrast and saturation of the image with
+        probability $p_1$, and a maximum of 0.2 for each of the three parameters.\footnote{While it may sound strange
+        to apply color jittering on a grayscale image, it is still possible to apply it, as it will simply affect the
+        contrast, brightness and saturation of the image.}
+        \item \textbf{HorizontalFlip} : randomly flip the image horizontally with probability $p_2$
+        \item \textbf{GridDistortion} : randomly apply grid distortion with probability $p_3$, and the following
+        parameters : num\_steps=5, distort\_limit=0.3, interpolation=1, border\_mode=0, value=None, mask\_value=None
+        \item \textbf{ElasticTransform} : randomly apply elastic transformation with probability $p_4$, and
+        parameters : alpha=0.2,sigma=25 and alpha\_affine=50
+        \label{tab:augmentations}
+    \end{itemize}
+
+    Data augmentation such as this serves two purposes. The first one is to allow the model to generalize better, as it is given
+    a wider variety of examples (albeit partially synthetic examples) . The second purpose is to avoid overfitting as the model will
+    have a harder time simply memorizing the examples instead of actually learning the desired characteristic within the image.
+
+    The second step, normalization, serves to assure that the distribution of the image stay within a specified norm. It is typical
+    to bring the images values between 0 and 1, and , if using a pretrained model as it is our case, to normalize the data
+    according to the specified mean and standard deviation value of the images used to pretrain the model (in our case ImageNet).
+
+    It is also possible to use histogram equalization. This method will normalize image with respect to local values instead of the global maximum and minimum.
+    Improving on this idea we used the Contrast Limited Adaptive Histogram Equalization, an often used method in
+    medical imaging \cite{clahe}
+    \footnote{see \url{https://towardsdatascience.com/clahe-and-thresholding-in-python-3bf690303e40}},
+    to further improve the normalization and contrast of our images. We hope this will help with the
+    cross-generalization of our model on the different datasets.
+
+
+
+
 
     \subsection{Dealing with uncertainty labels}
 
@@ -300,7 +458,7 @@ accurately capture the perforance on the model even with the imbalances present.
     \begin{figure}[h]
 
          \centering
-         \includegraphics[width=0.8 \textwidth]{plots/densenet_figure}
+         \includegraphics[width=0.5 \textwidth]{plots/densenet_figure}
          \caption{Figure 1 from the densenet paper \cite{densenet}. It shows how the layers are all interconnected}
          \label{fig:densenet_figure}
 
@@ -322,7 +480,7 @@ accurately capture the perforance on the model even with the imbalances present.
 \begin{figure}[H]
 
      \centering
-     \includegraphics[width=0.8 \textwidth]{plots/convnext_graph}
+     \includegraphics[width=0.5 \textwidth]{plots/convnext_graph}
      \caption{Figure 2 from the ConvNeXt paper \cite{convnext}. It details the different improvement made to the
      resnet architecture and the gain in performance obtained following each modification.}
      \label{fig:convnext}
@@ -334,7 +492,7 @@ accurately capture the perforance on the model even with the imbalances present.
         they created an architecture which outperformed many SOTA models on the ImageNet competititon.
 
         The details of these modifications can be seen in the figure \ref{fig:convnext}, which is taken from their paper.
-        It replaced densenet as the "default" convolutionnal model
+        It replaced densenet as the \"default\" convolutionnal model
 
 
     \subsection{Model 3 : EfficientNet \cite{efficientnet} and YOLO \cite{yolo}}
@@ -411,6 +569,10 @@ accurately capture the perforance on the model even with the imbalances present.
     \subsection{Experiment Tracking}
         To track our experience, we used Weight\&Biases\footnote{\url{www.wandb.ai}} .This tool allows us to track the different hyperparameters,
         the loss, the accuracy, and the model architecture. It also allows us to compare different runs, and to easily reproduce them.
+        W\&B also allows us to easily upload our model to their servers, and to download it from anywhere. This
+        allows us to easily share our model with other people, and to easily reproduce our results. Finally, it allows us
+        to easily run hyperparameters sweeps, which will allow us to find the best hyperparameters for our model once we
+        finish our development.
 
     \subsection{Metrics}
         In any unbalanced dataset, the accuracy won't be enough to determine the performance of a classifier.
