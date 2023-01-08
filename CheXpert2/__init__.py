@@ -1,37 +1,27 @@
 
-#nc: 15
-
-#names = [ "Cardiomegaly", "Edema","Consolidation", "Atelectasis", "Pleural Effusion","No Finding"]
-
-#names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
-
-#names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Infiltration","Mass","No Finding"]
-
-#names = ["Opacity","Air","Liquid","Cardiomegaly", "Pleural Other", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia" , "Consolidation", "Edema" , "Fracture" , "No Finding"]
 
 #Chexpert
-names = ["Enlarged Cardiomediastinum","Cardiomegaly", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia", "Consolidation", "Edema", "No Finding"]
+# names = ["Enlarged Cardiomediastinum","Cardiomegaly", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia", "Consolidation", "Edema", "No Finding"]
+# hierarchy = {
+#         "Enlarged Cardiomediastinum" : ["Cardiomegaly"],
+#         "Consolidation" : ["Pneumonia"],
+#         "Lung Opacity"  : ["Edema","Consolidation","Pneumonia","Lung Lesion","Atelectasis"],
+# }
+
+
+
+#CIUSSS
+#
+names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis","Pneumothorax","Emphysema","Pleural Effusion","Fracture" ,"Infiltration","Mass","No Finding"]
+
 hierarchy = {
-        "Enlarged Cardiomediastinum" : ["Cardiomegaly"],
-        "Consolidation" : ["Pneumonia"],
-        "Lung Opacity"  : ["Edema","Consolidation","Pneumonia","Lung Lesion","Atelectasis"],
+        "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],
+        "Air" : ["Emphysema","Pneumothorax"],
+        "Liquid" : ["Edema","Pleural Effusion"]
 }
-#parents classes for hierarchical classification :
-#
-#
-# hierarchy = {
-#         "Opacity" : ["Consolidation","Atelectasis","Lung Lesion"],
-#         "Air" : ["Pneumothorax"],
-#         "Liquid" : ["Edema","Pleural Effusion"]
-# }
 
-# hierarchy = {
-#         "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],
-#         "Air" : ["Pneumothorax"],
-#         "Liquid" : ["Edema","Pleural Effusion"]
-# }
 
-#hierarchy = {}
+
 
 debug_config = {
         "model": "densenet121",

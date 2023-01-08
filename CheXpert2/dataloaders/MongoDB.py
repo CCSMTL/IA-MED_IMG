@@ -119,13 +119,12 @@ if __name__ == "__main__":
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert","vinBigData"])
-    print("database initialized")
-    train = MongoDB("10.128.107.212", 27017, ["ChexPert","CIUSSS","PadChest"]).dataset("Train")
-    #print("training dataset loaded")
-    valid = db.dataset("Valid")
-    print("validation dataset loaded")
-    train.iloc[0:100].to_csv("train.csv")
-    valid.iloc[0:100].to_csv("valid.csv")
-    # valid = valid[names]
-    #print(len(train),len(valid))
+    valid = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Valid")
+
+    train = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Train")
+
+
+    for parent, children in hierarchy.items():
+        print(parent,valid[parent].sum())
+
+

@@ -147,8 +147,10 @@ def main() :
     # ------------training--------------------------------------
 
     # setting up for the training
+    config["train_dataset"] = ["ChexPert"]
+    config["val_dataset"] = ["ChexPert"]
     experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=5
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
     )
 
 
@@ -157,18 +159,15 @@ def main() :
         model=model,
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
-        train_datasets=["ChexPert"],
-        val_datasets = ["ChexPert"],
+        train_datasets=config["train_dataset"],
+        val_datasets = config["train_dataset"],
         config=config,
         device=device
     )
 
 
-
     results = experiment.train()
     experiment.end(results)
-
-
 
 
 if __name__ == "__main__":
