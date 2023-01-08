@@ -1,0 +1,201 @@
+{
+    "os": "Linux-5.19.0-26-generic-x86_64-with-glibc2.36",
+    "python": "3.10.7",
+    "heartbeatAt": "2022-12-16T02:40:48.084149",
+    "startedAt": "2022-12-16T02:40:48.039351",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--model",
+        "convnext_small_384_in22ft1k",
+        "--batch_size",
+        "64",
+        "--img_size",
+        "224",
+        "--num_worker",
+        "12",
+        "--augment_prob",
+        "1",
+        "1",
+        "0.5",
+        "0.5",
+        "0.5",
+        "--clip_norm",
+        "1",
+        "--lr",
+        "0.0001",
+        "--device",
+        "0",
+        "--label_smoothing",
+        "0",
+        "--epoch",
+        "200",
+        "--drop_rate",
+        "0.2",
+        "--pretraining",
+        "0",
+        "--channel",
+        "1",
+        "--tag",
+        "val_ciusss_chexpert_padchest__chexnet_pos_weight",
+        "--debug",
+        "--weight_decay",
+        "0"
+    ],
+    "state": "running",
+    "program": "/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG/CheXpert2/training/train.py",
+    "codePath": "CheXpert2/training/train.py",
+    "git": {
+        "remote": "http://r06.azdevops.mtl.rtss.qc.ca:8080/DefaultCollection/IA-MED_IMG/_git/IA-MED_IMG",
+        "commit": "935b706084391a2264017eee4c578d9d9b7b6267"
+    },
+    "email": "joe199827@gmail.com",
+    "root": "/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG",
+    "host": "jonathan-MS-7D54",
+    "username": "jonathan",
+    "executable": "/home/jonathan/RSNA_kaggle_2022/venv/bin/python",
+    "cpu_count": 12,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 3876.217291666666,
+        "min": 2200.0,
+        "max": 3700.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 3799.219,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3877.815,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3821.418,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4235.471,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3802.477,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3641.006,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4897.822,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3700.0,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3919.199,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 2200.0,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4628.689,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4196.08,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3700.0,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3857.974,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3807.47,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4394.686,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3644.113,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3957.325,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4898.518,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4899.381,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 3868.586,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 4881.966,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 2200.0,
+            "min": 2200.0,
+            "max": 3700.0
+        },
+        {
+            "current": 2200.0,
+            "min": 2200.0,
+            "max": 3700.0
+        }
+    ],
+    "disk": {
+        "total": 118.25825881958008,
+        "used": 43.02831268310547
+    },
+    "gpu": "NVIDIA GeForce RTX 3090",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 3090",
+            "memory_total": 25769803776
+        }
+    ],
+    "memory": {
+        "total": 31.27265167236328
+    }
+}

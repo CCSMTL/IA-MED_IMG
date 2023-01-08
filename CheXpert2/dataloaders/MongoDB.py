@@ -5,6 +5,7 @@ import pandas as pd
 import pymongo
 import logging
 from CheXpert2 import names,hierarchy
+from pymongo.errors import ConnectionFailure
 class MongoDB:
     def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False) :
 
@@ -15,7 +16,13 @@ class MongoDB:
         self.names = names + ["Path", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
         self.debug = debug
-
+        try:
+            # The ismaster command is cheap and does not require auth.
+            client = pymongo.MongoClient(address, port)
+            client.admin.command('ismaster')
+        except ConnectionFailure:
+            logging.critical("Server not available ; switching offline")
+            debug = True
         if debug : #if debug is true, we are not using the database
             self.load_data = self.load_offline
             assert collectionnames == ["ChexPert"],f"{collectionnames} is not available offline"
@@ -112,13 +119,12 @@ if __name__ == "__main__":
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert","vinBigData"])
-    print("database initialized")
-    train = MongoDB("10.128.107.212", 27017, ["ChexPert","CIUSSS","PadChest"]).dataset("Train")
-    #print("training dataset loaded")
-    valid = db.dataset("Valid")
-    print("validation dataset loaded")
-    train.iloc[0:100].to_csv("train.csv")
-    valid.iloc[0:100].to_csv("valid.csv")
-    # valid = valid[names]
-    #print(len(train),len(valid))
+    valid = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Valid")
+
+    train = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Train")
+
+
+    for parent, children in hierarchy.items():
+        print(parent,valid[parent].sum())
+
+

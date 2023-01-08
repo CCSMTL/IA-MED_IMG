@@ -1,0 +1,116 @@
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=C:\Users\joeda\PycharmProjects\IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=C:\Users\joeda\PycharmProjects\IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=C:\Users\joeda\PycharmProjects\IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+ERROR:wandb.jupyter:Failed to detect the name of this notebook, you can set it manually with the WANDB_NOTEBOOK_NAME environment variable to enable code saving.
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+DEBUG:root:Loaded 64540 exams for training
+DEBUG:root:Loaded 200 exams for validation
+DEBUG:git.cmd:Popen(['git', 'rev-parse', '--show-toplevel'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=None)
+DEBUG:git.cmd:Popen(['git', 'cat-file', '--batch-check'], cwd=/media/jonathan/62E2EFF0E2EFC67F/Users/joeda/PycharmProjects/IA-MED_IMG, universal_newlines=False, shell=None, istream=<valid stream>)
+INFO:timm.models.helpers:Loading pretrained weights from url (https://dl.fbaipublicfiles.com/convnext/convnext_small_22k_1k_384.pth)
+INFO:timm.models.helpers:Converted input conv stem.0 pretrained weights from 3 to 1 channel(s)
+INFO:root:The model has now been successfully loaded into memory
