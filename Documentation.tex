@@ -588,6 +588,16 @@
 
     \section{Training}
 
+    \subsection{Resolution}
+
+        While our original images have a very high resolution (up to 4096x4096), we decided to downscale them to
+        384x384 pixels. While some information might be lost due to this downscaling, having higher resolution images
+        can lead to more overfitting, and it is also more computationally expensive to train on such high resolution
+        images. An added benefit of this is that it will allow us to train on a larger batch size, which will allow
+        for better statistics in the batch/layer normalizations, and will also allow us to train faster.
+
+        It also has already been demonstrated in this paper \cite{resolution} that , from a range of 224x224 to
+        1024x1024, the performance of the model does not change much.
 
     \subsection{Loss function}
         To train a classification model with a multilabel output, we use the Binary Cross Entropy. We therefore treat
