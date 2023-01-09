@@ -135,7 +135,52 @@
     since the data from the CCSMTL was not yet ready yet \footnote{The data was only fully delivered to us towards
     the end of the internship}.
 
+    As mentionned before, we had to take care of the conversion from text to label. While it's another intern who mostly worked on that part, I will
+    briefly described a few of the issues encountered with the help of anonymized examples (they are in french and we will not translate them as to avoid errors that it could introduce)
 
+    \subsubsection{Uncertainties}
+
+    \begin{quote}
+        Possible petit épanchement à la base droite. Pas d'oedème pulmonaire définitif. Pas de pneumonie définitive. Légère rotation vers la droite ce qui pourrait possiblement expliquer un aspect plus dense du hile droit.
+        Un contrôle est suggéré pour exclure une pathologie hilaire droite.
+    \end{quote}
+        As you can see, this text is quite ambiguous. It could be a pleural effusion, and the mention \"Pas d'oedème pulmonaire définitif\"  could either
+        mean there is definitely no pulmonary edema, or that there is no pulmonary edema definitive. The same goes for the mention of a possible pleural effusion,
+        which could either mean that there is a pleural effusion, or that there is a possible pleural effusion. This ambiguity is a major issue, and we had to decide how to handle it.
+        We identified the mention of a disease, and thanks to a rule base classifier determined whether the mention was positive, negative, or uncertain. This however just pushed the uncertainty issue further down
+        the line, and comes as an added error source.
+
+
+    \subsubsection{Specific exam}
+        \begin{quote}
+            Renseignements cliniques : Fièvre. Éliminer pneumonie.
+            POUMONS :
+            Il n'y a pas d'épanchement. Le médiastin est sans particularité. Il y a une opacité mal définie en péri-hilaire droit qui n'était pas présente à l'examen antérieur et qui pourrait donc être une pneumonie.
+            CONCORDANCE IMPOSSIBLE
+        \end{quote}
+
+        Again, we see some ambiguity in the text, with the mention of the opacity.  However, the issue I want to show here is with the clinical mentions. The radiologist was asked to looked for a pneumonia, and the patient had fever.
+        This is  a specific exam, and the radiologist was therefore not looking throughly for other signs of diseases, as they on average only spends about 15 seconds on each image \myworries{Explain how we know this}.
+
+     \subsubsection{Reference to prior exams}
+            \begin{quote}
+                Image pleuro-parenchymateuse et silhouette cardio-médiastinale sans particularité, notamment sans cardiomégalie identifiée. La silhouette de l'aorte est relativement inchangée.
+À noter qu'au moment de l'i nterprétation, la patiente avait déjà bénéficié d'une tomodensitométrie. S'il vous plaît vous référer au rapport de cette étude.
+           \end{quote}
+
+
+    \subsubsection{Poor image quality and no relecture}
+       \begin{quote}
+            Les coins inférieurs des deux poumons ne sont pas entièrement couverts dans la présente radiographie.
+            Il y a progression d'opacités parenchymateuses mal définies au tiers moyen/inférieur du poumon gauche, très discrètement également au tiers moyen/inférieur du poumon droit. Ceci est compatible avec des infiltrats infectieux, possiblement en lien avec COVID. Possible légère surcharge. Pas d'épanchements pleuraux significatifs. Légère cardiomégalie connue.
+            Signé sans relecture du radiologiste.
+        \end{quote}
+
+    As shown here, even the radiologist will sometimes comment on the quality of the image, such as partial images. Also, radiologist usually spell out their report, recording it vocally such that a secretary will later type it, without the radiologist
+    always reading it back. This leads to two other sources of error in our data.
+
+    All these issues are major sources of error in our dataset. While we did try our best to mitigate them, we are aware that they are still present, and that they might have a negative impact on our results. We already mentionned
+    multiple times the need for a second meeting with the radiologists, and we hope that this will allow us to mitigate some of these issues.
     \section{Data Analysis}
 
     The first step of any ML project is to analyse the data available to us. Let's start with the CheXpert dataset.
@@ -365,6 +410,10 @@
 
     To further simplify the model, we also explored two other option
 
+    %TODO TALK ABOUT % OF UNCERTAIN LABELS
+
+    %TODO Give text examples
+
     \subsection{Option 1 : Only use 1 frontal image}
         Our first attempt was to use only one frontal image per patient. This is a simple solution, but it is not optimal as it does not take into account the other images present in the patient file.
         However, we quickly realize that this was not a good idea as the model was underperforming with some specific pathologies. This was most
@@ -571,6 +620,7 @@
 
 
     \subsection{Experiment Tracking}
+
         To track our experience, we used Weight\&Biases\footnote{\url{www.wandb.ai}} .This tool allows us to track the different hyperparameters,
         the loss, the accuracy, and the model architecture. It also allows us to compare different runs, and to easily reproduce them.
         W\&B also allows us to easily upload our model to their servers, and to download it from anywhere. This
@@ -624,7 +674,6 @@
 
         \item Timm : The code use the timm library~\cite{timm} in order to load a model, allowing
         for an easy use of a multitude of pretrained model.
-
 
         \item Input Channels : While models are pretrained to use 3 channels (RGB), we can use a single channel (e.g grayscale). This uses
         only one of the convolution kernel at the first layer of the model, and thus reduce the number of parameters to train. However, it might require more training
@@ -864,6 +913,7 @@
             % Applying the lesson learned
             Applying the lesson learned, I tested the convnext base model with the 1 channels, and with/without the positive weights. I also increased the patience to 20 epochs.
             The results are shown in the figure~\ref{fig:training_curves3} and~\ref{fig:chexpert_results3}. We can see that the model with the positive weights is able to achieve a better AUC and F1-score.
+            All the details of this run can be find at \url{https://wandb.ai/ccsmtl2/Chexpert/runs/39ivi71f}
 
             \begin{figure}[H]
                  \centering
@@ -937,7 +987,7 @@
 
             \begin{itemize}
                 \centering %TODO : correct layout ; verify all hyperparameters
-                \item backbone : convnext small
+                \item backbone : convnext large
                 \item batch size : 64
                 \item learning rate : 1e-4
                 \item weight decay : 1e-2
@@ -948,7 +998,7 @@
                 \item patience : 20
                 \item label smoothing : 0
                 \item clip norm : 1
-                \item epoch : 50
+                \item epoch : 200
                 \item channel : 3
                 \item augment prob [ 1, 1, 0.5, 1, 1 ]
             \end{itemize}
@@ -995,7 +1045,7 @@
         \subsubsection{Hierarchical Learning~\cite{hierarchical}}
 
             The hierarchical learning method~\cite{hierarchical} is a method that uses a hierarchy in between the different classes
-            to more accurately predict them. Thansk to bayesian probabilities, we know that
+            to more accurately predict them. Thanks to bayesian probabilities, we know that
 
             \begin{equation}
                 P(A|B) = \frac{P(A \cap B)}{P(B)} = \frac{P(B|A) P(A)}{P(B)}
@@ -1031,8 +1081,10 @@
             \end{figure}
 
             The JFHealthcare team~\cite{jfhealthcare} used a probabilistic-CAM method to obtain their results.
-            The method is based on the idea that the model should be able to predict the probability of a class being
-            present in the image. The method is described in the figure~\ref{fig:jfhealthcare_probabilistic_cam}.
+             The method is described in the figure~\ref{fig:jfhealthcare_probabilistic_cam}. They basically run the feature extraction layers as usual, but add a final convolutionnal layer
+            to obtain a final probability vector, associated with each of the feature maps, as the probability of the class being present in the image. They then use the probability vector to weight the feature maps, and use the weighted feature maps to do a
+            weighted average pooling of the feature maps. The final result is then passed through fully connected layers to obtain the final prediction \footnote{While it is typical to only have one fully connected layer for the classification,
+            they did not justified their choice of having one layer per class. However, since its a multilabel classification problem, it does not alter the ability of the network to do its job}.
 
             They first start by proceeding as usual, applying a feature extraction backbone, followed by a 1x1 convolutionnal layer.
             They then apply a sigmoid activation function to the output of the fully connected layer, in order to obtain a probability between 0 and 1.
@@ -1051,7 +1103,7 @@
 
 
             Following the results obtained earlier on CheXpert, we then tried applying some of the same technique, but this time using a validation dataset from the CIUSSS data.
-            For the training data, we tried to supplement the CIUSSS dataset with the CheXpert dataset, in order to increase the size of the dataset and improve the model's performance.
+
 
 
 
@@ -1059,6 +1111,7 @@
     \section{Explainability \& Visualization}
 
     %GradCam and improvements
+
 
     \section{Improvements and attempts}
 
@@ -1095,7 +1148,7 @@
 
         Many times did we had issues with our drivers. This happened because we were updating the packages as we were developping the project, and because we were working on parallel on more than one project
         on the same machine. To rectify and avoid this, a simple solution is to use a virtual environment, which will allow us to have a clean environment for each project, and to avoid any conflict. Docker
-        is a good solution to provide such virtual environment.
+        is a good solution to provide such virtual environment. However, we had issues installing and using Docker properly, and we managed to resolved our initial problem in the meantime.
 
     \subsection{Multi-GPU training}
 
