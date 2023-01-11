@@ -21,17 +21,19 @@ from CheXpert2.dataloaders.CXRLoader import CXRLoader
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
 
-from CheXpert2 import names
-
+from CheXpert2 import names,hierarchy
+for key in hierarchy.keys():
+    if key not in names :
+        names.insert(0,key)
 #from libauc.losses import AUCM_MultiLabel
 #from libauc.optimizers import PESG
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-#torch.autograd.set_detect_anomaly(False)
+#torch.autograd.set_detect_anomaly(True)
 #torch.autograd.profiler.profile(False)
 #torch.autograd.profiler.emit_nvtx(False)
-#torch.backends.cudnn.benchmark = False
-#torch.backends.cudnn.enabled = True
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.enabled = True
 #torch.set_float32_matmul_precision('high')
 
 try:
@@ -82,7 +84,7 @@ def initialize_config(args):
 
     config = vars(args)
     experiment = Experiment(
-        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=5)
+        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=20)
     torch.set_num_threads(max(config["num_worker"],1))
 
     # ----------- load classes ----------------------------------------
@@ -147,8 +149,10 @@ def main() :
     # ------------training--------------------------------------
 
     # setting up for the training
+    config["train_dataset"] = ["ChexPert","MimicCxrJpg"]
+    config["val_dataset"]   = ["ChexPert"]
     experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=5
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
     )
 
 
@@ -157,8 +161,8 @@ def main() :
         model=model,
         optimizer = "AdamW",
         criterion="BCEWithLogitsLoss",
-        train_datasets=["ChexPert","CIUSSS","MimicCxrJpg","PadChest"],
-        val_datasets = ["ChexPert","vinBigData","MimicCxrJpg"],
+        train_datasets=config["train_dataset"],
+        val_datasets = config["val_dataset"],
         config=config,
         device=device
     )

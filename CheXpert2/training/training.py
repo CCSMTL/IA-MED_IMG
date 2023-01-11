@@ -53,7 +53,7 @@ def training_loop(
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
-        loader.iterable.dataset.step(idx,outputs.detach().cpu().numpy())
+        #loader.iterable.dataset.step(idx,outputs.detach().cpu().numpy())
         running_loss += torch.nan_to_num(loss.detach(),0)
         # ending loop
 
@@ -101,6 +101,7 @@ def validation_loop(model, loader, criterion, device, autocast):
             outputs = model(images)
             loss = criterion(outputs.float(), labels.float())
 
+        outputs = torch.sigmoid(outputs)
         outputs = outputs.detach().cpu().squeeze()
         assert not torch.isnan(outputs).any(),print(outputs)
         running_loss += loss.detach()

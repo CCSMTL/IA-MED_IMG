@@ -102,8 +102,7 @@ def load_model() :
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
     models = [
-        CNN("convnext_small_384_in22ft1k", img_size=384, channels=1, num_classes=18, pretrained=False,
-            pretraining=False),
+        CNN("convnext_small_384_in22ft1k", channels=1, num_classes=18, pretrained=False),
         #    CNN("convnext_base", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
         #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
         #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),

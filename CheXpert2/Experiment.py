@@ -21,7 +21,10 @@ from CheXpert2.training.training import training_loop,validation_loop
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
 import torch.distributed as dist
 import tqdm
-from CheXpert2 import names
+from CheXpert2 import names,hierarchy
+for key in hierarchy.keys():
+    if key not in names :
+        names.insert(0,key)
 import torch
 import numpy as np
 import pandas as pd
@@ -276,9 +279,10 @@ class Experiment:
 
 
 
-        samples_weights = np.ones_like(train_dataset.weights)
-        sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,
-                                                                 num_samples=min(num_samples, len(train_dataset)))
+
+        weights = torch.ones(len(train_dataset.weights))
+        # sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,num_samples=min(num_samples, len(train_dataset)))
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(weights,num_samples=min(num_samples, len(train_dataset)))
 
 
         if dist.is_initialized():
@@ -310,7 +314,10 @@ class Experiment:
         num_negatives = len(self.training_loader.dataset) - num_positives
         pos_weight = num_negatives / num_positives
         pos_weight = torch.nan_to_num(pos_weight, nan=1.0, posinf=1.0, neginf=1.0)
-        print("pos_weight :" ,pos_weight)
+        for name, weight in zip(self.names, pos_weight):
+            if weight == 1.0:
+                logging.critical(f"No positive examples for {name}")
+
         criterion = getattr(torch.nn, criterion) if criterion else None
         self.criterion_val = criterion()
         self.criterion = criterion(pos_weight = pos_weight.to(device))

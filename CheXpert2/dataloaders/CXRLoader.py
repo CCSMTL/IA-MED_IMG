@@ -21,7 +21,10 @@ from torchvision import transforms
 import albumentations as A
 
 from CheXpert2.dataloaders.MongoDB import MongoDB
-from CheXpert2 import names
+from CheXpert2 import names,hierarchy
+for key in hierarchy.keys():
+    if key not in names :
+        names.insert(0,key)
 from CheXpert2.custom_utils import truncation_normalization,clahe,get_LUT_value, crop_coords
 
 class CXRLoader(Dataset):
@@ -116,19 +119,30 @@ class CXRLoader(Dataset):
         return A.Compose(
             [
 
-                A.augmentations.geometric.transforms.Affine(scale=(0.85, 1.15), translate_percent=(0.15, 0.15),
-                                                            rotate=(-25, 25), shear=None, cval=0, keep_ratio=True,
-                                                            p=prob[0]),
+                # A.augmentations.geometric.transforms.Affine(scale=(0.85, 1.15), translate_percent=(0.15, 0.15),
+                #                                             rotate=(-25, 25), shear=None, cval=0, keep_ratio=True,
+                #                                             p=prob[0]),
+                # A.augmentations.transforms.GaussNoise(var_limit=(0, 0.01), mean=0, p=prob[1]),
+                # A.augmentations.HorizontalFlip(p=prob[1]),
+                # A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
+                #                                        p=prob[2]),
+                # A.GridDistortion(num_steps=5, distort_limit=0.3, interpolation=1, border_mode=0, value=None,
+                #                  mask_value=None, always_apply=False, p=prob[3]),
+                #
+                # A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None, p=prob[4],
+                #                    border_mode=cv.BORDER_CONSTANT),
 
+                A.augmentations.geometric.transforms.Affine(scale=(0.90, 1.10),rotate=(-15, 15), shear=None, cval=0, keep_ratio=True,
+                                                            p=prob[0]),
+                #A.augmentations.transforms.GaussNoise(var_limit=(0, 0.01), mean=0, p=prob[1]),
                 A.augmentations.HorizontalFlip(p=prob[1]),
-                A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
+                A.augmentations.transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, always_apply=False,
                                                        p=prob[2]),
-                A.GridDistortion(num_steps=5, distort_limit=0.3, interpolation=1, border_mode=0, value=None,
+                A.GridDistortion(num_steps=5, distort_limit=0.2, interpolation=1, border_mode=0, value=None,
                                  mask_value=None, always_apply=False, p=prob[3]),
 
-                A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None, p=prob[4],
+                A.ElasticTransform(alpha=0.1, sigma=20, alpha_affine=40, interpolation=1, value=None, p=prob[4],
                                    border_mode=cv.BORDER_CONSTANT),
-
 
             ]
         )
@@ -172,6 +186,8 @@ class CXRLoader(Dataset):
 
         count = data.sum().to_numpy()
         self.count = count
+        count = np.ones_like(count)
+        count[-1] = 100 #reduce the presence of empty images
         for name, cat_count in zip(self.classes, count):
             if cat_count == 0:
                 logging.warning(f"Careful! The category {name} has 0 images!")
@@ -230,10 +246,11 @@ class CXRLoader(Dataset):
             #
             try :
                 img = iio.v3.imread(f"{self.img_dir}{path}")
+                img = img.astype(np.uint8)
 
             except :
                 logging.critical(f"Could not read image {path}")
-                img = np.zeros((self.img_size, self.img_size))
+                img = np.zeros((self.img_size, self.img_size),dtype=np.uint8)
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
@@ -314,9 +331,9 @@ if __name__ == "__main__":
 
     img_dir = os.environ["img_dir"]
     train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
-                      channels=3, datasets=["ChexPert"],debug=True)
+                      channels=3, datasets=["CIUSSS"],debug=False)
     valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
-                      channels=1, datasets=["ChexPert"],debug=True)
+                      channels=1, datasets=["CIUSSS"],debug=False)
     print(len(train))
     print(len(valid))
     i = 0

@@ -15,7 +15,7 @@ class MongoDB:
         self.names = names + ["Path", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
         self.debug = debug
-
+        self.hierarchy = hierarchy
         if debug : #if debug is true, we are not using the database
             self.load_data = self.load_offline
             assert collectionnames == ["ChexPert"],f"{collectionnames} is not available offline"
@@ -41,7 +41,6 @@ class MongoDB:
 
 
     def load_online(self,datasetname) :
-
         # -------- load data from database ---------------------------
 
         if datasetname=="Test" : #for testing we specified the subset of the CIUSSS collection
@@ -54,13 +53,15 @@ class MongoDB:
 
         for collection in self.data:
             results = list(collection.find(query))
-
+            data = pd.DataFrame(results)
 
             logging.info(f"Collected query for dataset {collection}")
 
-            if len(results) > 0:
+            if len(data) == 0 :
+                raise Exception(f"No data found for {datasetname} in {collection}")
+            else :
 
-                data=pd.DataFrame(results)
+
 
                 if "Exam ID" not in data.columns: #TODO: remove this when the database is updated
                     data["Exam ID"] = data["Patient ID"]
@@ -78,11 +79,10 @@ class MongoDB:
                 data.set_index("Patient ID")
                 train_dataset.append(data)
 
-        if len(train_dataset) > 1:
-            #df = reduce(lambda left, right: pd.append(left, right,on=self.names, how='inner'), train_dataset)
-            df = pd.concat(train_dataset,ignore_index=True)
-        else:
-            raise Exception("No data found")
+        print("Loaded {} images from {}".format(len(data), collection))
+        df = pd.concat(train_dataset,ignore_index=True)
+
+
 
         return df
     def load_offline(self,datasetname):
@@ -96,8 +96,10 @@ class MongoDB:
         #set up parent class
         df.fillna(0, inplace=True)
 
-        for parent,children in hierarchy.items() :
-            df[parent] = df[children].replace(-1,1).max(axis=1)
+        #TODO : reactivate this section for CIUSSS
+        for parent,children in self.hierarchy.items() :
+            if parent not in df.columns :
+                df[parent] = df[children].replace(-1,1).max(axis=1)
         df.fillna(0, inplace=True)
         df[self.names[:-4]] = df[self.names[:-4]].astype(int)
         #df.to_csv("test.csv",sep=" ")
@@ -112,13 +114,11 @@ if __name__ == "__main__":
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
-    db = MongoDB("10.128.107.212", 27017, ["ChexPert","vinBigData"])
-    print("database initialized")
-    train = MongoDB("10.128.107.212", 27017, ["ChexPert","CIUSSS","PadChest"]).dataset("Train")
-    #print("training dataset loaded")
-    valid = db.dataset("Valid")
-    print("validation dataset loaded")
-    train.iloc[0:100].to_csv("train.csv")
-    valid.iloc[0:100].to_csv("valid.csv")
-    # valid = valid[names]
-    #print(len(train),len(valid))
+    valid = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Valid")
+
+    train = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Train")
+
+
+    for parent, children in hierarchy.items():
+        print(parent,valid[parent].sum())
+

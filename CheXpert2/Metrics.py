@@ -59,7 +59,7 @@ class Metrics:
             true, pred2, zero_division=0, average=None
         )  # weighted??
         f1_dict={name: item for name, item in zip(self.names, f1)}
-        f1_dict["mean"] = np.sum(f1)/np.sum(f1!=0)
+        f1_dict["mean"] = np.mean(f1)
         return f1_dict
 
     def precision(self, true, pred):
