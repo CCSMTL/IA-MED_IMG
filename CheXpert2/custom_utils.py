@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 import cv2 as cv
+
+
 # -----------------------------------------------------------------------------------
 
 def convert(array1):
@@ -155,7 +157,16 @@ def clahe(img, clip):
     @clip : float, clip limit for CLAHE algorithm
     return: numpy array of the enhanced image
     """
+    # if you ever installed the cuda implementation of openCV
+    # img = np.array(img, dtype=np.uint8)
+    # clahe = cv.cuda.createCLAHE(clipLimit=clip,tileGridSize=(8,8))
+    # src = cv.cuda_GpuMat()
+    # src.upload(img)
+    # cl = clahe.apply(src,cv2.cuda_Stream.Null()).download()
+
+    img = np.array(img, dtype=np.uint8)
     clahe = cv.createCLAHE(clipLimit=clip,tileGridSize=(8,8))
-    cl = clahe.apply(np.array(img, dtype=np.uint8))
+    cl = clahe.apply(img)
+
     return cl
 

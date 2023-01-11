@@ -35,6 +35,22 @@ def test_cnn_RGB():
     y = cnn(x)  # test forward loop
 
 
+def test_cnn_hierarchical():
+    os.environ["DEBUG"] = "True"
+    x = torch.randn((2, 6, 320, 320))
+
+
+    cnn = CNN("convnext_tiny", 14, channels=3,hierarchical=True)
+    y = cnn(x)  # test forward loop
+
+
+def test_cnn_weighted_pooling():
+    os.environ["DEBUG"] = "True"
+    x = torch.randn((2, 6, 320, 320))
+    cnn = CNN("convnext_tiny", 14, channels=3,global_pool="weighted")
+    y = cnn(x)  # test forward loop
+
+
 if __name__ == "__main__":
 
     test_cnn_grayscale()

@@ -53,11 +53,13 @@ def training_loop(
         scaler.step(optimizer)
         scaler.update()
         scheduler.step()
-        #loader.iterable.dataset.step(idx,outputs.detach().cpu().numpy())
+
+        # loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
+
         running_loss += torch.nan_to_num(loss.detach(),0)
         # ending loop
 
-        #loader.iterable.dataset.step(idx.tolist(), outputs.detach().cpu().numpy())
+
         del (
             outputs,
             labels,

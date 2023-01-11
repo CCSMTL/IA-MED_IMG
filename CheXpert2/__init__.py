@@ -1,5 +1,6 @@
 
 
+
 # Chexpert
 names = ["Enlarged Cardiomediastinum","Cardiomegaly", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis","Pneumonia" ,"Consolidation", "Edema" , "No Finding"]
 
@@ -8,11 +9,10 @@ hierarchy ={
         "Consolidation" : ["Pneumonia"],
         "Lung Opacity" : ["Pneumonia","Atelectasis","Consolidation","Edema"],
 }
-#parents classes for hierarchical classification :
 
 #CIUSSS
 #
-# names= ["Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis","Pneumothorax","Emphysema","Pleural Effusion","Fracture" ,"Infiltration","Mass","No Finding"]
+# names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis","Pneumothorax","Emphysema","Pleural Effusion","Fracture" ,"Infiltration","Mass","No Finding"]
 #
 # hierarchy = {
 #         "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],
@@ -20,7 +20,7 @@ hierarchy ={
 #         "Liquid" : ["Edema","Pleural Effusion"]
 # }
 #
-#
+
 
 
 

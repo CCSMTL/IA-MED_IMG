@@ -10,6 +10,7 @@ import copy
 import os
 
 import cv2 as cv
+
 import numpy as np
 
 import torch
@@ -122,7 +123,7 @@ class CXRLoader(Dataset):
                 # A.augmentations.geometric.transforms.Affine(scale=(0.85, 1.15), translate_percent=(0.15, 0.15),
                 #                                             rotate=(-25, 25), shear=None, cval=0, keep_ratio=True,
                 #                                             p=prob[0]),
-                # A.augmentations.transforms.GaussNoise(var_limit=(0, 0.01), mean=0, p=prob[1]),
+
                 # A.augmentations.HorizontalFlip(p=prob[1]),
                 # A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
                 #                                        p=prob[2]),
@@ -132,8 +133,8 @@ class CXRLoader(Dataset):
                 # A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None, p=prob[4],
                 #                    border_mode=cv.BORDER_CONSTANT),
 
-                A.augmentations.geometric.transforms.Affine(scale=(0.90, 1.10),rotate=(-15, 15), shear=None, cval=0, keep_ratio=True,
-                                                            p=prob[0]),
+
+                A.augmentations.geometric.transforms.Affine(scale=(0.90, 1.10),rotate=(-15, 15), shear=None, cval=0, keep_ratio=True,p=prob[0]),
                 #A.augmentations.transforms.GaussNoise(var_limit=(0, 0.01), mean=0, p=prob[1]),
                 A.augmentations.HorizontalFlip(p=prob[1]),
                 A.augmentations.transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, always_apply=False,
@@ -185,9 +186,8 @@ class CXRLoader(Dataset):
         data = data.astype(int)
 
         count = data.sum().to_numpy()
-        self.count = count
-        count = np.ones_like(count)
-        count[-1] = 100 #reduce the presence of empty images
+        self.count = count #used for positive class weights
+
         for name, cat_count in zip(self.classes, count):
             if cat_count == 0:
                 logging.warning(f"Careful! The category {name} has 0 images!")
@@ -260,10 +260,10 @@ class CXRLoader(Dataset):
 
             if self.split.lower() == "train":
                 img_cropped = self.transform(image=img_cropped)["image"]
-                cl1 = img_cropped
 
-            else :
-                cl1 = clahe(img_cropped, 2.0)
+
+
+            cl1 = clahe(img_cropped, 2.0)
 
             #img_normalized = truncation_normalization(img_cropped)
 
@@ -334,6 +334,7 @@ if __name__ == "__main__":
                       channels=3, datasets=["CIUSSS"],debug=False)
     valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
                       channels=1, datasets=["CIUSSS"],debug=False)
+
     print(len(train))
     print(len(valid))
     i = 0

@@ -32,8 +32,10 @@ for key in hierarchy.keys():
 #torch.autograd.set_detect_anomaly(True)
 #torch.autograd.profiler.profile(False)
 #torch.autograd.profiler.emit_nvtx(False)
+
 torch.backends.cudnn.benchmark = True
 torch.backends.cudnn.enabled = True
+
 #torch.set_float32_matmul_precision('high')
 
 try:
@@ -149,8 +151,10 @@ def main() :
     # ------------training--------------------------------------
 
     # setting up for the training
+
     config["train_dataset"] = ["ChexPert","MimicCxrJpg"]
     config["val_dataset"]   = ["ChexPert"]
+
     experiment = Experiment(
         f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
     )
@@ -170,8 +174,6 @@ def main() :
 
     results = experiment.train()
     experiment.end(results)
-
-
 
 
 if __name__ == "__main__":

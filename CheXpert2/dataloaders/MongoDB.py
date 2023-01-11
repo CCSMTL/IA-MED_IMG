@@ -5,6 +5,7 @@ import pandas as pd
 import pymongo
 import logging
 from CheXpert2 import names,hierarchy
+from pymongo.errors import ConnectionFailure
 class MongoDB:
     def __init__(self, address, port, collectionnames,use_frontal=False,img_dir="",debug=False) :
 
@@ -15,7 +16,17 @@ class MongoDB:
         self.names = names + ["Path", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
         self.debug = debug
+
         self.hierarchy = hierarchy
+
+        try:
+            # The ismaster command is cheap and does not require auth.
+            client = pymongo.MongoClient(address, port)
+            client.admin.command('ismaster')
+        except ConnectionFailure:
+            logging.critical("Server not available ; switching offline")
+            debug = True
+
         if debug : #if debug is true, we are not using the database
             self.load_data = self.load_offline
             assert collectionnames == ["ChexPert"],f"{collectionnames} is not available offline"

@@ -35,7 +35,7 @@ def chord_chexpert(data):
     #conn = conn / np.sum(conn) #normalize
     fig, axes = plot_connectivity_circle(conn, data.columns,facecolor='white', textcolor='black',fontsize_names=16,colormap="hot_r")
 
-    fig.savefig("chords_ciusss_valid")
+    fig.savefig("chords_chexpert_valid")
     #plt.title("Correlation map between diseases in chexnet")
     #fig.show()
 
@@ -70,7 +70,7 @@ def histogram_chexpert(data):
     )
 
     fig.show()
-    fig.write_image("histogram_ciusss_valid.png")
+    fig.write_image("histogram_chexpert_valid.png")
 
 
 def data_count(data) :
@@ -78,21 +78,30 @@ def data_count(data) :
     data.replace(-1, 1, inplace=True)
     count = data[names[:-1]].values.sum(axis=1)
     plt.figure()
-    print(count.shape)
-    #counts, bins = np.histogram(count)
-    #plt.hist(bins[:-1], bins=np.arange(0,11)-0.5,weights=counts)
+
+
     sns.histplot(count,discrete=True)
     plt.yscale("log")
-    plt.xlabel("Number of pathologies per label")
+    plt.xlabel("Number of pathologies per image")
     plt.ylabel("Count")
     plt.title("Number of pathologies per patient")
     plt.savefig("disease_count_ciusss_valid.png")
 
+def image_count(data) :
+    count = data.groupby(["Patient ID"]).count()["Cardiomegaly"].values
+    plt.figure()
+    sns.histplot(count,bins=list(range(0,10,1)))
+    plt.xticks(ticks=np.arange(0,10,1)+0.5,labels = np.arange(0,10,1))
+    plt.xlabel("Number of images per patient")
+    plt.ylabel("Count")
+    plt.savefig("image_count_chexpert_train.png")
+
 
 if __name__ == "__main__":
-    data = MongoDB("10.128.107.212", 27017, ["CIUSSS"]).dataset("Valid")
+    data = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset("Train")
     #data = pd.read_csv("/mnt/e/data/public_data/ChexPert/CheXpert-v1.0/valid.csv")
     data.fillna(0,inplace=True)
-    chord_chexpert(data)
-    histogram_chexpert(data)
-    data_count(data)
+    #chord_chexpert(data)
+    #histogram_chexpert(data)
+    #data_count(data)
+    image_count(data)

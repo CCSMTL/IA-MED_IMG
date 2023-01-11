@@ -275,7 +275,7 @@ class Experiment:
         if config["debug"]:
             num_samples = 50
         else:
-            num_samples = 50_000
+            num_samples = 20_000
 
 
 
@@ -303,6 +303,7 @@ class Experiment:
             pin_memory=True,
             shuffle=False,
         )
+
         self.optimizer = getattr(torch.optim, optimizer)(
             self.model.parameters(),
             lr=self.config["lr"],
