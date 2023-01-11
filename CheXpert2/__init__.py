@@ -1,14 +1,14 @@
 
 
-
-# Chexpert
-names = ["Enlarged Cardiomediastinum","Cardiomegaly", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis","Pneumonia" ,"Consolidation", "Edema" , "No Finding"]
-
-hierarchy ={
+#Chexpert
+names = ["Enlarged Cardiomediastinum","Cardiomegaly", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis" , "Pneumonia", "Consolidation", "Edema", "No Finding"]
+hierarchy = {
         "Enlarged Cardiomediastinum" : ["Cardiomegaly"],
         "Consolidation" : ["Pneumonia"],
-        "Lung Opacity" : ["Pneumonia","Atelectasis","Consolidation","Edema"],
+        "Lung Opacity"  : ["Edema","Consolidation","Pneumonia","Atelectasis"],
 }
+
+
 
 #CIUSSS
 #
@@ -19,7 +19,6 @@ hierarchy ={
 #         "Air" : ["Emphysema","Pneumothorax"],
 #         "Liquid" : ["Edema","Pleural Effusion"]
 # }
-#
 
 
 

@@ -13,8 +13,8 @@ import pandas as pd
 from mne_connectivity.viz import plot_connectivity_circle
 from CheXpert2.dataloaders.MongoDB import MongoDB
 
-#from CheXpert2 import names
-names = ["Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
+from CheXpert2 import names
+#names = ["Cardiomegaly","Lung Lesion" ,"Emphysema","Edema","Consolidation"  ,"Atelectasis"    ,"Pneumothorax"    ,"Pleural Effusion"    ,"Fracture" ,"Hernia","Infiltration","Mass","Nodule","No Finding"]
 #names = ["Enlarged Cardiomediastinum" ,"Cardiomegaly", "Pleural Other", "Pleural Effusion", "Pneumothorax" , "Lung Opacity" , "Atelectasis", "Lung Lesion" , "Pneumonia" , "Consolidation", "Edema" , "Fracture" , "Support Devices", "No Finding"]
 
 def chord_chexpert(data):
@@ -97,6 +97,21 @@ def image_count(data) :
     plt.savefig("image_count_chexpert_train.png")
 
 
+def uncertainty_count(data) :
+    data = data[names]
+    import copy
+    data2 = data.copy()
+    #certain count
+
+    certain_count = data.replace(-1,0).sum(axis=0)
+
+    #uncertain count
+    data2 = data2.replace(1,0)
+    uncertain_count = data2.replace(-1,1).sum(axis=0)
+
+    print(f"Uncertain ratio :")
+    print(uncertain_count/certain_count)
+
 if __name__ == "__main__":
     data = MongoDB("10.128.107.212", 27017, ["ChexPert"]).dataset("Train")
     #data = pd.read_csv("/mnt/e/data/public_data/ChexPert/CheXpert-v1.0/valid.csv")
@@ -104,4 +119,5 @@ if __name__ == "__main__":
     #chord_chexpert(data)
     #histogram_chexpert(data)
     #data_count(data)
-    image_count(data)
+    #image_count(data)
+    uncertainty_count(data)

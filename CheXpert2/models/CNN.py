@@ -54,10 +54,10 @@ class CNN(torch.nn.Module):
                 self.hierarchy[names.index(parent)] = [names.index(child) for child in children]
 
         self.backbone = self.get_backbone()
-
-        self.final_convolution = torch.nn.Conv2d(in_channels = self.backbone.feature_info[-1]["num_chs"],out_channels=1, kernel_size=1, stride=1, padding=0, bias=True)
-        self.fc = torch.nn.ModuleList([torch.nn.Linear(self.backbone.feature_info[-1]["num_chs"],1) for i in range(self.num_classes)])
-        self.dropout = torch.nn.Dropout(p=self.drop_rate)
+        if self.prob_pool :
+            self.final_convolution = torch.nn.Conv2d(in_channels = self.backbone.feature_info[-1]["num_chs"],out_channels=1, kernel_size=1, stride=1, padding=0, bias=True)
+            self.fc = torch.nn.ModuleList([torch.nn.Linear(self.backbone.feature_info[-1]["num_chs"],1) for i in range(self.num_classes)])
+            self.dropout = torch.nn.Dropout(p=self.drop_rate)
     def load_backbone(self, path: str) -> None:
         """
         Load the backbone from a given path
@@ -121,13 +121,15 @@ class CNN(torch.nn.Module):
         outputs = torch.zeros((images.shape[0], self.num_classes)).to(images.device)
 
 
+        if images.shape[1] == self.channels :
+            outputs += self.weighted_forward(images) if self.prob_pool else self.backbone(images)
+        else :
+            for i in range(0,2) :
+                #iterate through the two images for one patient
+                image = images[:,i*self.channels:(i+1)*self.channels,:,:]
 
-        for i in range(0,2) :
-            #iterate through the two images for one patient
-            image = images[:,i*self.channels:(i+1)*self.channels,:,:]
-
-            #if not torch.round(torch.min(image),decimals=2)==torch.round(torch.mean(image),decimals=2) : #if the image is not empty
-            outputs += self.weighted_forward(image) if self.prob_pool else self.backbone(image)
+                #if not torch.round(torch.min(image),decimals=2)==torch.round(torch.mean(image),decimals=2) : #if the image is not empty
+                outputs += self.weighted_forward(image) if self.prob_pool else self.backbone(image)
 
 
 
