@@ -282,8 +282,6 @@ class CXRLoader(Dataset):
 
 
 
-
-
             images[:, :,i * self.channels:(i + 1) * self.channels] = img_final[:, :, :self.channels]
             if i == 1:
                 break

@@ -229,6 +229,7 @@ class Experiment:
 
         """
         self.model=model.to(device,dtype=torch.float)
+        #self.model = torch.compile(model)
         self.device = device
         self.watch(self.model)
         self.config = config

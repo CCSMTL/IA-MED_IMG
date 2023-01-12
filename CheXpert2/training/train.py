@@ -33,8 +33,8 @@ for key in hierarchy.keys():
 #torch.autograd.profiler.profile(False)
 #torch.autograd.profiler.emit_nvtx(False)
 
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.enabled = True
+#torch.backends.cudnn.benchmark = True
+#torch.backends.cudnn.enabled = True
 
 #torch.set_float32_matmul_precision('high')
 
@@ -152,7 +152,7 @@ def main() :
 
     # setting up for the training
 
-    config["train_dataset"] = ["ChexPert","MimicCxrJpg"]
+    config["train_dataset"] = ["ChexPert"]
     config["val_dataset"]   = ["ChexPert"]
 
     experiment = Experiment(

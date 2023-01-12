@@ -478,6 +478,12 @@
     cross-generalization of our model on the different datasets.
 
 
+            No matter what we tried, however, the training always converge towards \~0.4 of F1, and 0.8 of AUC (see table \ref{final results}). One hypothesis for such lower result than on CheXpert is
+            the quality of the data. While a radiologist has himself a F1-score oscillating between .4 and .6, when you factor in our extra source of error, it seems only natural to not be able to achieve a higher score.
+
+
+            We won't be able to know more until we get radiologists to review our data to determine if it is indeed problematic or not.
+
 
 
 
@@ -1212,7 +1218,7 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
     \subsection{Verifying the data}
             The data was not as cleaned as we would have liked. While the CheXpert validation dataset was validated by a team of three radiologist, our data
             was simply annotated by a single radiologist's report, from which the labels were then automatically derived. This lead to a quite important source of error as radiologist's performance
-            is estimated to be between 0.4 and 0.6~\cite{radiologist_performance}. This is a quite important source of error, which is compounded
+            is estimated to be between 0.4 and 0.6~\cite{chexzero}. This is a quite important source of error, which is compounded
             by the fact that the radiologist's report often contained many uncertainties that we had
             to quantify with an automated labeler. The problem's come that no radiologist was available to verify the work of the labeler, and we had to rely on our interpretation of
             the report to evaluate the performance of the rule-based labeler we developped.
@@ -1267,13 +1273,15 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
 
     \subsubsection{Automatic Mixed Precision (AMP)}
 
-            To solve this problem, I tried to implement the automatic mixed precision (AMP) technique~\cite{automatic_mixed_precision}. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
-            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size.
+            To solve this problem, I tried to implement the automatic mixed precision (AMP) technique available with pytorch. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
+            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size, by applying a mix
+            of 32 bits precision and 16 bits precision multiplication.
 
-            However, this technique is not without its problems. Indeed, it is not always easy to implement, and it is not always compatible with all the libraries used.
-            While this technique improved the training time vastly, it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
+            However, this technique is not without its problems. While it improved the training time vastly,
+            it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
 
-            This is a problem that I have mostly solved by normalizing further the input vector but some underflowing might still occur. In these case, the training need to be done
+            This is a problem that I have mostly solved by normalizing further the input vector but some
+            underflowing might still occur. In these case, the training need to be done
             again as the model will be corrupted (Nan values in the weights).
 
 
