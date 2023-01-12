@@ -250,9 +250,8 @@ class CXRLoader(Dataset):
 
             except :
                 logging.critical(f"Could not read image {self.img_dir}{path}")
-                print("ATTENTION!!")
                 img = np.zeros((self.img_size, self.img_size),dtype=np.uint8)
-                raise FileNotFoundError("Could not read image")
+
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
