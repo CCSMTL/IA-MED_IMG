@@ -2,9 +2,9 @@ import numpy as np
 import sklearn.metrics
 import timm.utils.metrics
 from sklearn import metrics
-from sklearn.metrics import roc_curve, auc,f1_score,recall_score,precision_score,matthews_corrcoef
+from sklearn.metrics import roc_curve, auc,f1_score,recall_score,precision_score,matthews_corrcoef,roc_auc_score
 import logging
-from libauc.metrics import roc_auc_score
+
 class Metrics:
     def __init__(self, num_classes, names, threshold):
         self.num_classes = num_classes
@@ -46,7 +46,7 @@ class Metrics:
         for x, y in zip(true, pred):
             if (x == y).all():
                 accuracy += 1
-        #accuracy = timm.utils.metrics.accuracy(pred,true, topk=(1,))
+
         return accuracy
 
     def f1(self, true, pred):
@@ -57,7 +57,7 @@ class Metrics:
 
         f1=f1_score(
             true, pred2, zero_division=0, average=None
-        )  # weighted??
+        )
         f1_dict={name: item for name, item in zip(self.names, f1)}
         f1_dict["mean"] = np.mean(f1)
         return f1_dict

@@ -94,6 +94,14 @@ def set_thresholds(self, true, pred):
 
     return best_threshold
 
+def load_my_state_dict(self, state_dict):
+
+    own_state = self.state_dict()
+    for name, param in state_dict.items():
+        if name not in own_state:
+            continue
+
+        own_state[name].copy_(param)
 
 def load_model() :
     if torch.cuda.is_available():
@@ -102,7 +110,7 @@ def load_model() :
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
     models = [
-        CNN("convnext_small_384_in22ft1k", channels=1, num_classes=18, pretrained=False),
+        CNN("convnext_base_384_in22ft1k", channels=3, num_classes=len(names), pretrained=False,hierarchical=True),
         #    CNN("convnext_base", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
         #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
         #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
@@ -113,7 +121,7 @@ def load_model() :
     # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
     # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
     weights = [
-        "/data/model_weights/convnext_small.pt",
+        "/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG/data/model_weights/atomic-wildflower.pt",
         #    "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base_2.pt",
         #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201.pt",
         #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201_2.pt",
@@ -122,17 +130,11 @@ def load_model() :
     for model, weight in zip(models, weights):
         state_dict = torch.load(weight, map_location=torch.device(device))
 
-        # from collections import OrderedDict
-        # new_state_dict = OrderedDict()
-        # for k, v in state_dict.items():
-        #     name = k[7:]  # remove 'module.' of DataParallel/DistributedDataParallel
-        #     new_state_dict[name] = v
 
-        # model.load_state_dict(new_state_dict)
-        model.load_state_dict(state_dict)
-        # model = model.to(device)
+        #model.load_state_dict(state_dict)
+        load_my_state_dict(model,state_dict)
         model.eval()
-
+        model = model.to(device)
         return model
 
 def main():

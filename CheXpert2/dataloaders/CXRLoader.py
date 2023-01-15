@@ -249,8 +249,9 @@ class CXRLoader(Dataset):
                 img = img.astype(np.uint8)
 
             except :
-                logging.critical(f"Could not read image {path}")
+                logging.critical(f"Could not read image {self.img_dir}{path}")
                 img = np.zeros((self.img_size, self.img_size),dtype=np.uint8)
+
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
@@ -278,8 +279,6 @@ class CXRLoader(Dataset):
             else :
 
                 img_final = cl1[:,:,None]
-
-
 
 
 

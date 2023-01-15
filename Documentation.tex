@@ -478,6 +478,12 @@
     cross-generalization of our model on the different datasets.
 
 
+            No matter what we tried, however, the training always converge towards \~0.4 of F1, and 0.8 of AUC (see table \ref{final results}). One hypothesis for such lower result than on CheXpert is
+            the quality of the data. While a radiologist has himself a F1-score oscillating between .4 and .6, when you factor in our extra source of error, it seems only natural to not be able to achieve a higher score.
+
+
+            We won't be able to know more until we get radiologists to review our data to determine if it is indeed problematic or not.
+
 
 
 
@@ -1075,9 +1081,10 @@
             we will have to adapt the hierarchy. The hierarchy used in~\cite{hierarchical} is reported in the figure~\ref{fig:hierarchical_learning_hierarchy}. We will use the same hierarchy, but with our classes instead of theirs.
 
 
-            They also used a pretraining phase, with only the case where the parent class is present. We will first try without this pretraining phase to see if it is necessary.
+            They also used a pretraining phase, with only the case where the parent class is present. We will first try without this pretraining phase to see if it is necessary. We will apply it later
+            on the CCSMTL's dataset.
 
-
+            As it turns out, we still see great results
 
         \subsubsection{JFHealthcare - Probabilistic-CAM~\cite{jfhealthcare}}
 
@@ -1109,23 +1116,90 @@
             within the image. This is especially useful for the radiologist, who might want to understand why the model made a certain decision.
 
 
-        \subsection{Results on the CIUSSS dataset}
+
+\begin{table}[]
+\begin{tabular}{lllllll}
+Experiences & \multicolumn{2}{l}{Baseline} & \multicolumn{2}{l}{Hierarchical} & \multicolumn{2}{l}{Weighted pooling} \\
+Metrics / Classes & AUC  & F1   & AUC & F1 & AUC  & F1 \\
+Cardiomegaly      & 0.74 & 0.60 & 0   & 0  & 0.57 & 0  \\
+Pleural Effusion  & 0.90 & 0.65 & 0   & 0  & 0.86 & 0  \\
+Pneumothorax      & 0.87 & 0.22 & 0   & 0  & 0.83 & 0  \\
+Lung Opacity      & 0.88 & 0.83 & 0   & 0  & 0.89 & 0  \\
+Atelectasis       & 0.67 & 0.47 & 0   & 0  & 0.77 & 0  \\
+Lung Lesion       & 0.26 & 0.67 & 00  & 0  & N/A  & 0  \\
+Pneumonia         & 0.70 & 0    & 0   & 0  & N/A  & 0  \\
+Consolidation     & 0.75 & 0.45 & 0   & 0  & 0.78 & 0  \\
+Edema             & 0.86 & 0.55 & 0   & 0  & 0.88 & 0  \\
+No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
+                  &      &      &     &    &      &    \\
+                  &      &      &     &    &      &    \\
+                  &      &      &     &    &      &    \\
+                  &      &      &     &    &      &
+\end{tabular}
+\end{table}
+
+        \subsection{Results on the CCSMTL's dataset}
 
 
-            Following the results obtained earlier on CheXpert, we then tried applying some of the same technique, but this time using a validation dataset from the CIUSSS data.
+            Following the results obtained earlier on CheXpert, we then tried applying some of the same technique, but this time using a validation dataset from the CIUSSS data. Sadly, every attempt, no matter what, always seem
+            to converge towards a f1-score of 0.4 , and an approximate AUC of 0.8 . Since we obtained a way higher score on CheXpert, and even using weights trained on it didn't result in any improvement, we had to face
+            the reality that we most likely had too much noise in our labels. Now , while there are ways to deal with noisy label (some that we will discuss/point later), we do need to have a validation/test dataset free
+            of this noise to evaluate our model's performance on. Sadly, we were not able to obtain help from the radiologists working in the CCSMTL to clean the labels, and while other dataset exists, they do not focus
+            exactly on the same label of interest, and they will not allow us to test the performance of our model on the hospital's data before deploying the model!
 
+            There is also the issue of cross-dataset bias. As demonstrated in the section data aalysis, there is a stark difference between the data of CheXpert and the one from the CCSMTL. This bias is not only in the form of the
+            label count, but also in the label interpretation . Indeed, there is some variation as to the definition of specific label that varies regionally, based on the radiologists training \cite{cross-bias}.
 
+            Without help from the radiologists, we might need to proceed to some form of self supervised learning to deal with this issue of fine tuning on the CCSMTL's data, but we still need to have a clean test dataset. For the time being, we did not had time to implement such method however.
 
 
 
     \section{Explainability \& Visualization}
 
     %GradCam and improvements
+        We used GradCAM \cite{gradcam} to visualize the model's decision. The GradCAM method is a method that allows to visualize the regions of the image that the model used to make its decision. It does so by computing the gradient of the output of the model with respect to the last convolutional layer, and then using this gradient to weight the feature maps.
+        The weighted feature maps are then summed up to obtain a single feature map, which is then used to obtain the final heatmap.
+        The final heatmap is then used to overlay the heatmap on the original image, in order to visualize the regions of the image that the model used to make its decision.
+
+        We then use an arbitrary threshold of 0.9 , as described in \myworries{Find citation}, we concentrate on the part of the image most important to the relevant class.
+        As you can see on \ref{}, we have a few examples of the results. Please note we used the ScoreCAM method provided by the GradCAM package. Other method failed to
+        identify correcly the pathology, mostly simply indicating the lung region.
 
 
-    \section{Improvements and attempts}
+
+    \section{Failed Attempts}
 
     \subsection{Moving Average Labels}
+
+        While we know we have many errors in our dataset, it is our hope that our model will simply ignore this as noise. However, there are more advanced techniques
+        to deal with noisy labels in your training data.
+        Based on the "Deep learning with noisy labels: exploring techniques and remedies in medical image analysis" \cite{noisy_label_medical} and
+        "Learning from Noisy Labels with Deep Neural Networks: A Survey" \cite{noisy_label_review}, I've tried implementing step mechanism that would modified the training
+         label, applying them as a moving average such that, each time a prediction p_i for a given label L_i, is made by the model, the label is modified to
+
+        \begin{equation}
+            L_{i+1} = \alpha L_i + (1 - \alpha) P_{i}
+        \end{equation}
+
+
+        I've tried setting the $\alpha$ parameter to 0.999, but immediately runs done with such mechanism led to overfitting. Any further
+        attempts hasn't yielded any interesting results either. This solution was therefore discarded
+
+%
+%    \subsection{Label Smoothing}
+%            Label Smoothing is a commonly used regularization technique . Studying the Binary Cross Entropy, one can see that it is bias towards the extreme,
+%            penalizing prediction that are close to the boundaries, with a perfect prediction being exactly 0 or 1. However, if we have noisy labels, such as in our case,
+%            this pressure can lead to the model learning to reproduce this noise, or to mostly focus on easy classes, which predictions it can push to those extremities . To avoid this, it is
+%            common to see a label
+
+    \subsection{Polycam (PCAM)}
+
+    While the Gradient Class Activation (GradCam) methods allow to visualize the most important regions of the image for a given class, it is quite imprecise. A lot has been done towards
+    providing a better explainability for deep learning models, and one such paper is the Polycam paper~\cite{polycam}. The paper proposes a method to obtain a more precise localization of the
+    class-related pixels, by leveraging the information present at multiple layers throughout the network. Doing so , they did improved by a lot the precision
+    over the GradCAM method. However, our attempt to use it has failed. For now, we could only obtain noise from the method, and we were unable to find a way to improve it. We will try to
+    come back to it later.
+
 
 
     \section{Problem observed}
@@ -1144,7 +1218,7 @@
     \subsection{Verifying the data}
             The data was not as cleaned as we would have liked. While the CheXpert validation dataset was validated by a team of three radiologist, our data
             was simply annotated by a single radiologist's report, from which the labels were then automatically derived. This lead to a quite important source of error as radiologist's performance
-            is estimated to be between 0.4 and 0.6~\cite{radiologist_performance}. This is a quite important source of error, which is compounded
+            is estimated to be between 0.4 and 0.6~\cite{chexzero}. This is a quite important source of error, which is compounded
             by the fact that the radiologist's report often contained many uncertainties that we had
             to quantify with an automated labeler. The problem's come that no radiologist was available to verify the work of the labeler, and we had to rely on our interpretation of
             the report to evaluate the performance of the rule-based labeler we developped.
@@ -1199,13 +1273,15 @@
 
     \subsubsection{Automatic Mixed Precision (AMP)}
 
-            To solve this problem, I tried to implement the automatic mixed precision (AMP) technique~\cite{automatic_mixed_precision}. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
-            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size.
+            To solve this problem, I tried to implement the automatic mixed precision (AMP) technique available with pytorch. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
+            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size, by applying a mix
+            of 32 bits precision and 16 bits precision multiplication.
 
-            However, this technique is not without its problems. Indeed, it is not always easy to implement, and it is not always compatible with all the libraries used.
-            While this technique improved the training time vastly, it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
+            However, this technique is not without its problems. While it improved the training time vastly,
+            it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
 
-            This is a problem that I have mostly solved by normalizing further the input vector but some underflowing might still occur. In these case, the training need to be done
+            This is a problem that I have mostly solved by normalizing further the input vector but some
+            underflowing might still occur. In these case, the training need to be done
             again as the model will be corrupted (Nan values in the weights).
 
 

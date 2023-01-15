@@ -5,7 +5,6 @@ Created on 2022-07-20$
 
 @author: Jonathan Beaulieu-Emond
 """
-import os
 
 import pandas as pd
 import plotly.graph_objects as go

@@ -1,42 +1,33 @@
 # ------python import------------------------------------
 import os
 import sys
-
-import urllib
 import warnings
 
-#import libauc.datasets
-import numpy as np
 import torch
 import torch.distributed as dist
-import yaml
-from torch.utils.data.sampler import SequentialSampler
 import logging
 import wandb
-from CheXpert2.Experiment import Experiment
-# ----------- parse arguments----------------------------------
-from CheXpert2.Parser import init_parser
-from CheXpert2.custom_utils import set_parameter_requires_grad
-from CheXpert2.dataloaders.CXRLoader import CXRLoader
+
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
-
+from CheXpert2.Experiment import Experiment
+from CheXpert2.Parser import init_parser
 from CheXpert2 import names,hierarchy
 for key in hierarchy.keys():
     if key not in names :
         names.insert(0,key)
-#from libauc.losses import AUCM_MultiLabel
-#from libauc.optimizers import PESG
+
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
 #torch.autograd.set_detect_anomaly(True)
 #torch.autograd.profiler.profile(False)
 #torch.autograd.profiler.emit_nvtx(False)
 
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.enabled = True
+#torch.backends.cudnn.benchmark = True
+#torch.backends.cudnn.enabled = True
 
 #torch.set_float32_matmul_precision('high')
+# --------load local variable ----------------------------
 
 try:
     os.environ["img_dir"] = os.environ["img_dir"]
@@ -88,12 +79,6 @@ def initialize_config(args):
     experiment = Experiment(
         f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=40)
     torch.set_num_threads(max(config["num_worker"],1))
-
-    # ----------- load classes ----------------------------------------
-
-
-
-
 
 
     # --------- instantiate experiment tracker ------------------------
@@ -160,6 +145,7 @@ def main() :
     # ------------training--------------------------------------
 
     # setting up for the training
+
 
     config["train_dataset"] = ["ChexPert", "MimicCxrJpg"]
     config["val_dataset"] = ["ChexPert"]
