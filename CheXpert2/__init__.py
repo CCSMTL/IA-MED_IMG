@@ -11,7 +11,7 @@ hierarchy = {
 
 
 #CIUSSS
-#
+
 # names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis","Pneumothorax","Emphysema","Pleural Effusion","Fracture" ,"Infiltration","Mass","No Finding"]
 #
 # hierarchy = {
@@ -19,9 +19,6 @@ hierarchy = {
 #         "Air" : ["Emphysema","Pneumothorax"],
 #         "Liquid" : ["Edema","Pleural Effusion"]
 # }
-
-
-
 
 debug_config = {
         "model": "densenet121",

@@ -150,7 +150,11 @@ class CNN(torch.nn.Module):
 
         return outputs
 
-
+    def reset_classifier(self) :
+        if self.prob_pool :
+            self.fc = torch.nn.ModuleList([torch.nn.Linear(self.backbone.feature_info[-1]["num_chs"], 1) for i in range(self.num_classes)])
+        else :
+            self.backbone.reset_classifier(self.num_classes, self.drop_rate, self.global_pool)
 
 
 if __name__ == "__main__":  # for debugging purpose

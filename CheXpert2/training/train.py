@@ -1,32 +1,22 @@
 # ------python import------------------------------------
 import os
-
-
-import urllib
+import sys
 import warnings
 
-#import libauc.datasets
-import numpy as np
 import torch
 import torch.distributed as dist
-import yaml
-from torch.utils.data.sampler import SequentialSampler
 import logging
 import wandb
-from CheXpert2.Experiment import Experiment
-# ----------- parse arguments----------------------------------
-from CheXpert2.Parser import init_parser
-from CheXpert2.custom_utils import set_parameter_requires_grad
-from CheXpert2.dataloaders.CXRLoader import CXRLoader
+
 # -----local imports---------------------------------------
 from CheXpert2.models.CNN import CNN
-
+from CheXpert2.Experiment import Experiment
+from CheXpert2.Parser import init_parser
 from CheXpert2 import names,hierarchy
 for key in hierarchy.keys():
     if key not in names :
         names.insert(0,key)
-#from libauc.losses import AUCM_MultiLabel
-#from libauc.optimizers import PESG
+
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
 #torch.autograd.set_detect_anomaly(True)
@@ -37,6 +27,7 @@ for key in hierarchy.keys():
 #torch.backends.cudnn.enabled = True
 
 #torch.set_float32_matmul_precision('high')
+# --------load local variable ----------------------------
 
 try:
     os.environ["img_dir"] = os.environ["img_dir"]
@@ -86,14 +77,8 @@ def initialize_config(args):
 
     config = vars(args)
     experiment = Experiment(
-        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=20)
+        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=40)
     torch.set_num_threads(max(config["num_worker"],1))
-
-    # ----------- load classes ----------------------------------------
-
-
-
-
 
 
     # --------- instantiate experiment tracker ------------------------
@@ -110,6 +95,15 @@ def initialize_config(args):
 
 def main() :
     logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    root.addHandler(handler)
+
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir,experiment, device = initialize_config(args)
@@ -139,24 +133,25 @@ def main() :
             model,
             optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
-            train_datasets=["ChexPert"],
-            val_datasets=["ChexPert"],
+            train_datasets=["CIUSSS", "PadChest"],
+            val_datasets=["vinBigData","MimicCxrJpg"],
             config=config,
             device=device
         )
         results = experiment.train()
-        model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+        model.reset_classifier()
         model = model.to(device)
 
     # ------------training--------------------------------------
 
     # setting up for the training
 
-    config["train_dataset"] = ["ChexPert"]
-    config["val_dataset"]   = ["ChexPert"]
+
+    config["train_dataset"] = ["ChexPert", "MimicCxrJpg"]
+    config["val_dataset"] = ["ChexPert"]
 
     experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=40
     )
 
 

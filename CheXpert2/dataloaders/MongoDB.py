@@ -16,9 +16,9 @@ class MongoDB:
         self.names = names + ["Path", "Exam ID", "Frontal/Lateral"]
         self.img_dir = img_dir
         self.debug = debug
-
+        self.collectionnames = collectionnames
         self.hierarchy = hierarchy
-
+        self.online = True
         try:
             # The ismaster command is cheap and does not require auth.
             client = pymongo.MongoClient(address, port)
@@ -28,8 +28,10 @@ class MongoDB:
             debug = True
 
         if debug : #if debug is true, we are not using the database
-            self.load_data = self.load_offline
-            assert collectionnames == ["ChexPert"],f"{collectionnames} is not available offline"
+            self.online = False
+            self.data = collectionnames
+            for collection in collectionnames :
+                assert os.path.exists(f"{self.img_dir}/data/{collection}.csv"), f" {collection}is not available offline"
             return
 
         #-------- database connection ---------------------------
@@ -37,7 +39,7 @@ class MongoDB:
         self.db_public = self.client["Public_Images"]
         self.data = []
         self.collectionnames = collectionnames
-        self.load_data = self.load_online
+
         if "CIUSSS" in collectionnames :
             self.db_CIUSSS = self.client["CIUSSS"]
             self.data.append(self.db_CIUSSS["images"])
@@ -51,10 +53,11 @@ class MongoDB:
 
 
 
-    def load_online(self,datasetname) :
+    def load(self,datasetname) :
         # -------- load data from database ---------------------------
 
         if datasetname=="Test" : #for testing we specified the subset of the CIUSSS collection
+            #TODO : FIX OFFLINE TEST
             self.data= [self .db_CIUSSS["test"]]
         train_dataset = [pd.DataFrame([],columns=self.names)]
         query = {datasetname: 1}
@@ -63,51 +66,53 @@ class MongoDB:
             query["Frontal/Lateral"] = "F"
 
         for collection in self.data:
-            results = list(collection.find(query))
-            data = pd.DataFrame(results)
 
-            logging.info(f"Collected query for dataset {collection}")
+            if self.online :
+                results = list(collection.find(query))
+                data = pd.DataFrame(results)
+            else : #using offline csv
+                data = pd.read_csv(f"{self.img_dir}/data/{collection}.csv")
+                data = data[data[datasetname] == 1]
+
+
+            logging.info(f"Collected {datasetname} from dataset {collection}")
 
             if len(data) == 0 :
                 raise Exception(f"No data found for {datasetname} in {collection}")
-            else :
+
+            if "Exam ID" not in data.columns: #TODO: remove this when the database is updated
+                data["Exam ID"] = data["Patient ID"]
 
 
 
-                if "Exam ID" not in data.columns: #TODO: remove this when the database is updated
-                    data["Exam ID"] = data["Patient ID"]
+            for column in self.names :
+                if column not in data.columns :
+                    logging.critical(f"Column {column} not found in the database for collection {collection}")
+                    data[column] = 0
+
+
+            data["Patient ID"] = data["Patient ID"].astype(str)
+            data["Exam ID"] = data["Exam ID"].astype(str)
+            data.set_index("Patient ID")
+            train_dataset.append(data)
 
 
 
-                for column in self.names :
-                    if column not in data.columns :
-                        logging.critical(f"Column {column} not found in the database for collection {collection}")
-                        data[column] = 0
-
-
-                data["Patient ID"] = data["Patient ID"].astype(str)
-                data["Exam ID"] = data["Exam ID"].astype(str)
-                data.set_index("Patient ID")
-                train_dataset.append(data)
-
-        print("Loaded {} images from {}".format(len(data), collection))
         df = pd.concat(train_dataset,ignore_index=True)
 
 
 
         return df
-    def load_offline(self,datasetname):
-        data = pd.read_csv(f"{self.img_dir}/data/ChexPert.csv")
-        return data[data[datasetname]==1]
+
     def dataset(self, datasetname):
         assert datasetname in ["Train","Valid","Test"],f"{datasetname} is not a valid choice. Please select Train,Valid, or Test"
 
 
-        df = self.load_data(datasetname)
+        df = self.load(datasetname)
         #set up parent class
         df.fillna(0, inplace=True)
 
-        #TODO : reactivate this section for CIUSSS
+      
         for parent,children in self.hierarchy.items() :
             if parent not in df.columns :
                 df[parent] = df[children].replace(-1,1).max(axis=1)
