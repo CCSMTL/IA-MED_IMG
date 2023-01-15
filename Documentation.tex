@@ -32,6 +32,8 @@
 \usepackage{multicol} % for multi-column itemize
 
 
+\usepackage{lscape} %for landscape table
+
 \addbibresource[backend=biber]{reference.bib}
 % Document
 \begin{document}
@@ -78,10 +80,13 @@
         \end{quote}
         The full detail of the criticism can be found in the blog post~\cite{chexnet_critic}.
 
+        % TODO : talk about these criticsm in my word!
+        During the project, I've tried keeping in mind all these mentions and I will cover most of them in the future sections.
+
     \subsection{CheXpert}
 
 
-        The second project, CheXpert, was based on the same model but with a larger dataset and a more precise analysis
+        The second project, CheXpert, was based on the same model but with a larger dataset (that the stanford team curated themselves) and a more precise analysis
         of the diseases. While they kept the 14 original diseases, they mainly focus on 5 different diseases from a CXR image
         (Atelectasis,Cardiomegaly, Consolidation,Edema and Pleural Effusion). It corrected a few of the criticsm
         from the last project, and had a different goal. While the Stanford team focused on building the deep learning model
@@ -92,8 +97,8 @@
         a positive, negative , or uncertain flag to each of the label for a given report. The validation
         and test dataset reviewed by a panel of three radiologists to ensure the quality of the dataset.
         This is a necessary steps as the evaluation of CXR images is a very
-        complex task, with not always a clear answer. In their CheXnet project, they evaluated the performance of
-        their radiologists to be at around 0.4 with the F1-score. This is a rather low score, and therefore explains
+        complex task, with not always clear answers. In their CheXnet project, they evaluated the performance of
+        their radiologists to be at around 0.4 with the F1-score \footnote{As mentionned in \cite{chexnet_critic}, this was most lkely underestimated. \cite{chexzero} provides a possibly more accurate estimate} . This is a rather low score, and therefore explains
         the need to have a validation/test set reviewed by a panel of radiologists.
 
         While most of the dataset was released, they kept the test set private to evaluate the performance of models
@@ -107,21 +112,21 @@
 
         For our project, while we mostly worked with the CheXpert dataset, we also started building our own, using
         data from the different hospitals covered by the CIUSSS Centre-Sud-de-l'Île-de-Montréal (CCSMTL)
-    \myworries{Cite?}. Sadly delays in the acquisition of the data and the lack of a clear protocol for the
-    processing of it meant that we were only able to start working on it by September.
+        . Sadly delays in the acquisition of the data and the lack of a clear protocol for the
+    processing of it meant that we were only able to start working on it fully by September.
 
-    we also had to deal with the fact that this data was not labelised yet. We received the image in the DICOM
-    format\myworries{cite} and had to convert them to a more usable format (jpeg). The images were linked with a text
-    report from the radiologist, which we had to convert to a label. Since our text were in french, and that most
+    We also had to deal with the fact that this data was not labelised yet. We received the image in the DICOM
+    format and had to convert them to a more usable format (jpeg). The images were linked with a text
+    report from the radiologist, which we had to convert to a label \footnote{The details of this will be convered later.}. Since our text were in french, and that most
     ressources available were in english, we had to develop our own rule-based system to convert the text to a label.
     This part of the project was done by another student, Maxime Fournier, and will therefore not be discussed in
     details here. \myworries{Add in appendix?}
 
     Once the data was ready, we separated the dataset into a training, validation and test set, with 300 patients per
-    classes in the validation set, and 300 (20 images per classes) in the test set.
+    classes in the validation set (for a total of 9500 images), and 300 (20 images per classes) in the test set.
     We ensured there were no patient leakage between the different sets(a patient seen during training should not
-    have images present within the test or validations set), and we also sampled the images such that to ensure a
-    good representation of the different diseases in the dataset.
+    have images present within the test or validations set) \footnote{As per the criticsm of Dr.
+    Oakden-Rayner}.
 
     Sadly, the CCSMTL was not able to provide us with expertise in the form of radiologists to review the dataset, or
     our conversion from text to label. We therefore had to rely solely on our interpretation of the text and the
@@ -130,13 +135,13 @@
     were still waiting  for the CCSMTL to provide us with a second meeting with the radiologists, in order to
     hopefully secure time to have them review and validate our test dataset \footnote{While it would be very
     important to also have a validation dataset validated by radiologist, the CCSMTL was reluctant to try and provide
-    us with the ressources to do so.} . Please also note that most
+    us with the ressources to do so. We are currently in \" negotatiation\" as to obtain time with the radiologist to review data for a test set only.} . Please also note that most
     of our analysis will be conducted on the CheXpert dataset, both as it has been validated by radiologists, and
-    since the data from the CCSMTL was not yet ready yet \footnote{The data was only fully delivered to us towards
+    since the data from the CCSMTL was not ready yet \footnote{The data was only fully delivered to us towards
     the end of the internship}.
 
     As mentionned before, we had to take care of the conversion from text to label. While it's another intern who mostly worked on that part, I will
-    briefly described a few of the issues encountered with the help of anonymized examples (they are in french and we will not translate them as to avoid errors that it could introduce)
+    briefly described a few of the issues encountered with the help of anonymized examples (they are in french and I will not translate them as to avoid errors that this translation could introduce)
 
     \subsubsection{Uncertainties}
 
@@ -144,8 +149,8 @@
         Possible petit épanchement à la base droite. Pas d'oedème pulmonaire définitif. Pas de pneumonie définitive. Légère rotation vers la droite ce qui pourrait possiblement expliquer un aspect plus dense du hile droit.
         Un contrôle est suggéré pour exclure une pathologie hilaire droite.
     \end{quote}
-        As you can see, this text is quite ambiguous. It could be a pleural effusion, and the mention \"Pas d'oedème pulmonaire définitif\"  could either
-        mean there is definitely no pulmonary edema, or that there is no pulmonary edema definitive. The same goes for the mention of a possible pleural effusion,
+        As you can see, this text is quite ambiguous. It could be a pleural effusion, and the mention \" Pas d'oedème pulmonaire définitif\"  could either
+        mean there is definitely no pulmonary edema, or that there is no \" Oedème pulmonaire définitif\". The same goes for the mention of a possible pleural effusion,
         which could either mean that there is a pleural effusion, or that there is a possible pleural effusion. This ambiguity is a major issue, and we had to decide how to handle it.
         We identified the mention of a disease, and thanks to a rule base classifier determined whether the mention was positive, negative, or uncertain. This however just pushed the uncertainty issue further down
         the line, and comes as an added error source.
@@ -153,21 +158,24 @@
 
     \subsubsection{Specific exam}
         \begin{quote}
-            Renseignements cliniques : Fièvre. Éliminer pneumonie.
-            POUMONS :
+            Renseignements clinique: Fièvre. Éliminer pneumonie.
+            POUMONS:
             Il n'y a pas d'épanchement. Le médiastin est sans particularité. Il y a une opacité mal définie en péri-hilaire droit qui n'était pas présente à l'examen antérieur et qui pourrait donc être une pneumonie.
             CONCORDANCE IMPOSSIBLE
         \end{quote}
 
         Again, we see some ambiguity in the text, with the mention of the opacity.  However, the issue I want to show here is with the clinical mentions. The radiologist was asked to looked for a pneumonia, and the patient had fever.
-        This is  a specific exam, and the radiologist was therefore not looking throughly for other signs of diseases, as they on average only spends about 15 seconds on each image \myworries{Explain how we know this}.
+        This is  a specific exam, and the radiologist was therefore not looking throughly for other signs of diseases, as they on average only spends about 15 seconds on each image \footnote{This specific timing was described to us by the radiology team
+        of the Hôpital Notre Dame}.
 
      \subsubsection{Reference to prior exams}
             \begin{quote}
                 Image pleuro-parenchymateuse et silhouette cardio-médiastinale sans particularité, notamment sans cardiomégalie identifiée. La silhouette de l'aorte est relativement inchangée.
-À noter qu'au moment de l'i nterprétation, la patiente avait déjà bénéficié d'une tomodensitométrie. S'il vous plaît vous référer au rapport de cette étude.
+                À noter qu'au moment de l'i nterprétation, la patiente avait déjà bénéficié d'une tomodensitométrie. S'il vous plaît vous référer au rapport de cette étude.
            \end{quote}
 
+        As can be seen, when radiologists review a patient's file, they often open previous exam to compare their most recent X-rays to the previous ones. They will sometimes mention this, saying there is no change , but this comment
+        alone does not inform us about the presence or absence of the pathology, and we do not have access to the rest of the patient file to give context to this comment.
 
     \subsubsection{Poor image quality and no relecture}
        \begin{quote}
@@ -177,10 +185,13 @@
         \end{quote}
 
     As shown here, even the radiologist will sometimes comment on the quality of the image, such as partial images. Also, radiologist usually spell out their report, recording it vocally such that a secretary will later type it, without the radiologist
-    always reading it back. This leads to two other sources of error in our data.
+    always reading it back. This leads to two other sources of error in our data. Please also note the mispelling of the word \" interprétation \" , with such misspelling  possibly misleading our rule-based classifier
 
     All these issues are major sources of error in our dataset. While we did try our best to mitigate them, we are aware that they are still present, and that they might have a negative impact on our results. We already mentionned
     multiple times the need for a second meeting with the radiologists, and we hope that this will allow us to mitigate some of these issues.
+
+    Please note our data was anonymized and as such we cannot provide the name of the radiologist, whose report we quoted here. We are also forbidden from providing the images linked with those reports.
+
     \section{Data Analysis}
 
     The first step of any ML project is to analyse the data available to us. Let's start with the CheXpert dataset.
@@ -197,26 +208,25 @@
     know for sure whether the model is able to predict them accurately. The results for those classes will most
     likely need to be ignored.
 
-    For the CCSMTL dataset, we can see in the training dataset~\ref{fig:histogram_ciusss_train} that we have an even stronger imbalance than in the
+    For the CCSMTL dataset, we can see in the training dataset~\ref{fig:histogram_classes} that we have an even stronger imbalance than in the
     CheXpert dataset. Images without any disease constitues almost 25\% of the dataset, with over 100 000 images
     while some classes have less that 5000 images. We will have to correct for this while training, with strategies
     such as weighting the loss, data augmentations and undersampling the classes with too many images.
 
-    In the validation dataset~\ref{fig:histogram_ciusss_train}, we did not simply randomly sampled the images, we can
-    see the distribution of images differs from the training dataset. However, an imbalance is still present, as some
-    disease might require more images than others to be accurately predicted or treated. However, we can see that we
+    In the validation dataset, we did not simply randomly sampled the images, we can
+    see the distribution of images differs from the training dataset. While there is still an imbalance in between the different classes, we can see that we
     still have a minimum of 300 images per classes, which should be enough to evaluate the performance of the model.
     We should however stay weary of this imbalance, since if we simply used a loss (such as the cross entropy), to
     see the performance of our model, the overrepresented classes might also be overrepresented in the loss, and thus
     bias our choice of hyperparameters. To correct for this, we can use metrics that takes into account the imbalance
-    present in our dataset, such as the F1-score, or the AUC.~\cite{metrics}.
-\newpage
+    present in our dataset, such as the F1-score \footnote{In retrospect, since the F1-score is not a smooth function, it is an imperfect function to
+    keep track of our model's improvement. While it's a useful metric to evaluate the performance, the probabilistic F1-score \cite{probabilisticf1} could have been used instead.}, or the AUC.~\cite{metrics}.
     \begin{figure}[h!]
          \centering
          \begin{subfigure}[b]{0.48\linewidth}
              \centering
              \includegraphics[width=\linewidth]{plots/histogram_ciusss_train}
-             \caption{CIUSSS's training dataset}
+             \caption{CCSMTL's training dataset}
              \vspace{4ex}
              \label{fig:histogram_ciusss_train}
          \end{subfigure}
@@ -224,7 +234,7 @@
          \begin{subfigure}[b]{0.48\linewidth}
              \centering
              \includegraphics[width=\linewidth]{plots/histogram_ciusss_valid}
-             \caption{CIUSSS's validation dataset}
+             \caption{CCSMTL's validation dataset}
              \vspace{4ex}
              \label{fig:histogram_ciusss_valid}
          \end{subfigure}
@@ -246,37 +256,19 @@
              \label{fig:histogram_chexpert_valid}
          \end{subfigure}
 
-         \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+         \caption{Histogram for the different labels present in the CCSMTL and CheXpert dataset}
          \label{fig:histogram_classes}
     \end{figure}
-\newpage
 
 
-    Another important thing to look at could be the correlation between diseases, to identify potential biases in the
-    data. To account for uncertainty labels, we will simply replace the uncertainty labels by a positive label for
-    this analysis.
-
-    Looking at the Chexpert's correlation graph (see~\ref{fig:chords_chexpert_train} and~\ref{fig:chords_chexpert_valid}),
-    we can see that the correlation between diseases is quite high. This is slightly worrying, as it means that the data could be biased
-    towards a specific disease. We can also see that the correlation is higher in the validation dataset than in the training
-    dataset. This is expected, as the validation dataset is smaller and therefore more likely to have a higher correlation
-    between diseases.
 
 
-    However, when we look at the CIUSSS's correlation graph (see~\ref{fig:chords_ciusss_train} and~\ref{fig:chords_ciusss_valid}), we observe a way lower correlation level between pathologies.
-    It might also be due to a difference in the population but this explanation does not seem quite likely
-
-    Assuming the preponderance of diseases is the same between the population visiting the Stanford's hospital and
-    the CIUSSS CCSMTL, we are left to assume that the quality of the data is different from the Stanford dataset. Whether it is better or worst is to verify.
-
-
-\newpage
 \begin{figure}[h!]
      \centering
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
          \includegraphics[width=\linewidth]{plots/chords_ciusss_train}
-         \caption{CIUSSS's training dataset}
+         \caption{CCSMTL's training dataset}
          \vspace{4ex}
          \label{fig:chords_ciusss_train}
      \end{subfigure}
@@ -284,7 +276,7 @@
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
          \includegraphics[width=\linewidth]{plots/chords_ciusss_valid}
-         \caption{CIUSSS's validation dataset}
+         \caption{CCSMTL's validation dataset}
          \vspace{4ex}
          \label{fig:chords_ciusss_valid}
      \end{subfigure}
@@ -305,11 +297,11 @@
          \vspace{4ex}
          \label{fig:chords_chexpert_valid}
      \end{subfigure}
-
-     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+     \label{fig:chords}
+     \caption{Histogram for the different labels present in the CCSMTL and CheXpert dataset}
 
 \end{figure}
-\newpage
+
 \begin{figure}[H]
      \centering
      \begin{subfigure}[b]{0.45\linewidth}
@@ -323,7 +315,7 @@
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
          \includegraphics[width=\linewidth]{plots/disease_count_ciusss_valid}
-         \caption{CIUSSS's validation dataset}
+         \caption{CCSMTL's validation dataset}
          \vspace{4ex}
          \label{fig:count_ciusss_valid}
      \end{subfigure}
@@ -345,17 +337,17 @@
          \label{fig:count_chexpert_valid}
      \end{subfigure}
      \label{fig:classes_per_image}
-     \caption{Histogram for the different labels present in the CIUSSS and CheXpert dataset}
+     \caption{Histogram for the different labels present in the CCSMTL and CheXpert dataset}
 
 \end{figure}
     
-    \newpage
+
 \begin{figure}[H]
      \centering
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
          \includegraphics[width=\linewidth]{plots/image_count_ciusss_train}
-         \caption{CIUSSS's training dataset}
+         \caption{CCSMTL's training dataset}
          \vspace{4ex}
          \label{fig:count_image_ciusss_train}
      \end{subfigure}
@@ -363,7 +355,7 @@
      \begin{subfigure}[b]{0.45\linewidth}
          \centering
          \includegraphics[width=\linewidth]{plots/image_count_ciusss_valid}
-         \caption{CIUSSS's validation dataset}
+         \caption{CCSMTL's validation dataset}
          \vspace{4ex}
          \label{fig:count_image_ciusss_valid}
      \end{subfigure}
@@ -384,35 +376,84 @@
          \vspace{4ex}
          \label{fig:count_image_chexpert_valid}
      \end{subfigure}
-     \label{fig:images_per_patient}
-     \caption{Histogram for the number of images per patient present in the CIUSSS and CheXpert dataset}
+
+     \caption{Histogram for the number of images per patient present in the CCSMTL and CheXpert dataset}
 
 \end{figure}
+
+
+    Another important thing to look at could be the correlation between diseases, to identify potential biases in the
+    data. To account for uncertainty labels, we will simply replace them by a positive label for
+    this analysis.
+
+    Looking at the Chexpert's correlation graph (see~\ref{fig:chords_chexpert_train} and~\ref{fig:chords_chexpert_valid}) ,
+    we can see that the correlation between diseases is quite high. This is slightly worrying, as it means that the model could be biased, simply
+    learning this correlation instead of recognizing one of the classes. We can also see that the correlation is higher in the validation dataset than in the training
+    dataset. This is expected, as the validation dataset is smaller and therefore more likely to have a higher correlation
+    between diseases.
+
+
+    However, when we look at the CCSMTL's correlation graph (see~\ref{fig:chords_ciusss_train} and~\ref{fig:chords_ciusss_valid}), we observe a way lower correlation level between pathologies.
+    It might also be due to a difference in the population but this explanation does not seem quite likely
+
+    Assuming the preponderance of diseases is the same between the population visiting the Stanford's hospital and
+    the CCSMTL, we are left to assume that the quality of the data is different from the Stanford dataset. Whether it is better or worst is to verify.
 
    
 
     As mentionned earlier, the data is unbalanced! While typically , we would simply undersample the overrepresented
-    categories or the opposite, oversample the under-represented classes, it is not an option here. Looking closely at the data~\ref{fig:classes_per_image},
+    classes or the opposite, oversample the under-represented classes, it is not an option here. Looking closely at the data(see~\ref{fig:count_ciusss_train}~\ref{fig:count_ciusss_valid}~\ref{fig:count_chexpert_train}~\ref{fig:count_chexpert_valid}),
     we can see our problem is not a simple classification, but a multilabel classification tasks where more than one class might be present
     in the input. We also see that we have a lot of images with no pathology at all in the CCSMTL dataset. This is a 
     problem as it means that the model will be biased toward answering no pathology are present. We therefore need 
     to undersample this category!
 
 
-
     To resolve the imbalancy, we can also assign each positive example of a class with a weight, therefore increasing the importance of the positive examples of the under-represented classes. This is
     done by using the class weights parameter of the loss function. This is a good solution, but it is not perfect of course as one class might have a higher preponderance in the loss
     function.
-    
+
+
+    Looking at the repartition of certain vs uncertain label, we found that there was an enormous discrepancy between the classes when it came to the ratio of uncertain vs certain labels.
+    As can be seen in the table~\ref{tab:uncertainty_ratio}, certain class can have up to thee more time uncertain label than certain. This confirms a lot of our hypothesis about the amount of noise present
+    within the dataset. We will have to see if this noise stop the model from learning, or simply act as a regularization technique. Another worry is the difference between the CCSMTL's data and the CheXpert data.
+    We can see we have a quite different ratio  of uncertainties. This could mean we have wrongly label our data. We will have to see if this is the case later on.
+    \begin{table}[]
+        \centering
+        \begin{tabular}{@{}lll@{}}
+            \toprule
+            Classes                    & \multicolumn{2}{c}{Uncertainty ratio} \\ \midrule
+                                       & CheXpert           & CCSMTL           \\ \midrule
+            Enlarged Cardiomediastinum & 115\%              & N/A              \\
+            Cardiomegaly               & 30\%               & 5\%              \\
+            Pleural Effusion           & 13\%               & 29\%             \\
+            Pneumothorax               & 16\%               & 20\%             \\
+            Lung Opacity               & 5\%                & N/A              \\
+            Atelectasis                & 101\%              & 49\%             \\
+            Pneumonia                  & 311\%              & N/A              \\
+            Consolidation              & 188\%              & 34\%             \\
+            Edema                      & 25\%               & 224\%            \\
+            No Finding                 & 0\%                & 0\%              \\
+            Fracture                   & N/A                & 17\%             \\
+            Hernia                     & N/A                & 17\%             \\
+            Infiltration               & N/A                & 33\%             \\
+            Mass                       & N/A                & 27\%             \\
+            Nodule                     & N/A                & 31\%             \\ \bottomrule
+        \end{tabular}
+        \caption{Uncertainty ratio for each class}
+        \label{tab:uncertainty_ratio}
+    \end{table}
+
+
     Secondly, our data does not come in the form of a simple image. The input is composed of multiple images present 
-    in the patient file for a specific exam, typically between 1 and 4 images~\ref{fig:images_per_patient}. While a RNN could be use to deal
+    in the patient file for a specific exam, typically between 1 and 8 images~\ref{fig:count_image_ciusss_train}, with most patient's exam having two images or less. While a RNN could be use to deal
     with a sequence of image, no such model exist for medical imaging. Instead, we will use a CNN to process each image independently, and combine the output with a simple addition before applying the sigmoid activation function.
 
     To further simplify the model, we also explored two other option
 
-    %TODO TALK ABOUT % OF UNCERTAIN LABELS
 
-    %TODO Give text examples
+
+
 
     \subsection{Option 1 : Only use 1 frontal image}
         Our first attempt was to use only one frontal image per patient. This is a simple solution, but it is not optimal as it does not take into account the other images present in the patient file.
@@ -425,7 +466,7 @@
         To ensure the model learned in an optimal manner from both lateral and frontal images, we tried to use two different set of weights for the feature extraction of frontal vs lateral images. This however
         effectively double the number of parameters to train, and led to a significant increase in the model capacity and overfitting. This option was therefore also rejected.
 
-        % link to document?
+
     Finally , we opted to use two of the images present in the patient file, and to combine the output of the CNN with a simple addition before applying the sigmoid activation function. This is a simple solution, but it is not optimal as it does not take into account the other images present in the patient file.
     It however will help simplify training as the model will almost always have the same number of input images (2, more rarely 1), and will also help with the generalization of the model as it will be trained on a wider variety of images.
 
@@ -448,23 +489,26 @@
 
     \begin{itemize}
         \item \textbf{Affine} : randomly apply affine transformations : translation, rotation, shear and scale with
-        probobility $p_0$. The translation is done with a maximum of 15\% of the image's width and height, the
-        rotation is done with a maximum of 25 degrees and a translation of up to 15\% is also done.
+        probobility $p_0$. The translation is done with a maximum of 10\% of the image's width and height, the
+        rotation is done with a maximum of 15 degrees .
         \item \textbf{ColorJitter} : randomly change the brightness, contrast and saturation of the image with
-        probability $p_1$, and a maximum of 0.2 for each of the three parameters.\footnote{While it may sound strange
+        probability $p_1$, and a maximum of 0.1 for each of the three parameters.\footnote{While it may sound strange
         to apply color jittering on a grayscale image, it is still possible to apply it, as it will simply affect the
         contrast, brightness and saturation of the image.}
         \item \textbf{HorizontalFlip} : randomly flip the image horizontally with probability $p_2$
         \item \textbf{GridDistortion} : randomly apply grid distortion with probability $p_3$, and the following
-        parameters : num\_steps=5, distort\_limit=0.3, interpolation=1, border\_mode=0, value=None, mask\_value=None
+        parameters : num\_steps=5, distort\_limit=0.2, interpolation=1, border\_mode=0, value=None, mask\_value=None
         \item \textbf{ElasticTransform} : randomly apply elastic transformation with probability $p_4$, and
-        parameters : alpha=0.2,sigma=25 and alpha\_affine=50
+        parameters : alpha=0.1,sigma=20 and alpha\_affine=40
         \label{tab:augmentations}
     \end{itemize}
 
     Data augmentation such as this serves two purposes. The first one is to allow the model to generalize better, as it is given
     a wider variety of examples (albeit partially synthetic examples) . The second purpose is to avoid overfitting as the model will
     have a harder time simply memorizing the examples instead of actually learning the desired characteristic within the image.
+
+    Too much data augmentations can also be a problem, as it can stop the model from learning the desired characteristic by applying too
+    much noise to the image.
 
     The second step, normalization, serves to assure that the distribution of the image stay within a specified norm. It is typical
     to bring the images values between 0 and 1, and , if using a pretrained model as it is our case, to normalize the data
@@ -478,11 +522,11 @@
     cross-generalization of our model on the different datasets.
 
 
-            No matter what we tried, however, the training always converge towards \~0.4 of F1, and 0.8 of AUC (see table \ref{final results}). One hypothesis for such lower result than on CheXpert is
-            the quality of the data. While a radiologist has himself a F1-score oscillating between .4 and .6, when you factor in our extra source of error, it seems only natural to not be able to achieve a higher score.
-
-
-            We won't be able to know more until we get radiologists to review our data to determine if it is indeed problematic or not.
+%            No matter what we tried, however, the training always converge towards \~0.4 of F1, and 0.8 of AUC (see table \ref{final results}). One hypothesis for such lower result than on CheXpert is
+%            the quality of the data. While a radiologist has himself a F1-score oscillating between .4 and .6, when you factor in our extra source of error, it seems only natural to not be able to achieve a higher score.
+%
+%
+%            We won't be able to know more until we get radiologists to review our data to determine if it is indeed problematic or not.
 
 
 
@@ -491,7 +535,7 @@
 
 
 
-        Since the labels are derived from the radiologist's report, they often include uncertainties express with vocabulary such as \"might\",\"maybe\",\"possible\", etc.
+        Since the labels are derived from the radiologist's report, they often include uncertainties express with vocabulary such as \" might \" , \" maybe \" , \" possible \" , etc.
         This is a problem as it is not clear what the label should be. We therefore decided to assign a flag of -1 to all uncertain label (just as it was done with CheXpert). Following this paper~\cite{hierarchical}, which tested different
         ways of dealing with those uncertainty, we replaced uncertain label with a random label sampled uniformly between 0.5 and 0.85, as to imply the label is more likely present than absent if the radiologist
         mentionned it as a possibility.
@@ -508,9 +552,10 @@
         in the results.
 
         Just as with the validation set, the test set should not contain any uncertainty either.
+
     \section{Model architecture}
 
-    \subsection{Model 1 : DenseNet~\cite{densenet}}
+    \subsection{Model 1 : DenseNet}
 
 
     \begin{figure}[h]
@@ -532,7 +577,7 @@
         This model released in 2018 improved on ResNet with its dense blocks, and was the state of the art for a while. The stanford team working on ChexNet found it was the best model available to achieve the highest AUC on CXR images~\cite{chexnet}.
 
 
-    \subsection{Model 2 : ConvNeXt~\cite{convnext}}
+    \subsection{Model 2 : ConvNeXt}
 
 
 \begin{figure}[H]
@@ -547,14 +592,13 @@
 
         The ConvNeXt model is another CNN model, this time released in 2020 and improving on the default Resnet architecture once again.
         They gradually implemented many of the features of vision transformers in order to \"modernize\" the typical
-    CNN architecture. In doing sp,
-        they created an architecture which outperformed many SOTA models on the ImageNet competititon.
+        CNN architecture. In doing so, they created an architecture which outperformed many SOTA models on the ImageNet competititon.
 
         The details of these modifications can be seen in the figure~\ref{fig:convnext}, which is taken from their paper.
         It replaced densenet as the \"default\" convolutionnal model
 
 
-    \subsection{Model 3 : EfficientNet~\cite{efficientnet} and YOLO~\cite{yolo}}
+    \subsection{Model 3 : EfficientNet and YOLO}
 
 
 \begin{figure}[H]
@@ -568,10 +612,10 @@
 \end{figure}
 
     EfficientNet was another model improving on the basic building blocks of CNN, in order to improve the efficiency (see~\ref{fig:efficientnet}). While it is
-    not the best one, this approach has led to further development. Such improvement came in the form of the You Only Look Once (YOLO) object detection
+    not the best one, this approach has led to further development. Such improvement came in the form of the You Only Look Once (YOLO)~\cite{yolo} object detection
     model, which quickly became a SOTA model. Further improvement have allowed this model to keep its position as one of the best pretrained model publicly available.
 
-    \subsection{Model 4 : Deit \& Transformers~\cite{deit}~\cite{image16x16}}
+    \subsection{Model 4 : Deit \& Transformers}
 
 
         \begin{figure}[H]
@@ -583,13 +627,13 @@
 
         \end{figure}
 
-        Transformers are a new revolution in deep learning. First developped to deal with natural language processing (NLP),
+        Transformers \cite{image16x16} are a new revolution in deep learning. First developped to deal with natural language processing (NLP),
         they were later introduced in image models, successfully improving on CNN's. While CNN still keep a few key
         elements on their side(they usually perform better to extract local information in an image), transformers split the image in blocks,
         treating them as different element of a sequence (see~\ref{fig:transformer}). Among other things, this allows them to better extract global feature present in an image.
 
         Later, the facebook research team improved on this general idea by pretraining the model on a similar, but different task, a now
-        common approach when using transformers. This allowed them to achieve a greater accuracy in the ImageNet competiton than previous models.
+        common approach when using transformers~\cite{deit}. This allowed them to achieve a greater accuracy in the ImageNet competiton than previous models.
 
 
     \section{Training}
@@ -602,7 +646,7 @@
         images. An added benefit of this is that it will allow us to train on a larger batch size, which will allow
         for better statistics in the batch/layer normalizations, and will also allow us to train faster.
 
-        It also has already been demonstrated in this paper \cite{resolution} that , from a range of 224x224 to
+        It also has already been demonstrated in this paper~\cite{resolution} that , from a range of 224x224 to
         1024x1024, the performance of the model does not change much.
 
     \subsection{Loss function}
@@ -710,7 +754,10 @@
         in between 1 and 95. The values are reported in the table~\ref{table:pos_weight_chexpert}. I suspect that high values might scramble the loss for the batches containing the rare positive samples of that class. We might later want to cap
         the maximum possible value of the positive weight to avoid this.
 
-        While we use a weighted sampler for our dataset,for CheXpert, all the training examples were sampled with equal weights.
+        While we use a weighted sampler for our dataset,for CheXpert, all the training examples were sampled with equal weights. The sampler only
+        allowed to randomly select 50 000 images per epoch.\footnote{While a typical strategies for classification problem would
+    be to sample every class equally, it's a bit more trickier in our case since images can often contain more than one class. Sampling 20 images of the class A will therefore impact
+    the number of images of class B present. This is why we switched to using a weighted loss instead.}
 
             \begin{table}[h!]
                 \centering
@@ -740,7 +787,7 @@
 
             \subsubsection{First Attempt}
             % with pos_weight
-                Using everything we describe so far, we obtain results as shown in~\ref{fig:chexpert1_performance}.
+                Using everything we describe so far, we obtain results as shown in~\ref{tab:chexpert1_performance}.
                 While the model did learned a bit from the data, we are underperforming the baseline by a large margin.
                 We will therefore have to try to improve our model.
 
@@ -763,7 +810,7 @@
                          \vspace{4ex}
                          \label{fig:chexpert_validation_loss1}
                      \end{subfigure}
-                     \label{fig:chexpert_training_curve1}
+
                      \caption{Training curves for our first attempt at reproducing the CheXpert baseline}
                 \end{figure}
 
@@ -773,7 +820,7 @@
                 The training loss plateau at around 0.6, while the validation loss varies between 0.8 and 0.6. This would usually indicate that the model
                 is underfitting and need to have a bigger capacity.
 
-                Now looking at the f1-score and AUC~\ref{fig:chexpert1_performance}, we can compare the performance of our model to the baseline. We can see that we are underperforming
+                Now looking at the f1-score and AUC~\ref{tab:chexpert1_performance}, we can compare the performance of our model to the baseline. We can see that we are underperforming
 
                 \begin{table}[]
                         \centering
@@ -795,8 +842,8 @@
                         Consolidation    &  & 0.899 & 0.385  & 0.85 & 0.41 \\
                         Edema            &  & 0.941 & 0.583  & 0.86 & 0.53 \\
                         No Finding       &  & N/A   & N/A  & 0.84 & 0.93 \\ \bottomrule
+                        \label{tab:chexpert1_performance}
                         \end{tabular}
-                        \label{fig:chexpert1_performance}
                         \caption{Performance of our first attempt at reproducing the CheXpert baseline. The estimation of the radiologist is the one provided by~\cite{chexzero}}
                 \end{table}
                 While the  performance for the lung lesion and the pneumonia are not good, we can remember from figure~\ref{fig:histogram_chexpert_valid} that these classes are barely present in the validation dataset (lung lesion only has one image). Ingoring those, we
@@ -816,10 +863,8 @@
             \subsubsection{Second Attempt}
             % without pos_weight
             
-                Without the positive weight, as suspected, we can clearly see the overfit of the model~\ref{fig:training_curves2} .
-                Our AUC does increase but at the price of a diminished F1-score. This is most likely due to the fact
-                that our model as a easier time learning the distribution of positive and negative samples. While it
-                helps avoid false positive, it also makes it harder to identify
+                Without the positive weight, as suspected, we can clearly see the overfit of the model~\ref{fig:chexpert_training_loss2} .
+                Our AUC does increase but at the price of a diminished F1-score. While it helps avoid false positive, it also makes it harder to identify
                 the true positive.
 
                 Another interesting thing to remember is that the distribution of positive and negative samples between the training and validation
@@ -845,7 +890,7 @@
                          \vspace{4ex}
                          \label{fig:channel_comparison_auc}
                      \end{subfigure}
-                     \label{fig:channel_comparison}
+
                      \caption{Comparisons of the experiments results grouped by number of channels
                          of the input images for the average AUC and f1-score. The curve are smoothed out to help the analysis, and the error bars are the min-max
                          of the values.}
@@ -868,7 +913,7 @@
                          \vspace{4ex}
                          \label{fig:model_comparison_auc}
                      \end{subfigure}
-                     \label{fig:model_comparison}
+
                      \caption{Comparisons of the experiments results grouped by model.The curve are smoothed out to help the analysis, and the error bars are the min-max
                          of the values.}
                 \end{figure}
@@ -891,14 +936,14 @@
                          \vspace{4ex}
                          \label{fig:chexpert_validation_loss2}
                      \end{subfigure}
-                     \label{fig:training_curves2}
+
                      \caption{Training curves for oursecond attempt at reproducing the CheXpert baseline. The different runs are grouped by models.}
                 \end{figure}
 
 
 
                 We can now separate our results by the model choice to see which one is the best.As can be seen in
-                the figure~\ref{fig:training_curves2} and~\ref{fig:model_comparison}, while the DenseNet model does
+                the figure~\ref{fig:chexpert_training_loss2} and~\ref{fig:model_comparison_auc}, while the DenseNet model does
                 learn from the data, it still underfit while the convnext model is able to overfit our training data.
                 This does seem to indicate that we need a more complex model than the densenet.
                 However, the convnext model is able to achieve a better AUC than Densenet. It means that while by itself, the training curves seem
@@ -920,7 +965,7 @@
 
 
                 Just as we compared the performance by the choice of model, we can do the same to compare the performance of using 1 vs 3 channels. Doing so, we can observe
-                in the figure~\ref{fig:channel_comparison} that the model with 3 channels is able to achieve a better AUC and F1-score. This is most likely due to the fact that the model is able to
+                in the figure~\ref{fig:channel_comparison_auc} that the model with 3 channels is able to achieve a better AUC and F1-score. This is most likely due to the fact that the model is able to
                 extract more information as we did not simply reapeated the same information on the three channel, but instead concatenated the min-max normalized image, and two image treated
                 with the CLAHE algorithm, albeit with two different threshold (2 and 4). But while it performs slightly better, it is not by a large margin, but it does increase the training time significantly
                 by putting a heavier load on the CPU. This is why we will continue to use the 1 channel model for the rest of the experiments, until we reach our final results.
@@ -928,7 +973,7 @@
             \subsubsection{Third Attempt}
             % Applying the lesson learned
             Applying the lesson learned, I tested the convnext base model with the 1 channels, and with/without the positive weights. I also increased the patience to 20 epochs.
-            The results are shown in the figure~\ref{fig:training_curves3} and~\ref{fig:chexpert_results3}. We can see that the model with the positive weights is able to achieve a better AUC and F1-score.
+            The results are shown in the figure~\ref{fig:chexpert_training_loss3} and~\ref{fig:chexpert_f1_3}. We can see that the model with the positive weights is able to achieve a better AUC and F1-score.
             All the details of this run can be find at \url{https://wandb.ai/ccsmtl2/Chexpert/runs/39ivi71f}
 
             \begin{figure}[H]
@@ -948,7 +993,7 @@
                      \vspace{4ex}
                      \label{fig:chexpert_validation_loss3}
                  \end{subfigure}
-                 \label{fig:training_curves3}
+
                  \caption{Training curves for our third attempt at reproducing the CheXpert baseline}
 
             \end{figure}
@@ -970,7 +1015,7 @@
                      \vspace{4ex}
                      \label{fig:chexpert_auc_3}
                  \end{subfigure}
-                 \label{fig:chexpert_results3}
+
                  \caption{Metrics curves for our third attempt at reproducing the CheXpert baseline. The average values
                  include classes with no positive labels in the validation set. It should therefore only be used qualitatively. The curves are smoothed
                  out for an easier visualization.}
@@ -1032,8 +1077,8 @@
 
 
             % The Cross entropy loss does not allow for a good comparison between the different models. We should use the AUC or the F1-score instead.
-            We also see that the Cross-Entropy does not allow for a good comparison between the different models, as it does not correlate well with the AUC and F1-score.
-            Ideally, a loss that allow to optimize more closely the AUC and F1-score would be better suited for this task. We will try and explore if such solution exists.
+            We also see that the Cross-Entropy does not allow for a good comparison between the different models, \myworries{as it does not correlate well with the AUC and F1-score.
+            Ideally, a loss that allow to optimize more closely the AUC and F1-score would be better suited for this task}. We will try and explore if such solution exists.
             % The patience mechanism should be based on the f1-score instead of the loss.
             Since our model's loss does not correlate well with the AUC and F1-score, we should use the F1-score as the metric to determine when to stop training. Our patience
             will therefore from now on be based on our F1-score instead of the loss.
@@ -1046,19 +1091,21 @@
 
         \subsection{Reproducing the CheXpert competition's results}
 
-            The CheXpert dataset was released as part of a competition, where the goal was to achieve the best possible performance on the hidden test set. The competition was won by a team from Stanford, who achieved a score of 0.91 on the hidden test set. The results of the competition are reported in the table~\ref{table:chexpert_competition_results}.
+            The CheXpert dataset was released as part of a competition, where the goal was to achieve the best possible performance on the hidden test set. The competition was won by a team from Stanford, who achieved a score of 0.93 on the hidden test set. The results of the competition are reported in the table~\ref{table:chexpert_competition_results}.
             The metric used was the ROC-AUC. We will therefore use the same metric to compare our results with theirs. However , we also implemented the
             F1-score (the harmonic mean of the precision and recall), which will make it easier to compare with the radiologist's performance
             in order to convince them to use our model.
 
 
-        \subsubsection{DeepAUC~\cite{DeepAUC}}
+        \subsubsection{DeepAUC}
 
             Attempting to reproduce the results of DeepAUC~\cite{DeepAUC} proved not to be possible. The snippet of code , provided by the author,
             did not reproduce the results as expected. No pretrained model was also given. Attempt to use their loss function with our dataset also proved
             to be unsuccessful. We therefore decided to not include their results in our comparison, and to not pursue this avenue.
 
-        \subsubsection{Hierarchical Learning~\cite{hierarchical}}
+
+
+        \subsubsection{Hierarchical Learning}
 
             The hierarchical learning method~\cite{hierarchical} is a method that uses a hierarchy in between the different classes
             to more accurately predict them. Thanks to bayesian probabilities, we know that
@@ -1084,9 +1131,12 @@
             They also used a pretraining phase, with only the case where the parent class is present. We will first try without this pretraining phase to see if it is necessary. We will apply it later
             on the CCSMTL's dataset.
 
+            Finally, an important part to mention is that the bayesian probabilities are only calculated during the inference phase. Therefore, this modification does not affect the training of the model.
+
             As it turns out, we still see great results
 
-        \subsubsection{JFHealthcare - Probabilistic-CAM~\cite{jfhealthcare}}
+            %TODO : write the hyperparameters used by hierarchical
+        \subsubsection{JFHealthcare - Probabilistic-CAM}
 
             \begin{figure}[H]
 
@@ -1115,40 +1165,260 @@
             But further than that, it also allows for a better understanding of the model's decision. Indeed, the weighted class activation maps offer a more accurate way to visualize the model's decision and potential object location
             within the image. This is especially useful for the radiologist, who might want to understand why the model made a certain decision.
 
-
+            %TODO : write the hyperparameters used by JFhealthcare
+    \begin{landscape}
 
 \begin{table}[]
-\begin{tabular}{lllllll}
-Experiences & \multicolumn{2}{l}{Baseline} & \multicolumn{2}{l}{Hierarchical} & \multicolumn{2}{l}{Weighted pooling} \\
-Metrics / Classes & AUC  & F1   & AUC & F1 & AUC  & F1 \\
-Cardiomegaly      & 0.74 & 0.60 & 0   & 0  & 0.57 & 0  \\
-Pleural Effusion  & 0.90 & 0.65 & 0   & 0  & 0.86 & 0  \\
-Pneumothorax      & 0.87 & 0.22 & 0   & 0  & 0.83 & 0  \\
-Lung Opacity      & 0.88 & 0.83 & 0   & 0  & 0.89 & 0  \\
-Atelectasis       & 0.67 & 0.47 & 0   & 0  & 0.77 & 0  \\
-Lung Lesion       & 0.26 & 0.67 & 00  & 0  & N/A  & 0  \\
-Pneumonia         & 0.70 & 0    & 0   & 0  & N/A  & 0  \\
-Consolidation     & 0.75 & 0.45 & 0   & 0  & 0.78 & 0  \\
-Edema             & 0.86 & 0.55 & 0   & 0  & 0.88 & 0  \\
-No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
-                  &      &      &     &    &      &    \\
-                  &      &      &     &    &      &    \\
-                  &      &      &     &    &      &    \\
-                  &      &      &     &    &      &
+\centering
+\begin{tabular}{@{}lllllllllcccc@{}}
+\toprule
+\multicolumn{1}{c}{Experiences} &
+  \multicolumn{2}{c}{Baseline} &
+  \multicolumn{2}{c}{Hierarchical} &
+  \multicolumn{2}{c}{Weighted pooling} &
+  \multicolumn{2}{c}{CCSMTL} &
+  \multicolumn{2}{c}{\begin{tabular}[c]{@{}c@{}}Vingroup\\  Big Data\\ (*)\end{tabular}} &
+  \multicolumn{2}{c}{\begin{tabular}[c]{@{}c@{}}Radiologists\\ estimated performance\end{tabular}} \\ \midrule
+Metrics / Classes &
+  AUC &
+  F1 &
+  AUC &
+  F1 &
+  AUC &
+  F1 &
+  AUC &
+  F1 &
+  \multicolumn{1}{l}{AUC} &
+  \multicolumn{1}{l}{F1} &
+  AUC &
+  F1 \\
+Cardiomegaly &
+  0.74 &
+  0.60 &
+  0.82 &
+  0.64 &
+  0.84 &
+  \textbf{0.69} &
+  0.82 &
+  0.44 &
+  \multicolumn{1}{l}{\textbf{0.86}} &
+  - &
+  - &
+  \multicolumn{1}{l}{0.678} \\
+Pleural Effusion &
+  0.90 &
+  0.65 &
+  0.91 &
+  0.75 &
+  \textbf{0.94} &
+  \textbf{0.76} &
+  0.87 &
+  0.61 &
+  \multicolumn{1}{l}{0.92} &
+  - &
+  - &
+  \multicolumn{1}{l}{\textbf{0.737}} \\
+Pneumothorax &
+  0.87 &
+  0.22 &
+  0.94 &
+  0.00 &
+  \textbf{0.94} &
+  \textbf{0.33} &
+  0.84 &
+  0.47 &
+  - &
+  - &
+  - &
+  - \\
+Lung Opacity &
+  0.88 &
+  0.83 &
+  \textbf{0.90} &
+  \textbf{0.84} &
+  0.90 &
+  0.81 &
+  0.67 &
+  0.53 &
+  - &
+  - &
+  - &
+  - \\
+Atelectasis &
+  0.67 &
+  0.47 &
+  0.75 &
+  0.63 &
+  0.78 &
+  0.64 &
+  0.74 &
+  0.39 &
+  \multicolumn{1}{l}{\textbf{0.83}} &
+  - &
+  - &
+  \multicolumn{1}{l}{\textbf{0.692}} \\
+Lung Lesion &
+  0.26 &
+  0.67 &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.71 &
+  0.21 &
+  - &
+  - &
+  - &
+  - \\
+Pneumonia &
+  0.70 &
+  0 &
+  \textbf{0.88} &
+  \textbf{0.10} &
+  0.69 &
+  0.09 &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  - &
+  - &
+  - &
+  - \\
+Consolidation &
+  0.75 &
+  0.45 &
+  0.88 &
+  \textbf{0.37} &
+  0.83 &
+  0.37 &
+  0.71 &
+  0.26 &
+  \multicolumn{1}{l}{\textbf{0.94}} &
+  - &
+  - &
+  \multicolumn{1}{l}{\textbf{0.385}} \\
+Edema &
+  0.86 &
+  0.55 &
+  0.70 &
+  0.36 &
+  \textbf{0.93} &
+  0.52 &
+  0.77 &
+  0.32 &
+  \multicolumn{1}{l}{\textbf{0.93}} &
+  - &
+  - &
+  \multicolumn{1}{l}{\textbf{0.583}} \\
+No Finding &
+  0.89 &
+  0.93 &
+  0.84 &
+  0.94 &
+  \textbf{0.90} &
+  \textbf{0.93} &
+  0.82 &
+  0.97 &
+  - &
+  - &
+  - &
+  - \\ \midrule
+Mass &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.76 &
+  0.27 &
+  - &
+  - &
+  - &
+  - \\
+Air Infiltration &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.81 &
+  0.49 &
+  - &
+  - &
+  - &
+  - \\
+Liquid Infiltration &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.83 &
+  0.56 &
+  - &
+  - &
+  - &
+  - \\
+Fracture &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.72 &
+  0.21 &
+  - &
+  - &
+  - &
+  - \\
+Emphysema &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.82 &
+  0.38 &
+  - &
+  - &
+  - &
+  - \\
+Infiltration &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  \multicolumn{1}{c}{-} &
+  0.70 &
+  0.26 &
+  - &
+  - &
+  - &
+  -
 \end{tabular}
+    \label{tab:final_results}
+    \caption{Final results of our experiments. Please note that the results of the Vingroup Big Data experiment are based on their single model results, and not their ensembling results. While not officially first
+    place in the CheXpert results, they did provide the AUC per class - contrary to the other team. The exact configuration of each run can be found in the appendix. Also keep in mind the CCSMTL results refer
+    to another dataset, and are not directly comparable to the other results. The radiologist's estimations come from ChexZero\cite{chexzero}}
 \end{table}
-
+\end{landscape}
         \subsection{Results on the CCSMTL's dataset}
 
+            All results can be visualized at \url{https://wandb.ai/ccsmtl2/RadIA}
 
-            Following the results obtained earlier on CheXpert, we then tried applying some of the same technique, but this time using a validation dataset from the CIUSSS data. Sadly, every attempt, no matter what, always seem
+            Following the results obtained earlier on CheXpert, we then tried applying some of the same technique, but this time using a validation dataset from the CCSMTL's data. Sadly, every attempt, no matter what, always seem
             to converge towards a f1-score of 0.4 , and an approximate AUC of 0.8 . Since we obtained a way higher score on CheXpert, and even using weights trained on it didn't result in any improvement, we had to face
             the reality that we most likely had too much noise in our labels. Now , while there are ways to deal with noisy label (some that we will discuss/point later), we do need to have a validation/test dataset free
             of this noise to evaluate our model's performance on. Sadly, we were not able to obtain help from the radiologists working in the CCSMTL to clean the labels, and while other dataset exists, they do not focus
             exactly on the same label of interest, and they will not allow us to test the performance of our model on the hospital's data before deploying the model!
 
             There is also the issue of cross-dataset bias. As demonstrated in the section data aalysis, there is a stark difference between the data of CheXpert and the one from the CCSMTL. This bias is not only in the form of the
-            label count, but also in the label interpretation . Indeed, there is some variation as to the definition of specific label that varies regionally, based on the radiologists training \cite{cross-bias}.
+            label count, but also in the label interpretation . Indeed, there is some variation as to the definition of specific label that varies regionally, based on the radiologists training~\cite{cross-bias}.
 
             Without help from the radiologists, we might need to proceed to some form of self supervised learning to deal with this issue of fine tuning on the CCSMTL's data, but we still need to have a clean test dataset. For the time being, we did not had time to implement such method however.
 
@@ -1157,15 +1427,55 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
     \section{Explainability \& Visualization}
 
     %GradCam and improvements
-        We used GradCAM \cite{gradcam} to visualize the model's decision. The GradCAM method is a method that allows to visualize the regions of the image that the model used to make its decision. It does so by computing the gradient of the output of the model with respect to the last convolutional layer, and then using this gradient to weight the feature maps.
+        We used GradCAM~\cite{gradcam} to visualize the model's decision. The GradCAM method is a method that allows to visualize the regions of the image that the model used to make its decision. It does so by computing the gradient of the output of the model with respect to the last convolutional layer, and then using this gradient to weight the feature maps.
         The weighted feature maps are then summed up to obtain a single feature map, which is then used to obtain the final heatmap.
         The final heatmap is then used to overlay the heatmap on the original image, in order to visualize the regions of the image that the model used to make its decision.
 
-        We then use an arbitrary threshold of 0.9 , as described in \myworries{Find citation}, we concentrate on the part of the image most important to the relevant class.
-        As you can see on \ref{}, we have a few examples of the results. Please note we used the ScoreCAM method provided by the GradCAM package. Other method failed to
-        identify correcly the pathology, mostly simply indicating the lung region.
+        We compared the different method offered by the GradCAM package. Sadly , neither the CCSMTL's data nor the CheXpert dataset
+        provides image-level annotations. We therefore had to rely on qualitative analysis for now. As can be seen in \ref{fig:gradcam_example_chexpert}, while some method are simply to discard (pointing you "EigenCAM"),
+        others do provided interesting results. While on first sight the ScoreCAM method seems to be more precise than the GradCAM (vanilla) or HiResCAM, it does not always correlate with them.
+
+        To determine which is better, we will need to quantify these results. Sadly, I was out of time to achieve this goal. Ideally, we would want to use the CCSMTL's dataset to do so, but as mentionned earlier,
+        the CCSMTL has difficulty providing radiologists time for the project. We therefore found another dataset, VinBigData\cite{vinbigdata}, that does provide image-level annotations. We hope to
+        soon use this dataset in order to evaluate the mean Average Precision (mAP) \cite{mAP}.
+
+        \myworries{Other examples of the results can be found in the appendix at \ref{fig:gradcam_example_chexpert_4} and \ref{fig:gradcam_example_chexpert_5}.}
 
 
+
+        \begin{figure}[H]
+                 \centering
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_3.jpg}
+                     \caption{Example 1}
+                     \vspace{4ex}
+                     \label{fig:gradcam3}
+                 \end{subfigure}
+                 \hfill
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_6.jpg}
+                     \caption{Example 2}
+                     \vspace{4ex}
+                     \label{fig:gradcam4}
+                 \end{subfigure}
+                 \label{fig:gradcam_example_chexpert}
+                 \caption{Two examples of patient files being interpreted by the model using GradCAM. \myworries{The first one is a patient with a lung opacity, and the second one is a patient with a pneumothorax. Wrong pathologies!}}
+
+            \end{figure}
+
+    I, however, am quite satisfied that the model's deccision is not only based on the lung's part of the image, but that it also seem to coincide with the region of interest (ROI) that the pathologies would normally be. While I am
+    no expert in radiology, based on my understanding, the model does seem to draw a plausible ROI.
+
+    Finally, however, this method is not subject to any regularization, since the model has only been trained on classification, and that these region are inferred from the model's decision.
+    A future step in this project would therefore be that, once our best model has been trained (ideally by doing an ensemble of model), to use the best GradCAM method (as determined by the mAP)
+    in order to generate pseudo labels. These pseudo-labels would then be used to train an object-detection model such as yolo\cite{yolo}, which would hopefully learn to detect the pathologies in the image better than our original
+    model ensemble, but also, importantly, faster. Currently, some method such as ScoreCAM does require a lot of computationnal ressources (For one image, it require about ~1 minute on a 3090 GPU for a single model), which would lead to a bottleneck
+    for the deployment of the model.
+
+    \myworries{you will also noticed that we tested the empty images on the GradCAM. While the model is training/infering, these empty images, used as padding to facilitate the job of the dataloader, are not given to the model.
+    However, it is still interesting to see how our model reacts when it sees them, demonstrating any "bias" towards a specific region of the image.}
 
     \section{Failed Attempts}
 
@@ -1173,16 +1483,16 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
 
         While we know we have many errors in our dataset, it is our hope that our model will simply ignore this as noise. However, there are more advanced techniques
         to deal with noisy labels in your training data.
-        Based on the "Deep learning with noisy labels: exploring techniques and remedies in medical image analysis" \cite{noisy_label_medical} and
-        "Learning from Noisy Labels with Deep Neural Networks: A Survey" \cite{noisy_label_review}, I've tried implementing step mechanism that would modified the training
-         label, applying them as a moving average such that, each time a prediction p_i for a given label L_i, is made by the model, the label is modified to
+        Based on the \" Deep learning with noisy labels: exploring techniques and remedies in medical image analysis\" \cite{noisy_label_medical} and
+        \" Learning from Noisy Labels with Deep Neural Networks: A Survey \" \cite{noisy_label_review}, I've tried implementing step mechanism that would modified the training
+         label, applying them as a moving average such that, each time a prediction $p_i$ for a given label $L_i$, is made by the model, the label is modified to
 
         \begin{equation}
             L_{i+1} = \alpha L_i + (1 - \alpha) P_{i}
         \end{equation}
 
 
-        I've tried setting the $\alpha$ parameter to 0.999, but immediately runs done with such mechanism led to overfitting. Any further
+        I've initially tried setting the $\alpha$ parameter to 0.999 but, immediately, runs done with such mechanism led to overfitting. Any further
         attempts hasn't yielded any interesting results either. This solution was therefore discarded
 
 %
@@ -1200,12 +1510,33 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
     over the GradCAM method. However, our attempt to use it has failed. For now, we could only obtain noise from the method, and we were unable to find a way to improve it. We will try to
     come back to it later.
 
+    \subsection{Adding Data}
+        %TODO : Complete this section
 
+        We tried supplementing our dataset with data from different sources, mainly MimicCXR~\cite{mimic-cxr} .However, this didn't led to the increase in score that I hoped. I think it is because of the difference
+        in interpretation between the two datasets. As described in~\cite{cross-bias}, radiologists from different region in the world can interpret the same image differently. This means combining two datasets together
+        will simply lead to more noise in the data. Without having a radiologist certifying that the label from the two sources are equivalent, combining two or more datasets together is probably not the best idea.
 
     \section{Problem observed}
 
     A multitude of problems slowed down the development of the model. We will try to cover the most
     important ones here, and the lesson learned from them.
+
+    \section{Automatic Mixed Precision (AMP)}
+            %TODO  : more details
+            The training on such a massive dataset is rather slow. To solve this problem, I tried to implement the automatic mixed precision (AMP) technique available with pytorch. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
+            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size, by applying a mix
+            of 32 bits precision and 16 bits precision multiplication.
+
+            However, this technique is not without its problems. While it improved the training time vastly,
+            it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
+
+            This is a problem that I have mostly solved by normalizing further the input vector but some
+            underflowing might still occur. In these case, the training need to be done
+            again as the model will be corrupted (Nan values in the weights).
+    %Scaler scale the loss to avoid underflow
+    %unscale then to perform gradient clipping
+
 
 
     \subsection{Normalizing the data}
@@ -1258,8 +1589,8 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
 
         However, it is not idiot-proof either. As I was working on the project, I later found a bug where my image input of format (C,H,W) was not being converted to (H,W,C) by the library, as it required, but was still processed, leading to disastrous images.
 
-        To avoid this step, a jupyter notebook was then used to verify the output of our dataloader at different step in order to verify the integrity of the image
-        throughout its pre-processing.
+        To avoid this step, a jupyter notebook was then used to verify from now on the output of our dataloader at different step in order to verify the integrity of the image
+        throughout its pre-processing and data-augmenting journey.
 
     \subsection{Unitary Tests}
 
@@ -1270,20 +1601,6 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
 
 
     \subsection{Unstability during training}
-
-    \subsubsection{Automatic Mixed Precision (AMP)}
-
-            To solve this problem, I tried to implement the automatic mixed precision (AMP) technique available with pytorch. This technique is a way to train a model in a lower precision, while still using a higher precision for the gradient computation.
-            This is especially useful when training on a GPU, as it allows to reduce the memory usage, and therefore to train on larger batch size, by applying a mix
-            of 32 bits precision and 16 bits precision multiplication.
-
-            However, this technique is not without its problems. While it improved the training time vastly,
-            it did lead to some unstability, with the gradient sometimes underflowing and becoming NaN.
-
-            This is a problem that I have mostly solved by normalizing further the input vector but some
-            underflowing might still occur. In these case, the training need to be done
-            again as the model will be corrupted (Nan values in the weights).
-
 
     \subsubsection{Gradient's clipping}
 
@@ -1311,13 +1628,117 @@ No Finding        & 0.89 & 0.93 & 0   & 0  & 0.72 & 0  \\
             This web application is accessible through a web browser, and allows the user to upload an image, and to get the prediction of the model. It also allow to use a few example
             preloaded in the server. This will allow us to easily display the capacity of the model, and to gather feedback from the user.
 
-            Please give the appropriate credit to the authors of the template use to developped the web application.\footnote{It was developped by the Dash team and is available
+            Please give the appropriate credit to the authors of the template use to developped the web application. \footnote{It was developped by the Dash team and is available
             at \url{https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-image-processing}}
 
-            %Include images and description of the web application
+            Once its effectiveness had been demonstrated, it was decided to give the task of developping a cleaner, more professionnal and efficient interface to a team of web developper. This allowed
+            the team to shift back its focus on the machine learning aspect of the project. An example of the interface is shown in Figure~\ref{fig:interface}.
 
-        \subsection{Data Verification}
-            %Unet
+            The interface allows to quickly see which pathology has been predicted by the model, thanks to the color-coded graph shown in the bottom-right corner of the interface. The disease predicted by the model
+            have a button appeared in the right section, which, when the cursor is placed on top, will display the corresponding heatmap above the image. This allow for the user to quickly see the image, unhindered by the heatmap,
+            and to quickly inspect all the different heatmaps provided by the model. This speed of use is an important requirement, since the radiologists spends very little time per image, and go as far as to count each and every click
+            of mouse to avoid wasting time.
+
+            Finally, the interface also show the labeled of the image, by displaying the name of the class in red in the aforementioned graph. This allow us to quickly compared the model's prediction to the ground truth.
+
+        \section{Future Steps}
+            I have identified the remaining step of the project before deployment as being :
+            \begin{enumerate}
+            \item Create a validation and test set for the CCSMTL's dataset with the help of radiologists
+            \item Clean the training data based on the feedback from the radiologists
+            \item Find the best GradCAM method based on the mAP score on either the CCSMTL's improved dataset, or on vinBigData
+            \item Create a model ensemble from the different model/training method explored that performed successfully
+            \item Train Yolo (or another detection model) from the pseudo labels generated by the model ensemble
+            \item Filter the data sent to the model, either by training a Unet or by other method, to avoid ,broken, "weird" images to make it to the model
+            to preserve the trust of the radiologist using it.
+            \item Use the feedback from the radiologists to improve the model , change the categories, expand or reduce the number of categories, etc.
+            \item Create a final ensemble of model
+            \item The most important, final step : test the model on a validated test dataset from the CCSMTL's hospitals before pre-releasing the model
+            \item Deploy the model as fully operationnal
+            \item Write a protocol to verify the model's performance on a regular basis, in order to prevent model's drift. (This could be the result of changes in the radiologist's practice,
+            the introduction of new X-ray machine, etc)
+            \end{enumerate}
+
+
+            \section{Appendix}
+
+
+        \begin{figure}[H]
+                 \centering
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_0.jpg}
+                     \caption{Example 1}
+                     \vspace{4ex}
+
+                 \end{subfigure}
+                 \hfill
+                 \begin{subfigure}[b]{0.45\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_1.jpg}
+                     \caption{Example 2}
+                     \vspace{4ex}
+
+                 \end{subfigure}
+                 \label{fig:gradcam_example_chexpert_3}
+                 \caption{Two examples of patient files being interpreted by the model using GradCAM. \myworries{The first one is a patient with a lung opacity, and the second one is a patient with a pneumothorax. Wrong pathologies!}}
+
+            \end{figure}
+
+
+        \begin{figure}[H]
+                 \centering
+                 \begin{subfigure}[b]{\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_2.jpg}
+                     \caption{Example 1}
+                     \vspace{4ex}
+
+                 \end{subfigure}
+                 \hfill
+                 \begin{subfigure}[b]{\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_5.jpg}
+                     \caption{Example 2}
+                     \vspace{4ex}
+
+                 \end{subfigure}
+                 \label{fig:gradcam_example_chexpert_4}
+                 \caption{Two examples of patient files being interpreted by the model using GradCAM. \myworries{The first one is a patient with a lung opacity, and the second one is a patient with a pneumothorax. Wrong pathologies!}}
+
+            \end{figure}
+
+
+        \begin{figure}[H]
+                 \centering
+                 \begin{subfigure}[b]{\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_4.jpg}
+                     \caption{Example 1}
+                     \vspace{4ex}
+
+                 \end{subfigure}
+                 \hfill
+                 \begin{subfigure}[b]{\textwidth}
+                     \centering
+                     \includegraphics[width=\textwidth]{CheXpert2/inference/heatmaps_7.jpg}
+                     \caption{Example 2}
+                     \vspace{4ex}
+
+                 \end{subfigure}
+                 \label{fig:gradcam_example_chexpert_5}
+                 \caption{Two examples of patient files being interpreted by the model using GradCAM. \myworries{The first one is a patient with a lung opacity, and the second one is a patient with a pneumothorax. Wrong pathologies!}}
+
+            \end{figure}
+
+            \begin{landscape}
+            \begin{figure}
+                \centering
+                \includegraphics[width=\linewidth]{plots/webapp}
+                \caption{Example of the interface}
+                \label{fig:interface}
+            \end{figure}
+            \end{landscape}
     \newpage
     % REFERENCES
     {
