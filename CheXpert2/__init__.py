@@ -19,14 +19,6 @@ hierarchy = {
 #         "Air" : ["Emphysema","Pneumothorax"],
 #         "Liquid" : ["Edema","Pleural Effusion"]
 # }
-<<<<<<< HEAD
-#
-#
-=======
-
->>>>>>> 2765b09c84371d368556957be77b80800821db86
-
-
 
 debug_config = {
         "model": "densenet121",
