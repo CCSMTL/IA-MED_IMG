@@ -1,6 +1,6 @@
 # ------python import------------------------------------
 import os
-
+import sys
 
 import urllib
 import warnings
@@ -86,7 +86,7 @@ def initialize_config(args):
 
     config = vars(args)
     experiment = Experiment(
-        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=20)
+        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=40)
     torch.set_num_threads(max(config["num_worker"],1))
 
     # ----------- load classes ----------------------------------------
@@ -110,6 +110,15 @@ def initialize_config(args):
 
 def main() :
     logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    root.addHandler(handler)
+
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir,experiment, device = initialize_config(args)
@@ -139,24 +148,24 @@ def main() :
             model,
             optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
-            train_datasets=["ChexPert"],
-            val_datasets=["ChexPert"],
+            train_datasets=["CIUSSS", "PadChest"],
+            val_datasets=["vinBigData","MimicCxrJpg"],
             config=config,
             device=device
         )
         results = experiment.train()
-        model.backbone.reset_classifier(num_classes=num_classes, global_pool=config["global_pool"])
+        model.reset_classifier()
         model = model.to(device)
 
     # ------------training--------------------------------------
 
     # setting up for the training
 
-    config["train_dataset"] = ["ChexPert","MimicCxrJpg"]
-    config["val_dataset"]   = ["ChexPert"]
+    config["train_dataset"] = ["ChexPert", "MimicCxrJpg"]
+    config["val_dataset"] = ["ChexPert"]
 
     experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=20
+        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=40
     )
 
 

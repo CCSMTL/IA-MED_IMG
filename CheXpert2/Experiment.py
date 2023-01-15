@@ -298,7 +298,7 @@ class Experiment:
         )
         self.validation_loader = torch.utils.data.DataLoader(
             val_dataset,
-            batch_size=config["batch_size"],
+            batch_size=config["batch_size"] * 2,
             num_workers=config["num_worker"],
             pin_memory=True,
             shuffle=False,
@@ -399,7 +399,7 @@ class Experiment:
 
                     # Finishing the loop
 
-                self.next_epoch(val_loss)
+                self.next_epoch(1-metrics_results["f1"]["mean"])
                 # if not dist.is_initialized() and self.epoch % 5 == 0:
                 #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
                 if self.epoch == self.epoch_max:
