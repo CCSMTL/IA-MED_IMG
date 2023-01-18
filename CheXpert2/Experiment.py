@@ -32,7 +32,7 @@ from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
 
 
 class Experiment:
-    def __init__(self, directory : str, names: [str], tag : str = None, config=None, epoch_max : int=50, patience : int=5,verbose : int=1):
+    def __init__(self, directory : str, names: [str], tag : str = None, config=None, epoch_max : int=50, patience : int=5):
         """
         Initalize the experiment with some prerequired information.
 
@@ -51,8 +51,6 @@ class Experiment:
             The Number of epoch the experiment can run
         patience : Int
             Amount of patience of the experiment. Default is 5
-        verbose : Int
-            Integer between 0 & 5. Default is 1
         """
         self.names = names
         self.weight_dir = "models_weights/" + directory
@@ -75,7 +73,7 @@ class Experiment:
         if self.rank == 0:
             wandb.init(project="Chestxray", entity="ccsmtl2", config=config,tags=tag)
 
-        self.verbose=verbose
+
 
 
     def next_epoch(self, val_loss: torch.Tensor) -> None:
@@ -276,14 +274,14 @@ class Experiment:
         if config["debug"]:
             num_samples = 50
         else:
-            num_samples = 20_000
+            num_samples = 50_000
 
 
 
 
-        weights = torch.ones(len(train_dataset.weights))
+        samples_weights = train_datasets.weights
         # sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,num_samples=min(num_samples, len(train_dataset)))
-        sampler = torch.utils.data.sampler.WeightedRandomSampler(weights,num_samples=min(num_samples, len(train_dataset)))
+        sampler = torch.utils.data.sampler.WeightedRandomSampler(samples_weights,num_samples=min(num_samples, len(train_dataset)))
 
 
         if dist.is_initialized():
@@ -305,12 +303,15 @@ class Experiment:
             shuffle=False,
         )
 
-        self.optimizer = getattr(torch.optim, optimizer)(
-            self.model.parameters(),
-            lr=self.config["lr"],
-            weight_decay=self.config["weight_decay"],
-            betas=(self.config["beta1"], self.config["beta2"]),
-        ) if optimizer else None
+        if optimizer in ["Adam","AdamW"] :
+            self.optimizer = getattr(torch.optim, optimizer)(
+                self.model.parameters(),
+                lr=self.config["lr"],
+                weight_decay=self.config["weight_decay"],
+                betas=(self.config["beta1"], self.config["beta2"]),
+            )
+        else :
+            raise NotImplementedError(f"Optimizer {optimizer} not implemented")
 
         num_positives = torch.tensor(self.training_loader.dataset.count).to(self.device)
         num_negatives = len(self.training_loader.dataset) - num_positives
@@ -335,6 +336,7 @@ class Experiment:
         **kwargs : Override default methods in compile
 
         """
+
         for key, value in kwargs.items():
             setattr(self,key,value)
 
@@ -357,7 +359,7 @@ class Experiment:
 
         with logging_redirect_tqdm():
 
-            while self.keep_training:  # loop over the dataset multiple times
+            while self.keep_training :  # loop over the dataset multiple times
                 metrics_results = {}
                 if dist.is_initialized():
                     self.training_loader.sampler.set_epoch(self.epoch)
@@ -400,7 +402,7 @@ class Experiment:
 
                     # Finishing the loop
 
-                self.next_epoch(1-metrics_results["f1"]["mean"])
+                self.next_epoch(1-metrics_results["f1"]["mean"]) # give it the variable to control for early stopping
                 # if not dist.is_initialized() and self.epoch % 5 == 0:
                 #     set_parameter_requires_grad(model, 1 + self.epoch // 2)
                 if self.epoch == self.epoch_max:

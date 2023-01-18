@@ -118,6 +118,6 @@ def validation_loop(model, loader, criterion, device, autocast):
             loss,
         )  # garbage management sometimes fails with cuda
 
-    return running_loss, results,
+    return running_loss, results
 
 

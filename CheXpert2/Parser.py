@@ -35,12 +35,6 @@ def init_parser():
         help="GPU on which to execute your code. Parallel to use all available gpus",
     )
 
-    parser.add_argument(
-        "--wandb",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish (and did you setup) wandb? You will need to add the project name in the initialization of wandb in train.py",
-    )
 
     parser.add_argument(
         "--epoch",
@@ -71,7 +65,7 @@ def init_parser():
     )
     parser.add_argument(
         "--clip_norm",
-        default=100,
+        default=1,
         const="all",
         type=int,
         nargs="?",
@@ -124,7 +118,7 @@ def init_parser():
     )
     parser.add_argument(
         "--batch_size",
-        default=100,
+        default=16,
         const="all",
         type=int,
         nargs="?",
@@ -162,12 +156,7 @@ def init_parser():
         help="tag to add to the logs",
     )
 
-    parser.add_argument(
-        "--freeze",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="do you wish  to freeze the backbone? This option has been disabled for now",
-    )
+
     parser.add_argument(
         "--pretrained",
         action=argparse.BooleanOptionalAction,
@@ -221,14 +210,14 @@ def init_parser():
         nargs="?",
         const="all",
         type=str,
-
+        choices=["avg", "weighted"],
         required=False,
         help="the type of pooling to effectuate before the classifier",
     )
 
     parser.add_argument(
         "--hierarchical",
-        default=True,
+        default=False,
         action=argparse.BooleanOptionalAction,
         required=False,
         help="Whether to use the hierarchical inference",

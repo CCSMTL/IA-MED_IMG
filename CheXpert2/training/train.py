@@ -3,6 +3,7 @@ import os
 import sys
 import warnings
 
+import libauc.losses
 import torch
 import torch.distributed as dist
 import logging
@@ -30,13 +31,14 @@ for key in hierarchy.keys():
 # --------load local variable ----------------------------
 
 try:
-    os.environ["img_dir"] = os.environ["img_dir"]
+    img_dir = os.environ["img_dir"]
 except:
     os.environ["img_dir"] = ""
+
 def initialize_config(args):
     # -------- proxy config ---------------------------
-    #
-    # proxy = urllib.request.ProxyHandler(line
+    # import urllib
+    # proxy = urllib.request.ProxyHandler(
     #     {
     #         "https": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
     #         "http": "http://ccsmtl.proxy.mtl.rtss.qc.ca:8080",
@@ -51,8 +53,8 @@ def initialize_config(args):
 
     # ------------ parsing & Debug -------------------------------------
 
-    # 1) set up debug env variable
-    os.environ["DEBUG"] = str(args.debug)
+
+
     if args.debug:
         os.environ["WANDB_MODE"] = "offline"
     # 2) load from env.variable the data repository location
@@ -63,37 +65,27 @@ def initialize_config(args):
 
     # ---------- Device Selection ----------------------------------------
     if torch.cuda.is_available():
-        if dist.is_initialized():
-            rank = dist.get_rank()
-            device = rank % torch.cuda.device_count()
-        else:
             device = args.device
-
     else:
         device = "cpu"
-        warnings.warn("No gpu is available for the computation")
+        logging.critical("No gpu is available for the computation")
 
     # ----------- hyperparameters-------------------------------------<
 
     config = vars(args)
     experiment = Experiment(
         f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=40)
-    torch.set_num_threads(max(config["num_worker"],1))
 
 
-    # --------- instantiate experiment tracker ------------------------
 
-
-    if dist.is_initialized():
-        dist.barrier()
-        torch.cuda.device(device)
-    else:
-        config = wandb.config
-
+    config = wandb.config
+    torch.set_num_threads(max(config["num_worker"], 1))
 
     return config, img_dir,experiment, device
 
 def main() :
+
+    # -------------- set up logging -----------------------------------
     logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
@@ -103,7 +95,7 @@ def main() :
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root.addHandler(handler)
-
+    # ------------ parse argument and get config -------------------
     parser = init_parser()
     args = parser.parse_args()
     config, img_dir,experiment, device = initialize_config(args)

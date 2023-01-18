@@ -12,7 +12,7 @@ hierarchy = {
 
 #CIUSSS
 
-# names= ["Opacity","Air","Liquid","Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis","Pneumothorax","Emphysema","Pleural Effusion","Fracture" ,"Infiltration","Mass","No Finding"]
+# names= ["Cardiomegaly","Lung Lesion" ,"Edema","Consolidation"  ,"Atelectasis","Pneumothorax","Emphysema","Pleural Effusion","Fracture" ,"Infiltration","Mass","No Finding"]
 #
 # hierarchy = {
 #         "Opacity" : ["Consolidation","Atelectasis","Mass","Lung Lesion"],

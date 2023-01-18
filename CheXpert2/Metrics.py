@@ -26,18 +26,7 @@ class Metrics:
 
 
 
-    def accuracy3(self, true, pred):
-        # n, m = true.shape
-        # pred2 = self.convert(pred)
-        # pred2 = np.where(pred2 > 0.5, 1, 0)
-        #
-        # accuracy = 0
-        # for x, y in zip(true, pred2):
-        #     if (x == y).all():
-        #         accuracy += 1
-        # accuracy /=n
-        accuracy = timm.utils.metrics.accuracy(pred,true, topk=(3,))
-        return accuracy
+
     def accuracy(self, true, pred):
         pred = self.convert(pred)
         pred = np.where(pred > 0.5, 1, 0)

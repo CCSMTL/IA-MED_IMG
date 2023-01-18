@@ -58,12 +58,17 @@ class MongoDB:
 
         if datasetname=="Test" : #for testing we specified the subset of the CIUSSS collection
             #TODO : FIX OFFLINE TEST
+            assert self.debug== False, "Offline test is not available"
             self.data= [self .db_CIUSSS["test"]]
+
         train_dataset = [pd.DataFrame([],columns=self.names)]
         query = {datasetname: 1}
 
         if self.use_frontal:
+            #TODO : Fix mongodb frontal/lateral before using
             query["Frontal/Lateral"] = "F"
+            raise NotImplementedError("Frontal/Lateral is not implemented yet")
+
 
         for collection in self.data:
 
