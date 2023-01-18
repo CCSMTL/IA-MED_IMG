@@ -26,29 +26,13 @@ def load_my_state_dict(self, state_dict):
         own_state[name].copy_(param)
 
 
-def load_model():
+def load_model(weights,models):
     if torch.cuda.is_available():
         device = "cuda:0"
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
-    models = [
-        CNN("convnext_base_384_in22ft1k", channels=3, num_classes=len(names), pretrained=False, hierarchical=True),
-        #    CNN("convnext_base", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-        #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-        #    CNN("densenet201", img_size=384, channels=1, num_classes=14, pretrained=False, pretraining=False),
-    ]
-    # model =  torch.nn.parallel.DistributedDataParallel(model)
 
-    # api = wandb.Api()
-    # run = api.run(f"ccsmtl2/Chestxray/{args.run_id}")
-    # run.file("models_weights/convnext_base/DistributedDataParallel.pt").download(replace=True)
-    weights = [
-        "/mnt/c/Users/joeda/PycharmProjects/IA-MED_IMG/data/model_weights/atomic-wildflower.pt",
-        #    "/data/home/jonathan/IA-MED_IMG/models_weights/convnext_base_2.pt",
-        #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201.pt",
-        #    "/data/home/jonathan/IA-MED_IMG/models_weights/densenet201_2.pt",
-    ]
 
     for model, weight in zip(models, weights):
         state_dict = torch.load(weight, map_location=torch.device(device))
