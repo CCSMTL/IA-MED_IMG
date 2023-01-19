@@ -20,8 +20,9 @@ class Mixing(object):
         self.prob = prob
         self.intensity = intensity
 
-    def __call__(self, samples: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]) -> tuple[
-        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __call__(
+        self, samples: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         image1, image2, label1, label2 = samples
 
         if torch.rand(1) < self.prob:
@@ -44,11 +45,14 @@ class CutMix(object):
         self.prob = prob
         self.intensity = intensity
 
-    def __call__(self, samples: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]) -> tuple[
-        torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __call__(
+        self, samples: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         image1, image2, label1, label2 = samples
         n = image1.shape[1]
-        bbox = torch.cat((torch.rand(2) * n, torch.abs(torch.randn(2) * n * self.intensity))).int()
+        bbox = torch.cat(
+            (torch.rand(2) * n, torch.abs(torch.randn(2) * n * self.intensity))
+        ).int()
         x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
         if torch.rand(1) < self.prob:
             x2 = min(x + w, n) if w > 0 else max(x + w, 0)
@@ -59,9 +63,11 @@ class CutMix(object):
             bbox[1] = min(y, y2)
             bbox[3] = max(y, y2)
 
-            ratio = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) / n ** 2
+            ratio = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]) / n**2
 
-            image1[:, bbox[0]:bbox[2], bbox[1]:bbox[3]] = image2[:, bbox[0]:bbox[2], bbox[1]:bbox[3]]
+            image1[:, bbox[0] : bbox[2], bbox[1] : bbox[3]] = image2[
+                :, bbox[0] : bbox[2], bbox[1] : bbox[3]
+            ]
             label1 = (1 - ratio) * label1 + ratio * label2
 
         return (image1, image2, label1, label2)

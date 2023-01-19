@@ -9,6 +9,7 @@ import scipy
 import torch
 from six.moves import urllib
 from sklearn import metrics
+
 # -------- local import ---------------------------
 
 from CheXpert2.dataloaders.CXRLoader import CXRLoader
@@ -16,6 +17,7 @@ from CheXpert2.models.CNN import CNN
 from CheXpert2.Metrics import Metrics
 from CheXpert2 import names
 import tqdm
+
 # -------- proxy config ---------------------------
 def load_my_state_dict(self, state_dict):
     own_state = self.state_dict()
@@ -26,13 +28,12 @@ def load_my_state_dict(self, state_dict):
         own_state[name].copy_(param)
 
 
-def load_model(weights,models):
+def load_model(weights, models):
     if torch.cuda.is_available():
         device = "cuda:0"
     else:
         device = "cpu"
         warnings.warn("No gpu is available for the computation")
-
 
     for model, weight in zip(models, weights):
         state_dict = torch.load(weight, map_location=torch.device(device))
@@ -42,6 +43,7 @@ def load_model(weights,models):
         model.eval()
         model = model.to(device)
         return model
+
 
 @torch.no_grad()
 def infer_loop(model, loader, criterion, device):
@@ -72,9 +74,7 @@ def infer_loop(model, loader, criterion, device):
         running_loss += loss.detach()
 
         if inputs.shape != labels.shape:  # prevent storing images if training unets
-            results[1] = torch.cat(
-                (results[1], outputs.detach().cpu()), dim=0
-            )
+            results[1] = torch.cat((results[1], outputs.detach().cpu()), dim=0)
             results[0] = torch.cat((results[0], labels.cpu()), dim=0)
 
         del (

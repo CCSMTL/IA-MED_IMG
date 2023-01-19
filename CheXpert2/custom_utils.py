@@ -9,6 +9,7 @@ import cv2 as cv
 
 # -----------------------------------------------------------------------------------
 
+
 def convert(array1):
     array = copy.copy(array1)
     answers = []
@@ -58,7 +59,7 @@ def dummy_context_mgr():
     yield None
 
 
-#----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 def channels321(backbone):
 
     for name, weight1 in backbone.named_parameters():
@@ -80,7 +81,7 @@ def channels321(backbone):
         stride=first_layer.stride,
         padding=first_layer.padding,
         bias=bias,
-        device=backbone.device
+        device=backbone.device,
     ).requires_grad_()
 
     new_first_layer.weight[:, :, :, :].data[...].fill_(0)
@@ -94,10 +95,8 @@ def channels321(backbone):
     setattr(item, last_item, new_first_layer)
 
 
+# -------------------------------------------------------------------------------------------
 
-
-
-#-------------------------------------------------------------------------------------------
 
 class Identity(torch.nn.Module):
     def __init__(self):
@@ -107,19 +106,25 @@ class Identity(torch.nn.Module):
         return x
 
 
-#-------------------------------------------------------------------------------------------
-
+# -------------------------------------------------------------------------------------------
 
 
 def get_LUT_value(data, window, level):
     """Apply the RGB Look-Up Table for the given
-       data and window/level value."""
+    data and window/level value."""
 
-    return np.piecewise(data,
-                        [data <= (level - 0.5 - (window - 1) / 2),
-                         data > (level - 0.5 + (window - 1) / 2)],
-                        [0, 255, lambda data: ((data - (level - 0.5)) /
-                                               (window - 1) + 0.5) * (255 - 0)])
+    return np.piecewise(
+        data,
+        [
+            data <= (level - 0.5 - (window - 1) / 2),
+            data > (level - 0.5 + (window - 1) / 2),
+        ],
+        [
+            0,
+            255,
+            lambda data: ((data - (level - 0.5)) / (window - 1) + 0.5) * (255 - 0),
+        ],
+    )
 
 
 def crop_coords(img):
@@ -130,7 +135,9 @@ def crop_coords(img):
     blur = cv.GaussianBlur(img, (5, 5), 0)
     _, breast_mask = cv.threshold(blur, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
 
-    cnts, _ = cv.findContours(breast_mask.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    cnts, _ = cv.findContours(
+        breast_mask.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE
+    )
     cnt = max(cnts, key=cv.contourArea)
     x, y, w, h = cv.boundingRect(cnt)
     return (x, y, w, h)
@@ -165,8 +172,7 @@ def clahe(img, clip):
     # cl = clahe.apply(src,cv2.cuda_Stream.Null()).download()
 
     img = np.array(img, dtype=np.uint8)
-    clahe = cv.createCLAHE(clipLimit=clip,tileGridSize=(8,8))
+    clahe = cv.createCLAHE(clipLimit=clip, tileGridSize=(8, 8))
     cl = clahe.apply(img)
 
     return cl
-

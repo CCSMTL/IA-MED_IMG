@@ -13,27 +13,29 @@ import wandb
 from CheXpert2.models.CNN import CNN
 from CheXpert2.Experiment import Experiment
 from CheXpert2.Parser import init_parser
-from CheXpert2 import names,hierarchy
+from CheXpert2 import names, hierarchy
+
 for key in hierarchy.keys():
-    if key not in names :
-        names.insert(0,key)
+    if key not in names:
+        names.insert(0, key)
 
 # -----------cuda optimization tricks-------------------------
 # DANGER ZONE !!!!!
-#torch.autograd.set_detect_anomaly(True)
-#torch.autograd.profiler.profile(False)
-#torch.autograd.profiler.emit_nvtx(False)
+# torch.autograd.set_detect_anomaly(True)
+# torch.autograd.profiler.profile(False)
+# torch.autograd.profiler.emit_nvtx(False)
 
-#torch.backends.cudnn.benchmark = True
-#torch.backends.cudnn.enabled = True
+# torch.backends.cudnn.benchmark = True
+# torch.backends.cudnn.enabled = True
 
-#torch.set_float32_matmul_precision('high')
+# torch.set_float32_matmul_precision('high')
 # --------load local variable ----------------------------
 
 try:
     img_dir = os.environ["img_dir"]
 except:
     os.environ["img_dir"] = ""
+
 
 def initialize_config(args):
     # -------- proxy config ---------------------------
@@ -53,8 +55,6 @@ def initialize_config(args):
 
     # ------------ parsing & Debug -------------------------------------
 
-
-
     if args.debug:
         os.environ["WANDB_MODE"] = "offline"
     # 2) load from env.variable the data repository location
@@ -65,7 +65,7 @@ def initialize_config(args):
 
     # ---------- Device Selection ----------------------------------------
     if torch.cuda.is_available():
-            device = args.device
+        device = args.device
     else:
         device = "cpu"
         logging.critical("No gpu is available for the computation")
@@ -74,31 +74,38 @@ def initialize_config(args):
 
     config = vars(args)
     experiment = Experiment(
-        f"{args.model}", names=names, tag=None, config=config, epoch_max=args.pretraining, patience=40)
-
-
+        f"{args.model}",
+        names=names,
+        tag=None,
+        config=config,
+        epoch_max=args.pretraining,
+        patience=40,
+    )
 
     config = wandb.config
     torch.set_num_threads(max(config["num_worker"], 1))
 
-    return config, img_dir,experiment, device
+    return config, img_dir, experiment, device
 
-def main() :
+
+def main():
 
     # -------------- set up logging -----------------------------------
-    logging.basicConfig(filename='RADIA.log', level=logging.DEBUG)
+    logging.basicConfig(filename="RADIA.log", level=logging.DEBUG)
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     handler.setFormatter(formatter)
     root.addHandler(handler)
     # ------------ parse argument and get config -------------------
     parser = init_parser()
     args = parser.parse_args()
-    config, img_dir,experiment, device = initialize_config(args)
+    config, img_dir, experiment, device = initialize_config(args)
     num_classes = len(names)
 
     # -----------model initialisation------------------------------
@@ -110,15 +117,14 @@ def main() :
         channels=config["channels"],
         drop_rate=config["drop_rate"],
         global_pool=config["global_pool"],
-        hierarchical=config["hierarchical"]
+        hierarchical=config["hierarchical"],
     )
-    #model = torch.compile(model)
+    # model = torch.compile(model)
     # send model to gpu
-
 
     logging.info("The model has now been successfully loaded into memory")
 
-    #------------pre-training--------------------------------------
+    # ------------pre-training--------------------------------------
     if config["pretraining"] != 0:
 
         experiment.compile(
@@ -126,9 +132,9 @@ def main() :
             optimizer="AdamW",
             criterion="BCEWithLogitsLoss",
             train_datasets=["CIUSSS", "PadChest"],
-            val_datasets=["vinBigData","MimicCxrJpg"],
+            val_datasets=["vinBigData", "MimicCxrJpg"],
             config=config,
-            device=device
+            device=device,
         )
         results = experiment.train()
         model.reset_classifier()
@@ -138,30 +144,31 @@ def main() :
 
     # setting up for the training
 
-
     config["train_dataset"] = ["ChexPert", "MimicCxrJpg"]
     config["val_dataset"] = ["ChexPert"]
 
     experiment = Experiment(
-        f"{config['model']}", names=names, tag=config["tag"], config=config, epoch_max=config["epoch"], patience=40
+        f"{config['model']}",
+        names=names,
+        tag=config["tag"],
+        config=config,
+        epoch_max=config["epoch"],
+        patience=40,
     )
-
-
 
     experiment.compile(
         model=model,
-        optimizer = "AdamW",
+        optimizer="AdamW",
         criterion="BCEWithLogitsLoss",
         train_datasets=config["train_dataset"],
-        val_datasets = config["val_dataset"],
+        val_datasets=config["val_dataset"],
         config=config,
-        device=device
+        device=device,
     )
-
 
     results = experiment.train()
     experiment.end(results)
 
 
 if __name__ == "__main__":
-  main()
+    main()

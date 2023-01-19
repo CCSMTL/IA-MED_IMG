@@ -22,11 +22,18 @@ from torchvision import transforms
 import albumentations as A
 
 from CheXpert2.dataloaders.MongoDB import MongoDB
-from CheXpert2 import names,hierarchy
+from CheXpert2 import names, hierarchy
+
 for key in hierarchy.keys():
-    if key not in names :
-        names.insert(0,key)
-from CheXpert2.custom_utils import truncation_normalization,clahe,get_LUT_value, crop_coords
+    if key not in names:
+        names.insert(0, key)
+from CheXpert2.custom_utils import (
+    truncation_normalization,
+    clahe,
+    get_LUT_value,
+    crop_coords,
+)
+
 
 class CXRLoader(Dataset):
     """
@@ -34,17 +41,17 @@ class CXRLoader(Dataset):
     """
 
     def __init__(
-            self,
-            split:          str = "Train",
-            img_dir:        str = "data",
-            img_size:       int = 240,
-            prob:           [float] = [1,0.5,1,1,1],
-            label_smoothing:float = 0,
-            channels:       int = 1,
-            use_frontal:    bool = False,
-            datasets:       [str] = None,
-            debug:          bool = False
-    ) -> Dataset :
+        self,
+        split: str = "Train",
+        img_dir: str = "data",
+        img_size: int = 240,
+        prob: [float] = [1, 0.5, 1, 1, 1],
+        label_smoothing: float = 0,
+        channels: int = 1,
+        use_frontal: bool = False,
+        datasets: [str] = None,
+        debug: bool = False,
+    ) -> Dataset:
         """
 
         Args:
@@ -63,20 +70,33 @@ class CXRLoader(Dataset):
 
         # ----- Assertion to validate inputs ---------------------------------------------
         assert datasets is not None, "You must specify the datasets to use"
-        assert 224<=img_size<=1000, "Image size must be between 224 and 1000"
-        assert 0<=label_smoothing<=1, "Label smoothing must be between 0 and 1"
-        assert channels in [1,3], "Channels must be either 1 or 3"
-        assert split in ["Train", "Valid", "Test"], "Split must be either Train, Valid or Test"
-        assert len(prob) == 5, f"Probabilities must be a list of 5 floats. Currently is {len(prob)}"
-        for pro in prob :
-            assert 0<=pro<=1, "Probabilities must be between 0 and 1"
+        assert 224 <= img_size <= 1000, "Image size must be between 224 and 1000"
+        assert 0 <= label_smoothing <= 1, "Label smoothing must be between 0 and 1"
+        assert channels in [1, 3], "Channels must be either 1 or 3"
+        assert split in [
+            "Train",
+            "Valid",
+            "Test",
+        ], "Split must be either Train, Valid or Test"
+        assert (
+            len(prob) == 5
+        ), f"Probabilities must be a list of 5 floats. Currently is {len(prob)}"
+        for pro in prob:
+            assert 0 <= pro <= 1, "Probabilities must be between 0 and 1"
 
         # ----- Variable definition ------------------------------------------------------
         self.classes = names
         self.img_dir = img_dir
         self.annotation_files = {}
         self.label_smoothing = label_smoothing
-        self.prob = prob if prob else [0, ] * 6
+        self.prob = (
+            prob
+            if prob
+            else [
+                0,
+            ]
+            * 6
+        )
         self.img_size = img_size
         self.channels = channels
         self.split = split
@@ -86,19 +106,32 @@ class CXRLoader(Dataset):
         self.transform = self.get_transform(self.prob)
 
         # ------- Caching & Reading -----------------------------------------------------------
-        classnames = []  # ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
+        classnames = (
+            []
+        )  # ["Lung Opacity", "Enlarged Cardiomediastinum"] if pretrain else []
 
-        self.files = MongoDB("10.128.107.212", 27017, datasets, use_frontal=use_frontal,img_dir=img_dir,debug=debug).dataset(split)
+        self.files = MongoDB(
+            "10.128.107.212",
+            27017,
+            datasets,
+            use_frontal=use_frontal,
+            img_dir=img_dir,
+            debug=debug,
+        ).dataset(split)
 
         self.files[self.classes] = self.files[self.classes].astype(int)
 
         paths = self.files.groupby("Exam ID")["Path"].apply(list)
         frontal_lateral = self.files.groupby("Exam ID")["Frontal/Lateral"].apply(list)
-        self.files = self.files[self.classes + ["Exam ID"]].groupby("Exam ID").mean().round(0)
+        self.files = (
+            self.files[self.classes + ["Exam ID"]].groupby("Exam ID").mean().round(0)
+        )
         self.files["Path"] = paths
         self.files["Frontal/Lateral"] = frontal_lateral
 
-        self.read_img = lambda idx: self.read_img_from_disk(paths=self.files.iloc[idx]['Path'])
+        self.read_img = lambda idx: self.read_img_from_disk(
+            paths=self.files.iloc[idx]["Path"]
+        )
         self.preprocess = self.get_preprocess(channels)
         self.weights = self.samples_weights()
 
@@ -119,11 +152,9 @@ class CXRLoader(Dataset):
         """
         return A.Compose(
             [
-
                 # A.augmentations.geometric.transforms.Affine(scale=(0.85, 1.15), translate_percent=(0.15, 0.15),
                 #                                             rotate=(-25, 25), shear=None, cval=0, keep_ratio=True,
                 #                                             p=prob[0]),
-
                 # A.augmentations.HorizontalFlip(p=prob[1]),
                 # A.augmentations.transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, always_apply=False,
                 #                                        p=prob[2]),
@@ -132,23 +163,44 @@ class CXRLoader(Dataset):
                 #
                 # A.ElasticTransform(alpha=0.2, sigma=25, alpha_affine=50, interpolation=1, value=None, p=prob[4],
                 #                    border_mode=cv.BORDER_CONSTANT),
-
-
-                A.augmentations.geometric.transforms.Affine(scale=(0.90, 1.10),rotate=(-15, 15), shear=None, cval=0, keep_ratio=True,p=prob[0]),
-                #A.augmentations.transforms.GaussNoise(var_limit=(0, 0.01), mean=0, p=prob[1]),
+                A.augmentations.geometric.transforms.Affine(
+                    scale=(0.90, 1.10),
+                    rotate=(-15, 15),
+                    shear=None,
+                    cval=0,
+                    keep_ratio=True,
+                    p=prob[0],
+                ),
+                # A.augmentations.transforms.GaussNoise(var_limit=(0, 0.01), mean=0, p=prob[1]),
                 A.augmentations.HorizontalFlip(p=prob[1]),
-                A.augmentations.transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, always_apply=False,
-                                                       p=prob[2]),
-                A.GridDistortion(num_steps=5, distort_limit=0.2, interpolation=1, border_mode=0, value=None,
-                                 mask_value=None, always_apply=False, p=prob[3]),
-
-                A.ElasticTransform(alpha=0.1, sigma=20, alpha_affine=40, interpolation=1, value=None, p=prob[4],
-                                   border_mode=cv.BORDER_CONSTANT),
-
+                A.augmentations.transforms.ColorJitter(
+                    brightness=0.1,
+                    contrast=0.1,
+                    saturation=0.1,
+                    always_apply=False,
+                    p=prob[2],
+                ),
+                A.GridDistortion(
+                    num_steps=5,
+                    distort_limit=0.2,
+                    interpolation=1,
+                    border_mode=0,
+                    value=None,
+                    mask_value=None,
+                    always_apply=False,
+                    p=prob[3],
+                ),
+                A.ElasticTransform(
+                    alpha=0.1,
+                    sigma=20,
+                    alpha_affine=40,
+                    interpolation=1,
+                    value=None,
+                    p=prob[4],
+                    border_mode=cv.BORDER_CONSTANT,
+                ),
             ]
         )
-
-
 
     def get_label(self, idx):
         """
@@ -156,7 +208,10 @@ class CXRLoader(Dataset):
         the chexpert dataset, with 0,1,-1 corresponding to negative, positive, and uncertain, respectively.
         """
 
-        vector, label_smoothing = self.files[self.classes].iloc[idx, :].to_numpy(), self.label_smoothing
+        vector, label_smoothing = (
+            self.files[self.classes].iloc[idx, :].to_numpy(),
+            self.label_smoothing,
+        )
 
         # we will use the  U-Ones method to convert the vector to a probability vector
         # source : https://arxiv.org/pdf/1911.06475.pdf
@@ -165,12 +220,16 @@ class CXRLoader(Dataset):
         labels[vector == 0] = label_smoothing
 
         if self.split == "Train":
-            labels[vector == -1] = torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+            labels[vector == -1] = (
+                torch.rand(size=(len(vector[vector == -1]),)) * (0.85 - 0.55) + 0.55
+            )
         else:
             labels[vector == -1] = 1  # we only output binary for validation
 
         labels = torch.from_numpy(labels)
-        labels[-1] = 1 - labels[-1]  # lets predict the presence of a disease instead of the absence
+        labels[-1] = (
+            1 - labels[-1]
+        )  # lets predict the presence of a disease instead of the absence
 
         return labels
 
@@ -186,7 +245,7 @@ class CXRLoader(Dataset):
         data = data.astype(int)
 
         count = data.sum().to_numpy()
-        self.count = count #used for positive class weights
+        self.count = count  # used for positive class weights
 
         for name, cat_count in zip(self.classes, count):
             if cat_count == 0:
@@ -202,7 +261,9 @@ class CXRLoader(Dataset):
             if len(a) > 0:
                 category = np.random.choice(a, 1)
             else:
-                category = len(self.classes) - 1  # assumes last class is the empty class
+                category = (
+                    len(self.classes) - 1
+                )  # assumes last class is the empty class
 
             weights[ex] = 1 / (count[category])
             ex += 1
@@ -224,7 +285,7 @@ class CXRLoader(Dataset):
         new_labels = 0.999 * labels + 0.001 * pseudo_labels
         self.files.loc[idxs, self.classes] = new_labels
 
-    def read_img_from_disk(self, paths) :
+    def read_img_from_disk(self, paths):
         """
         This function reads the images from disk associated with an exams and returns them as a numpy array
         It also applies the preprocessing function to the images. For now it will load up to 2 images per exam
@@ -235,8 +296,8 @@ class CXRLoader(Dataset):
 
         """
 
-        images = np.zeros((self.img_size, self.img_size,2*self.channels))
-        for i, path in enumerate(np.random.permutation(paths)) :
+        images = np.zeros((self.img_size, self.img_size, 2 * self.channels))
+        for i, path in enumerate(np.random.permutation(paths)):
             # images[i,:,:]=cv.resize(cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE),(self.img_size,self.img_size))
 
             # img = cv.imread(f"{self.img_dir}{path}", cv.IMREAD_GRAYSCALE)
@@ -244,45 +305,46 @@ class CXRLoader(Dataset):
             # with open(f"{self.img_dir}{path}", 'rb') as f:
             #     img = np.asarray(Image.open(f))
             #
-            try :
+            try:
                 img = iio.v3.imread(f"{self.img_dir}{path}")
                 img = img.astype(np.uint8)
 
-            except :
+            except:
                 logging.critical(f"Could not read image {self.img_dir}{path}")
-                img = np.zeros((self.img_size, self.img_size),dtype=np.uint8)
+                img = np.zeros((self.img_size, self.img_size), dtype=np.uint8)
 
             if len(img.shape) > 2:
                 img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
             h, w = img.shape
-            img_cropped = cv.resize(img[int(0.1 * h):int(0.9 * h), int(0.1 * w):int(0.9 * w)], (self.img_size,self.img_size))
-
+            img_cropped = cv.resize(
+                img[int(0.1 * h) : int(0.9 * h), int(0.1 * w) : int(0.9 * w)],
+                (self.img_size, self.img_size),
+            )
 
             if self.split.lower() == "train":
                 img_cropped = self.transform(image=img_cropped)["image"]
 
-
-
             cl1 = clahe(img_cropped, 2.0)
 
-            #img_normalized = truncation_normalization(img_cropped)
+            # img_normalized = truncation_normalization(img_cropped)
 
-            #img_normalized = (img_cropped - np.min(img_cropped)) / (np.max(img_cropped) - np.min(img_cropped))
+            # img_normalized = (img_cropped - np.min(img_cropped)) / (np.max(img_cropped) - np.min(img_cropped))
             img_normalized = img_cropped
-            if self.channels==3 :
+            if self.channels == 3:
 
                 cl2 = clahe(img_normalized, 4.0)
-                img_final = np.transpose(np.array([img_normalized, cl1, cl2]),(1,2,0))
+                img_final = np.transpose(
+                    np.array([img_normalized, cl1, cl2]), (1, 2, 0)
+                )
 
+            else:
 
-            else :
+                img_final = cl1[:, :, None]
 
-                img_final = cl1[:,:,None]
-
-
-
-            images[:, :,i * self.channels:(i + 1) * self.channels] = img_final[:, :, :self.channels]
+            images[:, :, i * self.channels : (i + 1) * self.channels] = img_final[
+                :, :, : self.channels
+            ]
             if i == 1:
                 break
 
@@ -309,21 +371,24 @@ class CXRLoader(Dataset):
                 normalize,
             ]
         )
-    def __getitem__(self, idx) :
 
-        images = self.read_img(idx)/255
+    def __getitem__(self, idx):
 
-        h,w,c = images.shape
+        images = self.read_img(idx) / 255
 
-        tensor_images =torch.zeros((c,h,w))
-        for i in range(0,2) :
-            image = images[:,:,i*self.channels:(i+1)*self.channels]
-            tensor_images[i*self.channels:(i+1)*self.channels,:,:] =self.preprocess(image)
+        h, w, c = images.shape
+
+        tensor_images = torch.zeros((c, h, w))
+        for i in range(0, 2):
+            image = images[:, :, i * self.channels : (i + 1) * self.channels]
+            tensor_images[
+                i * self.channels : (i + 1) * self.channels, :, :
+            ] = self.preprocess(image)
 
         assert not torch.isnan(tensor_images).any()
         label = self.get_label(idx)
 
-        bbox = self.files.at[idx,["x_min","y_min","x_max","y_max"]].to_numpy()
+        bbox = self.files.at[idx, ["x_min", "y_min", "x_max", "y_max"]].to_numpy()
 
         return tensor_images.float(), label.float(), bbox
 
@@ -331,10 +396,26 @@ class CXRLoader(Dataset):
 if __name__ == "__main__":
 
     img_dir = os.environ["img_dir"]
-    train = CXRLoader(split="Train", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
-                      channels=3, datasets=["CIUSSS"],debug=False)
-    valid = CXRLoader(split="Valid", img_dir=img_dir, img_size=240, prob=[1,1,1,1,1], label_smoothing=0,
-                      channels=1, datasets=["CIUSSS"],debug=False)
+    train = CXRLoader(
+        split="Train",
+        img_dir=img_dir,
+        img_size=240,
+        prob=[1, 1, 1, 1, 1],
+        label_smoothing=0,
+        channels=3,
+        datasets=["CIUSSS"],
+        debug=False,
+    )
+    valid = CXRLoader(
+        split="Valid",
+        img_dir=img_dir,
+        img_size=240,
+        prob=[1, 1, 1, 1, 1],
+        label_smoothing=0,
+        channels=1,
+        datasets=["CIUSSS"],
+        debug=False,
+    )
 
     print(len(train))
     print(len(valid))
@@ -348,4 +429,4 @@ if __name__ == "__main__":
             if i == 100:
                 break
 
-    print("time : ",time.time()-start)
+    print("time : ", time.time() - start)

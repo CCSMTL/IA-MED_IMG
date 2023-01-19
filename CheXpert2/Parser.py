@@ -16,7 +16,6 @@ def init_parser():
     )
 
     parser.add_argument(
-
         "--img_size",
         default=500,
         const="all",
@@ -35,7 +34,6 @@ def init_parser():
         help="GPU on which to execute your code. Parallel to use all available gpus",
     )
 
-
     parser.add_argument(
         "--epoch",
         default=50,
@@ -47,7 +45,7 @@ def init_parser():
     )
     parser.add_argument(
         "--augment_prob",
-        default=[0,0,0,0,0],
+        default=[0, 0, 0, 0, 0],
         type=float,
         nargs="+",
         required=False,
@@ -156,7 +154,6 @@ def init_parser():
         help="tag to add to the logs",
     )
 
-
     parser.add_argument(
         "--pretrained",
         action=argparse.BooleanOptionalAction,
@@ -170,7 +167,6 @@ def init_parser():
         default=False,
         help="If this argument is given , the frontal images only will be used",
     )
-
 
     parser.add_argument(
         "--debug",
@@ -190,7 +186,6 @@ def init_parser():
         nargs="?",
         const="all",
         type=int,
-
         required=False,
         help="Number of step to pretrain the model (in case you want to use diff. training config)",
     )
@@ -200,7 +195,6 @@ def init_parser():
         nargs="?",
         const="all",
         type=float,
-
         required=False,
         help="The dropout rate. Must be between 0 and 1",
     )
