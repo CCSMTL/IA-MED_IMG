@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from mne_connectivity.viz import plot_connectivity_circle
-from CheXpert2.dataloaders.MongoDB import MongoDB
+from radia.dataloaders.MongoDB import MongoDB
 
-# from CheXpert2 import names
+# from radia import names
 names = [
     "Cardiomegaly",
     "Lung Lesion",

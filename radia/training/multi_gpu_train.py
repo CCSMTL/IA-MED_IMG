@@ -11,12 +11,12 @@ import numpy as np
 import torch
 import torch.distributed as dist
 
-from CheXpert2.Experiment import Experiment
-from CheXpert2.custom_utils import set_parameter_requires_grad
-from CheXpert2.models.CNN import CNN
-from CheXpert2.training.train import initialize_config
-from CheXpert2.Parser import init_parser
-from CheXpert2 import names
+from radia.Experiment import Experiment
+from radia.custom_utils import set_parameter_requires_grad
+from radia.models.CNN import CNN
+from radia.training.train import initialize_config
+from radia.Parser import init_parser
+from radia import names
 
 
 def cleanup():

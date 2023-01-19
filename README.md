@@ -180,7 +180,7 @@ the pull request is allowed to move forward.
 ..
 ├── .gitignore
 ├── .pytest-deps
-├── CheXpert2
+├── radia
 │   ├── Experiment.py
 │   ├── Metrics.py
 │   ├── Parser.py

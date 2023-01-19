@@ -2,8 +2,8 @@ import os
 
 import torch
 import numpy as np
-from CheXpert2.dataloaders.CXRLoader import CXRLoader
-from CheXpert2 import names
+from radia.dataloaders.CXRLoader import CXRLoader
+from radia import names
 
 # -------- proxy config ---------------------------
 

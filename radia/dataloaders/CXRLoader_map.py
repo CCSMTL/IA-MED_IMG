@@ -21,13 +21,13 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import albumentations as A
 
-from CheXpert2.dataloaders.MongoDB import MongoDB
-from CheXpert2 import names, hierarchy
+from radia.dataloaders.MongoDB import MongoDB
+from radia import names, hierarchy
 
 for key in hierarchy.keys():
     if key not in names:
         names.insert(0, key)
-from CheXpert2.custom_utils import (
+from radia.custom_utils import (
     truncation_normalization,
     clahe,
     get_LUT_value,

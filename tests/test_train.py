@@ -10,10 +10,10 @@ import os
 import torch
 import yaml
 import logging
-from CheXpert2.Experiment import Experiment
-from CheXpert2.models.CNN import CNN
-from CheXpert2.training.train import main
-from CheXpert2 import names,debug_config
+from radia.Experiment import Experiment
+from radia.models.CNN import CNN
+from radia.training.train import main
+from radia import names,debug_config
 
 def test_train():
     #-------- proxy config ---------------------------

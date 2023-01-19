@@ -2,8 +2,8 @@
 # 2022-11-21
 
 import pymongo
-from CheXpert2 import names
-from CheXpert2.dataloaders.MongoDB import MongoDB
+from radia import names
+from radia.dataloaders.MongoDB import MongoDB
 import pandas as pd
 from functools import reduce
 import random

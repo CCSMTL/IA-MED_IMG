@@ -4,7 +4,7 @@ import torch
 # -------- proxy config ---------------------------
 from six.moves import urllib
 
-from CheXpert2.models.CNN import CNN
+from radia.models.CNN import CNN
 
 proxy = urllib.request.ProxyHandler(
     {

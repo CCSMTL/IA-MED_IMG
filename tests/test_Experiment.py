@@ -10,9 +10,9 @@ import os
 import numpy as np
 
 
-from CheXpert2.Experiment import Experiment
-from CheXpert2 import debug_config
-from CheXpert2.models.CNN import CNN
+from radia.Experiment import Experiment
+from radia import debug_config
+from radia.models.CNN import CNN
 os.environ["WANDB_MODE"] = "offline"
 experiment = Experiment(directory="/debug", names=np.arange(0, 13).astype(str),config=debug_config)
 

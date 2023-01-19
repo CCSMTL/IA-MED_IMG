@@ -15,13 +15,13 @@ import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 from torch.utils.data.sampler import SequentialSampler
 import wandb
-from CheXpert2.custom_utils import convert
-from CheXpert2.results_visualization import plot_polar_chart
-from CheXpert2.training.training import training_loop, validation_loop
-from CheXpert2.dataloaders.CXRLoader import CXRLoader
+from radia.custom_utils import convert
+from radia.results_visualization import plot_polar_chart
+from radia.training.training import training_loop, validation_loop
+from radia.dataloaders.CXRLoader import CXRLoader
 import torch.distributed as dist
 import tqdm
-from CheXpert2 import names, hierarchy
+from radia import names, hierarchy
 
 for key in hierarchy.keys():
     if key not in names:
@@ -29,7 +29,7 @@ for key in hierarchy.keys():
 import torch
 import numpy as np
 import pandas as pd
-from CheXpert2.Metrics import Metrics  # sklearn f**ks my debug
+from radia.Metrics import Metrics  # sklearn f**ks my debug
 
 
 class Experiment:
@@ -304,7 +304,7 @@ class Experiment:
         else:
             num_samples = 50_000
 
-        samples_weights = train_datasets.weights
+        samples_weights = train_dataset.weights
         # sampler = torch.utils.data.sampler.WeightedRandomSampler(train_dataset.weights,num_samples=min(num_samples, len(train_dataset)))
         sampler = torch.utils.data.sampler.WeightedRandomSampler(
             samples_weights, num_samples=min(num_samples, len(train_dataset))

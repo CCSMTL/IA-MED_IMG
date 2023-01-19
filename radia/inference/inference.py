@@ -12,10 +12,10 @@ from sklearn import metrics
 
 # -------- local import ---------------------------
 
-from CheXpert2.dataloaders.CXRLoader import CXRLoader
-from CheXpert2.models.CNN import CNN
-from CheXpert2.Metrics import Metrics
-from CheXpert2 import names
+from radia.dataloaders.CXRLoader import CXRLoader
+from radia.models.CNN import CNN
+from radia.Metrics import Metrics
+from radia import names
 import tqdm
 
 # -------- proxy config ---------------------------

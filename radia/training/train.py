@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Updated on 2023-0119$
+
+@author: Jonathan Beaulieu-Emond
+"""
+
+
 # ------python import------------------------------------
 import os
 import sys
@@ -10,10 +19,10 @@ import logging
 import wandb
 
 # -----local imports---------------------------------------
-from CheXpert2.models.CNN import CNN
-from CheXpert2.Experiment import Experiment
-from CheXpert2.Parser import init_parser
-from CheXpert2 import names, hierarchy
+from radia.models.CNN import CNN
+from radia.Experiment import Experiment
+from radia.Parser import init_parser
+from radia import names, hierarchy
 
 for key in hierarchy.keys():
     if key not in names:

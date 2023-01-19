@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Updated on 2023-0119$
+
+@author: Jonathan Beaulieu-Emond
+"""
+
+
+
 import numpy as np
 import torch
 import torch.distributed as dist

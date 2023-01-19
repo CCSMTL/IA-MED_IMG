@@ -1,9 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Updated on 2023-0119$
+
+@author: Jonathan Beaulieu-Emond
+"""
+
+
 from functools import reduce
 import os
 import pandas as pd
 import pymongo
 import logging
-from CheXpert2 import names, hierarchy
+from radia import names, hierarchy
 from pymongo.errors import ConnectionFailure
 
 
@@ -131,7 +140,7 @@ if __name__ == "__main__":
     import yaml
 
     os.environ["DEBUG"] = "False"
-    from CheXpert2 import names
+    from radia import names
 
     # db = MongoDB("10.128.107.212", 27017, ["ChexPert", "ChexNet", "ChexXRay"])
 
