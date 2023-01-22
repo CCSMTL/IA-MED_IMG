@@ -12,7 +12,7 @@ import os
 import sys
 import warnings
 
-import libauc.losses
+
 import torch
 import torch.distributed as dist
 import logging
