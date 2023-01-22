@@ -334,18 +334,22 @@ Instruction on specific arguments can be obtained by running
 python CheXpert2/training/train.py --help
 ``
 
+A simplified context manager has been created to run experience. The class Experiment.py allow to easily compile run by specifying the desired optimizer and 
+loss "à la Keras". The class is defined in Radia/Experiment.py
+
+Please note a few element are still hard-coded in the class. These are 
+
+- The names and hierarchy of the classes : see Radia/__init__.py to customize these
+- the connection to the database : see Radia/dataloaders/CXRLoader.py to customize the IP address of the Mongo Database 
+- The positive weights associated for each classes : They are calculated in the dataloader : see Radia/dataloaders/CXRLoader.py
+- The sample weight of each element in the dataloader : They are calculated in the dataloader also : see Radia/dataloaders/CXRLoader.py
+- The datasets used : see Radia/training/train.py to change which dataset is used for either training or pretraining
 ## multi_gpu_train.py
 
-Used to launch training on multiple GPUs. Still unstable . Use with caution 
+Used to launch training on multiple GPUs. Still unstable . Use with caution as it is not yet functional. The synchronisation of gradient seem broken
 
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better.
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)_
 
 
 
