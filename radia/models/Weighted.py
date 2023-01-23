@@ -17,6 +17,11 @@ for key in hierarchy.keys():
 
 
 class Weighted(CNN) :
+    """
+    This is a super class of the CNN model implemented before. It overrides
+    the forward and reset classifier method to implement the weighted pooling
+    as described in https://arxiv.org/pdf/2005.14480.pdf
+    """
     def __init__(self,*args,**kwargs) :
         super(Weighted,self).__init__(*args,**kwargs)
 

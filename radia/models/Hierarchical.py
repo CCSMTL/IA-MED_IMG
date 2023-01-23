@@ -15,6 +15,10 @@ for key in hierarchy.keys():
         names.insert(0, key)
 
 class Hierarchical(CNN):
+    """
+    This is a superclass of the CNN method implemented before . It overrrides the forward pass
+    to implement the hierarchical classification as described in https://arxiv.org/abs/1911.06475
+    """
     def __init__(self,*args,**kwargs) :
         super(Hierarchical,self).__init__(*args,**kwargs)
 

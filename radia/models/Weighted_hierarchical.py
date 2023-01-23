@@ -14,6 +14,12 @@ for key in hierarchy.keys():
 
 
 class Weighted_hierarchical(CNN):
+    """
+       This is a super class of the CNN model implemented before. It overrides
+       the forward and reset classifier method to implement the weighted pooling
+       as described in https://arxiv.org/pdf/2005.14480.pdf . It also implement the conditional
+       learning process as described in https://arxiv.org/abs/1911.06475
+       """
 
     def __init__(self, *args, **kwargs):
         super(Weighted_hierarchical, self).__init__(*args, **kwargs)
