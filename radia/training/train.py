@@ -20,6 +20,9 @@ import wandb
 
 # -----local imports---------------------------------------
 from radia.models.CNN import CNN
+from radia.models.Hierarchical import Hierarchical
+from radia.models.Weighted_hierarchical import Weighted_hierarchical
+from radia.models.Weighted import Weighted
 from radia.Experiment import Experiment
 from radia.Parser import init_parser
 from radia import names, hierarchy
@@ -125,9 +128,29 @@ def main():
         pretrained=config["pretrained"],
         channels=config["channels"],
         drop_rate=config["drop_rate"],
-        global_pool=config["global_pool"],
-        hierarchical=config["hierarchical"],
+        # global_pool=config["global_pool"],
+        # hierarchical=config["hierarchical"],
     )
+
+    if config["global_pool"]=="weighted" and config["hierarchical"] :
+        Model = Weighted_hierarchical
+    elif config["global_pool"]=="weighted" :
+        Model = Weighted
+    elif config["hierarchical"] :
+        Model = Hierarchical
+    else :
+        Model = CNN
+
+    model = Model(
+            backbone_name=config["model"],
+            num_classes=num_classes,
+            pretrained=config["pretrained"],
+            channels=config["channels"],
+            drop_rate=config["drop_rate"],
+            # global_pool=config["global_pool"],
+            # hierarchical=config["hierarchical"],
+        )
+
     # model = torch.compile(model)
     # send model to gpu
 
@@ -153,7 +176,7 @@ def main():
 
     # setting up for the training
 
-    config["train_dataset"] = ["ChexPert", "MimicCxrJpg"]
+    config["train_dataset"] = ["ChexPert"]
     config["val_dataset"] = ["ChexPert"]
 
     experiment = Experiment(

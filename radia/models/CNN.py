@@ -14,14 +14,14 @@ for key in hierarchy.keys():
 
 class CNN(torch.nn.Module):
     def __init__(
-        self,
-        backbone_name: str,
-        num_classes: int,
-        channels: int = 3,
-        hierarchical: bool = True,
-        pretrained: bool = True,
-        drop_rate: float = 0,
-        global_pool: str = "avg",
+            self,
+            backbone_name: str,
+            num_classes: int,
+            channels: int = 3,
+
+            pretrained: bool = True,
+            drop_rate: float = 0,
+            global_pool: str = "avg",
     ) -> object:
         """
 
@@ -39,38 +39,14 @@ class CNN(torch.nn.Module):
         self.backbone_name = backbone_name
         self.pretrained = pretrained
         self.drop_rate = drop_rate
-        self.prob_pool = True if global_pool == "weighted" else False
-        self.global_pool = "avg" if self.prob_pool else global_pool
+
+        self.global_pool = "avg"
         self.channels = channels
         self.names = names
         self.num_classes = num_classes
         self.backbone = self.get_backbone()
 
-        self.hierarchical = hierarchical
-        if self.hierarchical:
-            self.hierarchy = {}
-            for parent, children in hierarchy.items():
-                self.hierarchy[names.index(parent)] = [
-                    names.index(child) for child in children
-                ]
-
         self.backbone = self.get_backbone()
-        if self.prob_pool:
-            self.final_convolution = torch.nn.Conv2d(
-                in_channels=self.backbone.feature_info[-1]["num_chs"],
-                out_channels=1,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                bias=True,
-            )
-            self.fc = torch.nn.ModuleList(
-                [
-                    torch.nn.Linear(self.backbone.feature_info[-1]["num_chs"], 1)
-                    for i in range(self.num_classes)
-                ]
-            )
-            self.dropout = torch.nn.Dropout(p=self.drop_rate)
 
     def get_backbone(self):
         if "yolo" in self.backbone_name:
@@ -106,88 +82,29 @@ class CNN(torch.nn.Module):
 
         return backbone
 
-    def weighted_forward(self, x):
-        """
-        Forward pass with weighted pooling as described in https://arxiv.org/pdf/2005.14480.pdf
 
-        Args:
-            x: The image to forward pass
-
-        Returns: The logits of the image
-
-        """
-        logits = torch.zeros((x.shape[0], self.num_classes)).to(x.device)
-        features = self.backbone.forward_features(x)
-        for i in range(self.num_classes):
-            prob_map = torch.sigmoid(self.final_convolution(features))
-
-            weight_map = prob_map / prob_map.sum(dim=2, keepdim=True).sum(
-                dim=3, keepdim=True
-            )
-            feat = (
-                (features * weight_map)
-                .sum(dim=2, keepdim=True)
-                .sum(dim=3, keepdim=True)
-            )
-
-            feat = feat.flatten(start_dim=1)
-
-            classifier = self.fc[i]
-            feat = self.dropout(feat)
-            logit = classifier(feat)
-
-            logits[:, i] = logit[:, 0]
-
-        return logits
 
     def forward(self, images):
         outputs = torch.zeros((images.shape[0], self.num_classes)).to(images.device)
 
         if images.shape[1] == self.channels:
-            outputs += (
-                self.weighted_forward(images)
-                if self.prob_pool
-                else self.backbone(images)
-            )
+            outputs += self.backbone(images)
+
         else:
             for i in range(0, 2):
                 # iterate through the two images for one patient
-                image = images[:, i * self.channels : (i + 1) * self.channels, :, :]
+                image = images[:, i * self.channels: (i + 1) * self.channels, :, :]
 
                 # if not torch.round(torch.min(image),decimals=2)==torch.round(torch.mean(image),decimals=2) : #if the image is not empty
-                outputs += (
-                    self.weighted_forward(image)
-                    if self.prob_pool
-                    else self.backbone(image)
-                )
-
-        if not self.training:
-            # we apply the sigmoid function if in the inference phase
-            # outputs = torch.sigmoid(outputs)
-
-            if self.hierarchical:
-                # using conditional probability
-                for parent_class, children in self.hierarchy.items():
-                    prob_parent = outputs[:, parent_class]
-                    outputs[:, children] = outputs[:, children] * prob_parent[:, None]
-
-                # prob_sick = outputs[:, -1]
-                # outputs[:,0:-1] = outputs[:,0:-1] * prob_sick[:, None]
+                outputs += self.backbone(image)
 
         return outputs
 
     def reset_classifier(self):
-        if self.prob_pool:
-            self.fc = torch.nn.ModuleList(
-                [
-                    torch.nn.Linear(self.backbone.feature_info[-1]["num_chs"], 1)
-                    for i in range(self.num_classes)
-                ]
-            )
-        else:
-            self.backbone.reset_classifier(
-                self.num_classes, self.drop_rate, self.global_pool
-            )
+
+        self.backbone.reset_classifier(
+            self.num_classes, self.drop_rate, self.global_pool
+        )
 
 
 if __name__ == "__main__":  # for debugging purpose
