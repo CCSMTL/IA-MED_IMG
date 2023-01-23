@@ -42,7 +42,7 @@ def load_model(weights, models):
         load_my_state_dict(model, state_dict)
         model.eval()
         model = model.to(device)
-        return model
+    return models
 
 
 @torch.no_grad()
