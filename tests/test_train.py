@@ -7,12 +7,9 @@ Created on 2022-07-28$
 """
 import os
 
-import torch
-import yaml
 import logging
-from radia.Experiment import Experiment
+from radia.training.Experiment import Experiment
 from radia.models.CNN import CNN
-from radia.training.train import main
 from radia import names,debug_config
 
 def test_train():

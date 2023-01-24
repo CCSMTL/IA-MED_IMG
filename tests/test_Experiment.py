@@ -10,7 +10,7 @@ import os
 import numpy as np
 
 
-from radia.Experiment import Experiment
+from radia.training.Experiment import Experiment
 from radia import debug_config
 from radia.models.CNN import CNN
 os.environ["WANDB_MODE"] = "offline"

@@ -127,7 +127,7 @@ source venv/bin/activate
 ### Install the dependencies
 
 ```
-pip install --proxy {proxy} -r CheXpert2/requirements.txt
+pip install --proxy {proxy} -r radia/requirements.txt
 pip install --proxy {proxy} -r requirements_dev.txt
 pip install -e .
 
@@ -331,7 +331,7 @@ You can use the command wandb online/wandb offline to toggle online/offline mode
 Used to launch training on a single GPU/CPU
 Instruction on specific arguments can be obtained by running
 ``
-python CheXpert2/training/train.py --help
+python radia/training/train.py --help
 ``
 
 A simplified context manager has been created to run experience. The class Experiment.py allow to easily compile run by specifying the desired optimizer and 
@@ -351,6 +351,12 @@ Used to launch training on multiple GPUs. Still unstable . Use with caution as i
 
 
 
+## Tips and tricks
 
+### Tmux
+
+tmux is a terminal multiplexer. It lets you switch easily between several programs in one terminal, detach them (they keep running in the background) and reattach them to a different terminal.
+It is extremely useful to run a program for a long time without worrying the 
+SSH connection is cut.
 
 
