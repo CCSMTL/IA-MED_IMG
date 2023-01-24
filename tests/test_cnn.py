@@ -5,6 +5,9 @@ import torch
 from six.moves import urllib
 
 from radia.models.CNN import CNN
+from radia.models.Hierarchical import Hierarchical
+from radia.models.Weighted import Weighted
+from radia.models.Weighted_hierarchical import Weighted_hierarchical
 
 proxy = urllib.request.ProxyHandler(
     {
@@ -40,15 +43,24 @@ def test_cnn_hierarchical():
     x = torch.randn((2, 6, 320, 320))
 
 
-    cnn = CNN("convnext_tiny", 14, channels=3,hierarchical=True)
+    cnn = Hierarchical("convnext_tiny", 14, channels=3)
     y = cnn(x)  # test forward loop
 
-
-def test_cnn_weighted_pooling():
+def test_cnn_weighted():
     os.environ["DEBUG"] = "True"
     x = torch.randn((2, 6, 320, 320))
-    cnn = CNN("convnext_tiny", 14, channels=3,global_pool="weighted")
+
+
+    cnn = Weighted("convnext_tiny", 14, channels=3)
     y = cnn(x)  # test forward loop
+def test_cnn_weighted_hierarchical():
+    os.environ["DEBUG"] = "True"
+    x = torch.randn((2, 6, 320, 320))
+
+
+    cnn =Weighted_hierarchical("convnext_tiny", 14, channels=3)
+    y = cnn(x)  # test forward loop
+
 
 
 if __name__ == "__main__":
