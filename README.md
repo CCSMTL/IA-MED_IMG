@@ -54,6 +54,9 @@ pip install --proxy http://ccsmtl.proxy.mtl.rtss.qc.ca -r requirement.txt
 ```
 ## Proxy help
 ```
+sudo apt-get  -o Acquire::http::proxy=http://ccsmtl.proxy.mtl.rtss.qc.ca:8080 install <package>
+
+
 export HTTP_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 export HTTPS_PROXY="http://ccsmtl.proxy.mtl.rtss.qc.ca:8080"
 
@@ -124,7 +127,7 @@ source venv/bin/activate
 ### Install the dependencies
 
 ```
-pip install --proxy {proxy} -r CheXpert2/requirements.txt
+pip install --proxy {proxy} -r radia/requirements.txt
 pip install --proxy {proxy} -r requirements_dev.txt
 pip install -e .
 
@@ -148,10 +151,7 @@ data_api/data_organizer.py
 ## Test
 The test can be found in the folder tests.
 Run them by executing
-```
-pytest -v test.py 
-```
-or run them all
+
 ```
 pytest -v ./tests
 ```
@@ -177,58 +177,67 @@ the pull request is allowed to move forward.
 
 # File structure
 ````
-.
-├── CheXpert2
+..
+├── .gitignore
+├── .pytest-deps
+├── radia
 │   ├── Experiment.py
 │   ├── Metrics.py
 │   ├── Parser.py
 │   ├── Transforms.py
 │   ├── __init__.py
-│   ├── custom_Transforms.py
 │   ├── custom_utils.py
 │   ├── data analysis
-│   │   ├── clustering.py
-│   │   └── temp.py
+│   │   └── clustering.py
 │   ├── data_API
+│   │   ├── create_test_set.py
 │   │   ├── data_analysis.py
 │   │   ├── data_downloader_chestXray.py
 │   │   ├── data_organizer.py
 │   │   ├── download.sh
 │   │   └── links.txt
+│   ├── data_exploration.ipynb
 │   ├── data_visualization.py
 │   ├── dataloaders
 │   │   ├── CXRLoader.py
-│   │   ├── MongoDB.py
-│   │   └── test.csv
+│   │   └── MongoDB.py
 │   ├── inference
 │   │   ├── __init__.py
 │   │   ├── detect.py
 │   │   ├── inference.ipynb
-│   │   └── test.csv
+│   │   └── utils.py
 │   ├── models
 │   │   ├── CNN.py
 │   │   ├── Ensemble.py
 │   │   ├── Unet.py
+│   │   ├── pylon.py
 │   │   └── teacher_learning.py
+│   ├── reproducing_libauc.ipynb
 │   ├── requirements.txt
 │   ├── results_visualization.py
 │   ├── run.sh
+│   ├── sanity_check.ipynb
 │   └── training
+│       ├── Loss.py
 │       ├── __init__.py
 │       ├── multi_gpu_train.py
 │       ├── train.py
 │       └── training.py
 ├── Pipfile
-├── RADIA.log
 ├── README.md
 ├── azure-pipelines.yml
 ├── data
 │   ├── chexnet_results.csv
 │   └── data_table.csv
-├── grouped_data.csv
+├── plots
+│   ├── Confusion Matrix.png
+│   ├── Most_Frequented_Classes111.png
+│   ├── chords_chexpert.png
+│   ├── chords_mongodb.png
+│   ├── histogram_chexpert.png
+│   └── histogram_mongodb.png
 ├── requirements_dev.txt
 ├── setup.py
-├── test.csv
 ├── tests
 │   ├── __init__.py
 │   ├── data_test
@@ -237,14 +246,59 @@ the pull request is allowed to move forward.
 │   │   │       ├── patient64541
 │   │   │       │   └── study1
 │   │   │       │       └── view1_frontal.jpg
-                    ....
+│   │   │       ├── patient64542
+│   │   │       │   └── study1
+│   │   │       │       ├── view1_frontal.jpg
+│   │   │       │       └── view2_lateral.jpg
+│   │   │       ├── patient64543
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64544
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64545
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64546
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64547
+│   │   │       │   └── study1
+│   │   │       │       ├── view1_frontal.jpg
+│   │   │       │       ├── view2_frontal.jpg
+│   │   │       │       └── view3_lateral.jpg
+│   │   │       ├── patient64548
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       ├── patient64549
+│   │   │       │   └── study1
+│   │   │       │       └── view1_frontal.jpg
+│   │   │       └── patient64550
+│   │   │           └── study1
+│   │   │               └── view1_frontal.jpg
 │   │   ├── data.yaml
 │   │   ├── images
 │   │   │   ├── 00027725_000.png
-                    ....
+│   │   │   ├── 00027725_001.png
+│   │   │   ├── 00027725_002.png
+│   │   │   ├── 00027725_003.png
+│   │   │   ├── 00027725_004.png
+│   │   │   ├── 00027725_005.png
+│   │   │   ├── 00027725_006.png
+│   │   │   ├── 00027725_007.png
+│   │   │   ├── 00027725_008.png
+│   │   │   └── 00027725_009.png
 │   │   ├── labels
 │   │   │   ├── 00027725_000.txt
-                    ....
+│   │   │   ├── 00027725_001.txt
+│   │   │   ├── 00027725_002.txt
+│   │   │   ├── 00027725_003.txt
+│   │   │   ├── 00027725_004.txt
+│   │   │   ├── 00027725_005.txt
+│   │   │   ├── 00027725_006.txt
+│   │   │   ├── 00027725_007.txt
+│   │   │   ├── 00027725_008.txt
+│   │   │   └── 00027725_009.txt
 │   │   ├── sampler_weights.txt
 │   │   ├── train.csv
 │   │   └── valid.csv
@@ -255,8 +309,8 @@ the pull request is allowed to move forward.
 │   ├── test_cnn.py
 │   ├── test_cxrloader.py
 │   └── test_train.py
-├── valid.csv
 └── visualization.py
+
 
 
 ````
@@ -277,22 +331,32 @@ You can use the command wandb online/wandb offline to toggle online/offline mode
 Used to launch training on a single GPU/CPU
 Instruction on specific arguments can be obtained by running
 ``
-python CheXpert2/training/train.py --help
+python radia/training/train.py --help
 ``
 
+A simplified context manager has been created to run experience. The class Experiment.py allow to easily compile run by specifying the desired optimizer and 
+loss "à la Keras". The class is defined in Radia/Experiment.py
+
+Please note a few element are still hard-coded in the class. These are 
+
+- The names and hierarchy of the classes : see Radia/__init__.py to customize these
+- the connection to the database : see Radia/dataloaders/CXRLoader.py to customize the IP address of the Mongo Database 
+- The positive weights associated for each classes : They are calculated in the dataloader : see Radia/dataloaders/CXRLoader.py
+- The sample weight of each element in the dataloader : They are calculated in the dataloader also : see Radia/dataloaders/CXRLoader.py
+- The datasets used : see Radia/training/train.py to change which dataset is used for either training or pretraining
 ## multi_gpu_train.py
 
-Used to launch training on multiple GPUs. Still unstable . Use with caution 
+Used to launch training on multiple GPUs. Still unstable . Use with caution as it is not yet functional. The synchronisation of gradient seem broken
 
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better.
-
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)_
 
 
+## Tips and tricks
+
+### Tmux
+
+tmux is a terminal multiplexer. It lets you switch easily between several programs in one terminal, detach them (they keep running in the background) and reattach them to a different terminal.
+It is extremely useful to run a program for a long time without worrying the 
+SSH connection is cut.
 
 
