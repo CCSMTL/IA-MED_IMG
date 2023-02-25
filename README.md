@@ -1,5 +1,9 @@
 # Welcome to RADIA -  The radiologist assistant powered by AI
 
+
+DISCLAIMER : This project is not intended to replace radiologists. It is a tool that can help them in their daily work.
+This release was made at the end of my internship and as such may not reflect the current state of the project. The CIUSSS Centre Sude de l'île de 
+Montreal is not associated with the publication of the code and the results presented here.
 ## What is RADIA?
 
 RADIA is a project laumched by the CIUSSS Centre Sud de l'ile de Montreal. The goal of the proejct was to study the feasibility of using AI to assist radiologists in their daily work. 
